@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "author": "CESS-UFF project team",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp32",
+      "top": 20,
+      "left": -20,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "red-led",
+      "top": -61.2,
+      "left": 253.4,
+      "attrs": { "color": "red", "label": "GPIO 2" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "red-led-resistor",
+      "top": 176.75,
+      "left": 96,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "green-led",
+      "top": -61.2,
+      "left": 176.6,
+      "attrs": { "color": "green", "label": "GPIO 4" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "green-led-resistor",
+      "top": 157.55,
+      "left": 96,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "push-button",
+      "top": -79.1,
+      "left": 114.3,
+      "rotate": 270,
+      "attrs": { "color": "green", "label": "Active HIGH - GPIO 17", "xray": "1", "key": " " }
+    },
+    {
+      "type": "board-ssd1306",
+      "id": "oled-display",
+      "top": -83.26,
+      "left": -18.97,
+      "attrs": { "i2cAddress": "0x3c" }
+    }
+  ],
+  "connections": [
+    [ "esp32:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp32:RX", "$serialMonitor:TX", "", [] ],
+    [ "red-led-resistor:2", "red-led:A", "red", [ "h27.6" ] ],
+    [ "red-led:C", "esp32:GND.2", "black", [ "h0.4", "v48", "h-188.04" ] ],
+    [ "green-led-resistor:2", "green-led:A", "green", [] ],
+    [ "green-led:C", "esp32:GND.2", "black", [ "v48", "h-110.84" ] ],
+    [ "esp32:3V3", "push-button:1.l", "red", [ "h-13.41", "v-39.2", "h153.6" ] ],
+    [ "push-button:2.l", "esp32:17", "blue", [ "h0.2", "v135.2" ] ],
+    [ "esp32:25", "oled-display:SCL", "gold", [ "h-23.01", "v-231.2", "h76.5" ] ],
+    [ "esp32:16", "oled-display:SDA", "cyan", [ "h15.24", "v-240.8", "h-48.07" ] ],
+    [ "esp32:3V3", "oled-display:VCC", "red", [ "h-32.61", "v-164", "h76.65" ] ],
+    [ "esp32:GND.2", "oled-display:GND", "black", [ "v-20", "h24.84", "v-124.8", "h-86.4" ] ],
+    [ "esp32:4", "green-led-resistor:1", "green", [ "h0" ] ],
+    [ "esp32:2", "red-led-resistor:1", "red", [ "h0" ] ]
+  ],
+  "dependencies": {}
+}

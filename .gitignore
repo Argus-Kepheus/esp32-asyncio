@@ -1,0 +1,26 @@
+# MicroPython firmware downloaded locally for the Wokwi VS Code extension
+# (see wokwi.toml). Not part of the source deliverable.
+firmware.bin
+*.bin
+
+# Editor / OS clutter
+.vscode/
+.DS_Store
+
+# LaTeX build artifacts (see report/build.ps1) -- relatorio.pdf is kept
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.fls
+report/*.fdb_latexmk
+report/*.synctex.gz
+report/*.lof
+report/*.lot
+report/*.bbl
+report/*.blg
+report/*.run.xml
+report/*.bcf
+report/*.nav
+report/*.snm
+report/*.vrb
