@@ -15,6 +15,6 @@ and Programming Logic.
 
 **Wokwi simulation:** <https://wokwi.com/projects/471528241540407297>
 
-![Simulated circuit: ESP32-DevKitC V4, two SSD1306 OLEDs, an ILI9341 TFT, six blue LEDs, a green LED, three push-buttons and a slide switch](report\figures\circuito-wokwi.png)
+![Simulated circuit: ESP32-DevKitC V4, two SSD1306 OLEDs, an ILI9341 TFT, six blue LEDs, a green LED, three push-buttons and a slide switch](report/figures/circuito-wokwi.png)
 
 **License:** CC0 1.0 Universal — see [`LICENSE`](LICENSE).
