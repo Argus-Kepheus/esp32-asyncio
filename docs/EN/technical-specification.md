@@ -1,4 +1,4 @@
-# Technical Specification — cess-uff
+# Technical Specification — esp32-asyncio
 
 ## 1. Document control
 
@@ -125,7 +125,7 @@ assignment for the rest of the project (see §6.3).
 | Wokwi component IDs | kebab-case | `red-led`, `green-led`, `push-button`, `oled-display` |
 | Python variables | snake_case | `red_led`, `green_led`, `push_button`, `oled_display` |
 | Python pin constants | UPPER_SNAKE_CASE | `RED_LED_PIN`, `GREEN_LED_PIN`, `BUTTON_PIN`, `OLED_SCL_PIN`, `OLED_SDA_PIN` |
-| Repository folder | kebab-case | `cess-uff` |
+| Repository folder | kebab-case | `esp32-asyncio` |
 
 All source code, comments and documentation are written in English. The two
 OLED display strings (`Boa sorte!` / `Consegui`) are a deliberate

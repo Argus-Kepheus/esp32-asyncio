@@ -1,4 +1,4 @@
-# Component Specifications — cess-uff
+# Component Specifications — esp32-asyncio
 
 One specification sheet per physical/simulated component used in
 `diagram.json`, kept separate from the design rationale in

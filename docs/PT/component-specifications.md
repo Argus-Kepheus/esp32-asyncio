@@ -1,4 +1,4 @@
-# Especificações dos componentes — cess-uff
+# Especificações dos componentes — esp32-asyncio
 
 Este documento apresenta uma ficha de especificação para cada componente
 físico ou simulado utilizado em `diagram.json`. As fichas são mantidas

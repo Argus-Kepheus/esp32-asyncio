@@ -1,4 +1,4 @@
-# Especificação técnica — cess-uff
+# Especificação técnica — esp32-asyncio
 
 ## 1. Controle do documento
 
@@ -390,7 +390,7 @@ Benefícios:
 ## 10. Estrutura do repositório
 
 ```text
-cess-uff/
+esp32-asyncio/
 ├── main.py
 ├── ssd1306.py
 ├── diagram.json
