@@ -15,8 +15,8 @@
     successful build by default. The resulting PDF is never deleted.
 
 .PARAMETER Document
-    Base name (without .tex) of the document to build, e.g. 'relatorio' or
-    'apresentacao_mobile'. Defaults to 'relatorio'.
+    Base name (without .tex) of the document to build. Defaults to
+    'relatorio'.
 
 .PARAMETER Clean
     Only remove temporary files; do not compile.
@@ -33,16 +33,8 @@
     Compile relatorio.tex and clean up temporary files.
 
 .EXAMPLE
-    .\build.ps1 -Document apresentacao_mobile
-    Compile apresentacao_mobile.tex and clean up temporary files.
-
-.EXAMPLE
     .\build.ps1 -Clean
     Remove relatorio's leftover temporary files without compiling anything.
-
-.EXAMPLE
-    .\build.ps1 -Document apresentacao_mobile -Clean
-    Remove apresentacao_mobile's leftover temporary files without compiling.
 
 .EXAMPLE
     .\build.ps1 -KeepTemp -Open

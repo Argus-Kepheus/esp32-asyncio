@@ -7,6 +7,15 @@ Instrumentação, Eletrônica e Lógica de Programação. Dois LEDs e um
 display OLED SSD1306 reagem a um botão pulsador, simulados no
 [Wokwi](https://wokwi.com).
 
+> **🚧 Status do projeto:** os requisitos e tabelas abaixo descrevem a
+> avaliação obrigatória original, que está completa e estável. Desde
+> então, o hardware e o `main.py` foram estendidos experimentalmente
+> (mais LEDs, um segundo OLED, um display TFT, botões extras, entre
+> outros) a pedido do usuário, e essa extensão **ainda está mudando
+> ativamente** — veja a seção "Funcionalidades estendidas" em
+> [`technical-specification.md`](technical-specification.md) para o
+> estado atual e atualizado.
+
 **Simulação no Wokwi:** <https://wokwi.com/projects/471528241540407297>
 
 ## Requisitos de hardware

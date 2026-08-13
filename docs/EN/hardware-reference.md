@@ -105,6 +105,14 @@ predefined project requirements, that reassignment is out of scope here.
 | Bootstrapping | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | Sampled at boot to select boot mode. GPIO2 is used here for the red LED (a required assignment) — the LED/resistor circuit does not force an external level on it, so it does not interfere with boot |
 | Primary UART | GPIO1, GPIO3 | Used for programming/diagnostic output and the Wokwi serial monitor; not used by project peripherals |
 
+Note on GPIO1/GPIO3: even though `diagram.json` wires no LED or button to
+them, they are not "free" or unused. `diagram.json` connects `esp32:TX` /
+`esp32:RX` to `$serialMonitor` — the same UART0 channel MicroPython's REPL
+and every `print()` call use. Concretely, this is the channel the
+`"Button: pressed/released | Green LED: ... | OLED: ..."` line from
+`apply_button_state()` (and the OLED/TFT initialization-failure
+diagnostics) is printed to.
+
 ## 6. Electrical characteristics
 
 - **Logic level:** 3.3 V. Never apply 5 V to a GPIO.

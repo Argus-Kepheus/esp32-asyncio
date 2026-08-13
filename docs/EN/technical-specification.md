@@ -393,6 +393,8 @@ a row, keep the reasoning short and explicit.
 | `machine.I2C` (hardware), not `machine.SoftI2C` | **Confirmed on a live wokwi.com run**: `tests/05_oled_basic.py` and `tests/06_oled_full_diagnostic.py`, both using hardware `I2C(0, scl=Pin(25), sda=Pin(16), freq=400_000)`, passed — including every `ssd1306.py` drawing primitive. This retroactively shows hardware I2C was never actually the cause of the original wokwi.com issues (the real cause was the `attrs.env` boot loop, see the row below); `SoftI2C` had been adopted earlier as an unconfirmed, purely defensive substitute and is no longer needed. `main.py` was reverted to hardware `I2C` accordingly. | `machine.SoftI2C` (previously adopted defensively, now confirmed unnecessary; kept only as a documented fallback if a future hardware-I2C regression appears) |
 | `push-button` wired with pin names `1.l` / `2.l` | These are the actual pin names exposed by the Wokwi `wokwi-pushbutton` part. One of the three original drafts used `1.R` / `2.R` (wrong case, wrong side), which Wokwi cannot resolve — the connection silently fails and the button never registers a press in that simulation. | `1.R` / `2.R` naming (rejected: invalid pin reference) |
 | `esp32` board part uses `"attrs": {}` (no pinned firmware `env`) | **Confirmed root cause of a live wokwi.com failure**: pinning `"env": "micropython-20240602-v1.23.0"` (carried over from the `p/` draft) caused an infinite boot loop — the console showed repeated `POWERON_RESET` / `SW_RESET` cycles and MicroPython never started, so *nothing* ran, not even a trivial one-GPIO test script (see TC-07). Removing the pin and letting Wokwi select its default/current MicroPython build resolved it. This also retroactively confirms this exact line was very likely the original issue reported against the `p/` draft before consolidation. | Pinning a specific firmware `env` string for reproducibility (rejected: the specific string used was invalid/unsupported and silently broke boot, with no error surfaced other than the reset loop) |
+| Both OLEDs repurposed as live resource-usage graphs (§19.2) | User-requested extension, after the mandatory FR-05 behavior was already validated. The "CPU usage" value is real measured I2C/SPI bus-busy time, not a synthetic/simulated number, since bare-metal MicroPython on the ESP32 exposes no OS-level scheduler load metric to read instead. | A synthetic/simulated waveform for "CPU usage" (rejected: would not reflect anything real about the running program); reusing the original text message alongside a graph (rejected: no space on a 128×64 monochrome panel without shrinking the graph) |
+| Six blinking LEDs share one interval, still six separate `asyncio` tasks (§19.3) | User-requested extension: demonstrates that adding "more of the same" only ever means one more concurrent task, never more shared-loop logic — same principle FR-01 already established for the original red LED. | A single task toggling all six LEDs together (rejected: defeats the point of demonstrating independent concurrent equipment, and reintroduces the coupling `asyncio` was adopted to avoid, §7.2) |
 
 ## 17. Future work (physical hardware phase, out of scope here)
 
@@ -416,3 +418,67 @@ reviewed commits. Proposed changes should identify whether they affect:
 
 Mandatory pin mappings and user-visible messages must not be changed
 without an explicit update to the assessment requirements.
+
+## 19. Extended features (beyond the original assignment)
+
+This section documents functionality added, at the user's explicit
+request, after the original mandatory deliverable (§2–§15) was already
+complete and validated. It does not replace or invalidate the functional
+requirements above; §16's decision log carries the short version of each
+decision below. The green LED and the OLED's original button-state
+purpose are both still being actively revised as of this writing, so they
+are deliberately **not** re-documented here yet — only what has already
+settled is recorded.
+
+### 19.1 Second OLED, own I2C bus
+
+A second SSD1306 OLED (`oled-display-2` / `oled_display_2`) runs on its
+own independent hardware I2C bus, `machine.I2C(1)`, on GPIO15 (SCL) /
+GPIO22 (SDA) — separate from the original OLED's `I2C(0)` bus (GPIO32
+SCL / GPIO16 SDA per the pin move recorded in §16), so both are addressed
+concurrently without bus contention.
+
+### 19.2 Both OLEDs now plot live resource-usage graphs
+
+FR-05 originally required the (single) OLED to display `Boa sorte!` /
+`Consegui` depending on the push-button state. Neither OLED does this
+anymore — both were repurposed as Task-Manager-style scrolling bar graphs,
+one sample per horizontal pixel column (up to 128 samples of history),
+redrawn every sampling window:
+
+- **First OLED — "CPU usage."** MicroPython on bare ESP32 exposes no
+  OS-level scheduler load metric, so the plotted value is a real, measured
+  stand-in: the fraction of each 250 ms sampling window spent inside a
+  blocking I2C or SPI transfer — the only time this single-core,
+  cooperatively-scheduled application is actually busy executing, as
+  opposed to suspended at an `await` point. See `main.py`'s
+  `update_cpu_graph()` and the `_bus_busy_begin()` / `_bus_busy_end()`
+  timing helpers, which every blocking display write (both OLEDs and the
+  TFT) now goes through.
+- **Second OLED — RAM usage.** A real value, not a stand-in: MicroPython's
+  own garbage-collector heap statistics, `gc.mem_alloc()` /
+  `gc.mem_free()`, sampled every 250 ms. See `update_ram_graph()`.
+
+The push-button still turns the green LED on/off and prints its state to
+the serial console (`apply_button_state()`) — only the OLED text feedback
+for it was removed, since neither OLED has room left for both a graph and
+a legible text message on a 128×64 monochrome panel.
+
+### 19.3 Six LEDs, one shared interval, six independent tasks
+
+Five additional LEDs (blue, yellow, white, orange, and a second red) join
+the original FR-01 red LED, all painted the same color on the board
+(`#0000FF`) even though `main.py` still tracks each one individually (see
+`BLINKING_LEDS`). Each runs as its own independent `asyncio` task
+(`blink_led()`) — the same pattern FR-01 already established: one more LED
+is always one more concurrent task, never more logic added to a shared
+loop.
+
+All six currently blink on the same 500 ms base interval — toggling every
+500 ms, ≈1 s full cycle, matching the original FR-01 timing — functionally
+six identical, independent pieces of equipment rather than six different
+frequencies. Two extra push-buttons (GPIO34 decrease, GPIO35 increase —
+both wired with an external physical pull-down, since GPIO34/35 have no
+internal one) scale every LED's interval by the same power-of-two factor
+at once, clamped between 125 ms and 4 s, so all six always stay in
+lockstep with each other.

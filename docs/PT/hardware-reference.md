@@ -129,6 +129,14 @@ atribuições predefinidas do projeto, esse remapeamento está fora do escopo.
 | Configuração de inicialização | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | São amostrados durante a inicialização. O GPIO2 é utilizado pelo LED vermelho por exigência do projeto; o conjunto LED/resistor não força externamente um nível lógico inadequado |
 | UART principal | GPIO1 e GPIO3 | Usados para programação, diagnóstico e monitor serial do Wokwi; não são usados pelos periféricos funcionais |
 
+Nota sobre GPIO1/GPIO3: mesmo sem nenhum LED ou botão ligado a eles no
+`diagram.json`, esses pinos não estão "livres" ou ociosos. O `diagram.json`
+conecta `esp32:TX` / `esp32:RX` ao `$serialMonitor` — o mesmo canal UART0
+usado pelo REPL do MicroPython e por todo `print()` do código. Na prática,
+é esse canal que exibe a linha `"Button: pressed/released | Green LED: ...
+| OLED: ..."` de `apply_button_state()` (e os diagnósticos de falha de
+inicialização do OLED/TFT).
+
 ## 6. Características elétricas
 
 - **Nível lógico:** 3,3 V. Nunca aplique 5 V diretamente a um GPIO.

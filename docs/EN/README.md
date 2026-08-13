@@ -6,6 +6,14 @@ ESP32 (MicroPython) practical assessment for the Instrumentation,
 Electronics and Programming Logic courses. Two LEDs and an SSD1306 OLED
 display react to a push-button, simulated in [Wokwi](https://wokwi.com).
 
+> **🚧 Project status:** the requirements and tables below describe the
+> original mandatory assessment, which is complete and stable. Since
+> then, the hardware and `main.py` have been extended experimentally
+> (more LEDs, a second OLED, a TFT display, extra buttons, and more) at
+> the user's request, and that extension is **still actively changing**
+> — see [`technical-specification.md`](technical-specification.md)'s
+> "Extended features" section for the current, up-to-date state.
+
 **Wokwi simulation:** <https://wokwi.com/projects/471528241540407297>
 
 ## Hardware requirements

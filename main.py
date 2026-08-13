@@ -2,19 +2,24 @@
 CESS-UFF - ESP32 MicroPython Practical Assessment
 Courses: Instrumentation / Electronics / Programming Logic
 
-Controls nine LEDs (six blinking at independent, adjustable frequencies,
-one driven by a push button, and two idle indicators) and updates two
-displays -- an SSD1306 OLED over I2C and an ILI9341 TFT over 4-wire SPI --
-based on the button state. Two extra push-buttons speed up or slow down
-every blinking LED at once. Cooperative asyncio tasks prevent timing
-delays from blocking the complete application and keep every LED blinking
-independently of the others and of the button-monitoring logic.
+Controls nine LEDs (six blinking at the same adjustable interval, each its
+own independent task, plus one driven by a push button and two idle
+indicators) and updates three displays -- two SSD1306 OLEDs, each on its
+own I2C bus, and an ILI9341 TFT over 4-wire SPI. The two OLEDs are live
+Task-Manager-style resource graphs: the first plots real I2C/SPI bus-busy
+time as a stand-in "CPU usage," the second plots real MicroPython heap
+usage as "RAM usage." Two extra push-buttons speed up or slow down every
+blinking LED at once. Cooperative asyncio tasks prevent timing delays from
+blocking the complete application and keep every LED and every display
+update running independently of each other and of the button-monitoring
+logic.
 
 See docs/EN/technical-specification.md for the full requirements and the
 rationale behind every decision below.
 """
 
 import asyncio
+import gc
 import time
 from machine import Pin, I2C, SPI
 
@@ -57,22 +62,29 @@ INCREASE_SPEED_BUTTON_PIN = 35
 BUS_IDLE_LED_PIN = 13
 SCHEDULER_IDLE_LED_PIN = 2
 
+# --- Pin assignments (second OLED, its own I2C bus) --------------------------
+# A separate machine.I2C(1) bus, independent of the first OLED's I2C(0), so
+# both can be addressed at the same time without bus contention.
+OLED2_SCL_PIN = 15
+OLED2_SDA_PIN = 22
+
 # --- Timing configuration ----------------------------------------------------
-# Each blinking LED's interval is half the previous one, from 4 s down to
-# 125 ms: RED_LED_2 -> BLUE -> YELLOW -> RED -> WHITE -> ORANGE.
-RED_LED_2_BLINK_INTERVAL_MS = 4000
-BLUE_LED_BLINK_INTERVAL_MS = 2000
-YELLOW_LED_BLINK_INTERVAL_MS = 1000
+# All six blinking LEDs share the same base interval -- each is still its
+# own independent asyncio task (see BLINKING_LEDS/blink_led()), just running
+# the same 500 ms period, as if they were separate, identical equipment.
+RED_LED_2_BLINK_INTERVAL_MS = 500
+BLUE_LED_BLINK_INTERVAL_MS = 500
+YELLOW_LED_BLINK_INTERVAL_MS = 500
 RED_LED_BLINK_INTERVAL_MS = 500
-WHITE_LED_BLINK_INTERVAL_MS = 250
-ORANGE_LED_BLINK_INTERVAL_MS = 125
+WHITE_LED_BLINK_INTERVAL_MS = 500
+ORANGE_LED_BLINK_INTERVAL_MS = 500
 
 # Each speed-button press doubles or halves every blinking LED's interval at
-# once (relative to its own base value above), so the 4s/2s/.../125ms ratios
-# never drift. The step is clamped so the fastest LED can't reach 0 ms and
-# the slowest can't run away to an absurd wait.
-BLINK_SPEED_STEP_MIN = -2  # fastest: intervals x0.25 (~31 ms floor)
-BLINK_SPEED_STEP_MAX = 3   # slowest: intervals x8 (~32 s ceiling)
+# once (relative to its own 500 ms base above), so all six always stay in
+# lockstep with each other. The step is clamped so the interval can't reach
+# 0 ms or run away to an absurd wait.
+BLINK_SPEED_STEP_MIN = -2  # fastest: 500ms x0.25 = 125 ms
+BLINK_SPEED_STEP_MAX = 3   # slowest: 500ms x8 = 4 s
 
 BUTTON_SAMPLE_INTERVAL_MS = 5
 # Wokwi's simulated push-button is bounce-free, so this debounce window is
@@ -85,8 +97,8 @@ OLED_WIDTH = 128
 OLED_HEIGHT = 64
 OLED_I2C_ADDRESS = 0x3C
 OLED_I2C_FREQUENCY_HZ = 400_000
-MSG_RELEASED = "Boa sorte!"  # shown while the button is released
-MSG_PRESSED = "Consegui"     # shown while the button is pressed
+CPU_GRAPH_SAMPLE_INTERVAL_MS = 250
+RAM_GRAPH_SAMPLE_INTERVAL_MS = 250
 
 # --- Peripheral setup ----------------------------------------------------
 red_led = Pin(RED_LED_PIN, Pin.OUT, value=0)
@@ -139,11 +151,29 @@ push_button = Pin(BUTTON_PIN, Pin.IN, Pin.PULL_DOWN)
 decrease_speed_button = Pin(DECREASE_SPEED_BUTTON_PIN, Pin.IN)
 increase_speed_button = Pin(INCREASE_SPEED_BUTTON_PIN, Pin.IN)
 
-# On by default; draw_centered_message()/draw_frequency_legend() turn it off
-# only for the few milliseconds their I2C/SSD1306 or SPI/ILI9341 write is
-# actually in flight -- the two blocking calls this project has (see
+# On by default; _bus_busy_begin()/_bus_busy_end() turn it off only for the
+# few milliseconds an I2C/SSD1306 or SPI/ILI9341 write is actually in
+# flight -- the only blocking calls this project has (see
 # docs/EN/technical-specification.md, section 7.2's engineering note).
 bus_idle_led = Pin(BUS_IDLE_LED_PIN, Pin.OUT, value=1)
+
+# Accumulates microseconds spent inside a _bus_busy_begin()/_bus_busy_end()
+# span since the last time the CPU-usage graph task read and reset it --
+# see update_cpu_graph(). This is real measured I2C/SPI bus-busy time, not
+# a simulated number.
+bus_busy_time_us = 0
+
+
+def _bus_busy_begin():
+    bus_idle_led.off()
+    return time.ticks_us()
+
+
+def _bus_busy_end(started_at_us):
+    global bus_busy_time_us
+    bus_busy_time_us += time.ticks_diff(time.ticks_us(), started_at_us)
+    bus_idle_led.on()
+
 
 # Lowest-priority task in the cooperative scheduler: it has no fixed
 # schedule of its own and always asks to run again immediately
@@ -166,31 +196,43 @@ i2c = I2C(
 )
 
 
-def create_oled_display():
-    """Initialize the OLED if it is detected on the I2C bus, else return None.
+def create_oled_display(i2c_bus, label):
+    """Initialize an SSD1306 OLED if detected on the given I2C bus, else
+    return None.
 
-    Returning ``None`` on failure lets the LED and button functions remain
+    Returning ``None`` on failure lets the rest of the application stay
     operational while reporting a clear diagnostic, instead of crashing the
     whole program on a wiring mistake.
     """
-    detected_addresses = i2c.scan()
+    detected_addresses = i2c_bus.scan()
     if OLED_I2C_ADDRESS not in detected_addresses:
         print(
-            "OLED initialization failed: expected I2C address 0x{:02X}, "
+            "{} initialization failed: expected I2C address 0x{:02X}, "
             "detected {}".format(
+                label,
                 OLED_I2C_ADDRESS,
                 ["0x{:02X}".format(address) for address in detected_addresses],
             )
         )
         return None
 
-    return SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, i2c, addr=OLED_I2C_ADDRESS)
+    return SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, i2c_bus, addr=OLED_I2C_ADDRESS)
 
 
-oled_display = create_oled_display()
+oled_display = create_oled_display(i2c, "OLED")
 
-# 4-wire SPI TFT (SCK, MOSI, CS, D/C), independent of the I2C OLED above --
-# both displays run at the same time, on separate buses/pins.
+# Second, independent hardware I2C bus (I2C(1)) driving a second SSD1306 --
+# runs alongside the first OLED's I2C(0) bus without contention.
+i2c_2 = I2C(
+    1,
+    scl=Pin(OLED2_SCL_PIN),
+    sda=Pin(OLED2_SDA_PIN),
+    freq=OLED_I2C_FREQUENCY_HZ,
+)
+oled_display_2 = create_oled_display(i2c_2, "OLED 2")
+
+# 4-wire SPI TFT (SCK, MOSI, CS, D/C), independent of the I2C OLEDs above --
+# all three displays run at the same time, on separate buses/pins.
 tft_spi = SPI(2, baudrate=20_000_000, sck=Pin(TFT_SCK_PIN), mosi=Pin(TFT_MOSI_PIN))
 
 
@@ -227,43 +269,51 @@ def draw_frequency_legend():
         return
 
     bar_height = tft_display.height // len(BLINKING_LEDS)
-    bus_idle_led.off()
+    started_at = _bus_busy_begin()
     for index, color565 in enumerate(BLINKING_LED_COLORS565):
         tft_display.fill_rect(0, index * bar_height, tft_display.width, bar_height, color565)
-    bus_idle_led.on()
+    _bus_busy_end(started_at)
 
 
-def draw_centered_message(message):
-    """Clear the screen and draw a single line of text, centered."""
-    if oled_display is None:
+# One history buffer per OLED graph, one sample per horizontal pixel column
+# (oldest sample scrolls off the left edge once the buffer is full).
+cpu_usage_history = []
+ram_usage_history = []
+
+
+def draw_usage_graph(display, history, value_percent, label):
+    """Task-Manager-style scrolling bar graph: append value_percent as the
+    newest column, drop the oldest one past OLED_WIDTH samples, and redraw
+    every column as a bar from the bottom of the screen."""
+    if display is None:
         return
 
-    character_width = 8
-    character_height = 8
-    x_position = max(0, (OLED_WIDTH - len(message) * character_width) // 2)
-    y_position = (OLED_HEIGHT - character_height) // 2
+    history.append(max(0, min(100, value_percent)))
+    if len(history) > OLED_WIDTH:
+        del history[0]
 
-    oled_display.fill(0)
-    oled_display.text(message, x_position, y_position, 1)
-    bus_idle_led.off()
-    oled_display.show()
-    bus_idle_led.on()
+    started_at = _bus_busy_begin()
+    display.fill(0)
+    for x, percent in enumerate(history):
+        bar_height = round(percent / 100 * (OLED_HEIGHT - 1))
+        if bar_height > 0:
+            display.vline(x, OLED_HEIGHT - bar_height, bar_height, 1)
+    display.text(label, 0, 0, 1)
+    display.show()
+    _bus_busy_end(started_at)
 
 
 def apply_button_state(is_pressed):
-    """Update the green LED and OLED for a stable button state.
+    """Update the green LED for a stable button state.
 
-    Called only at startup and after a debounced state transition, so the
-    OLED is never redrawn on every poll cycle (avoids flicker and redundant
-    I2C traffic).
+    Called only at startup and after a debounced state transition. The
+    OLEDs no longer show button text -- both are now live resource-usage
+    graphs (see draw_usage_graph()), unrelated to the button.
     """
     green_led.value(1 if is_pressed else 0)
-    message = MSG_PRESSED if is_pressed else MSG_RELEASED
-    draw_centered_message(message)
-    print("Button: {} | Green LED: {} | OLED: {}".format(
+    print("Button: {} | Green LED: {}".format(
         "pressed" if is_pressed else "released",
         "ON" if is_pressed else "OFF",
-        message,
     ))
 
 
@@ -329,6 +379,33 @@ async def scheduler_idle_task():
         await asyncio.sleep_ms(0)
 
 
+async def update_cpu_graph():
+    """First OLED: "CPU usage" graph. The percentage is the real fraction of
+    each sampling window spent inside a blocking I2C/SPI transfer (the only
+    time this single-core cooperative app is actually busy, as opposed to
+    suspended in an await) -- not a value read from an OS scheduler, since
+    MicroPython on bare ESP32 exposes no such thing."""
+    global bus_busy_time_us
+    while True:
+        window_us = CPU_GRAPH_SAMPLE_INTERVAL_MS * 1000
+        cpu_percent = round(bus_busy_time_us / window_us * 100)
+        bus_busy_time_us = 0
+        draw_usage_graph(oled_display, cpu_usage_history, cpu_percent, "CPU")
+        await asyncio.sleep_ms(CPU_GRAPH_SAMPLE_INTERVAL_MS)
+
+
+async def update_ram_graph():
+    """Second OLED: RAM usage graph, from MicroPython's real gc heap stats
+    (gc.mem_alloc() / gc.mem_free()) -- an actual measured value, not a
+    simulated one."""
+    while True:
+        allocated = gc.mem_alloc()
+        free = gc.mem_free()
+        ram_percent = round(allocated / (allocated + free) * 100)
+        draw_usage_graph(oled_display_2, ram_usage_history, ram_percent, "RAM")
+        await asyncio.sleep_ms(RAM_GRAPH_SAMPLE_INTERVAL_MS)
+
+
 async def main():
     initial_button_state = bool(push_button.value())
     apply_button_state(initial_button_state)
@@ -337,6 +414,8 @@ async def main():
     for entry in BLINKING_LEDS:
         asyncio.create_task(blink_led(entry))
     asyncio.create_task(scheduler_idle_task())
+    asyncio.create_task(update_cpu_graph())
+    asyncio.create_task(update_ram_graph())
     asyncio.create_task(
         monitor_step_button(decrease_speed_button, lambda: apply_blink_speed_step(-1))
     )

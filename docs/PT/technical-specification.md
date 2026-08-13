@@ -540,4 +540,75 @@ Em uma montagem física devem ser considerados:
 | Versão do firmware no `diagram.json` | Não fixar `attrs.env`; usar a versão padrão/atual do Wokwi |
 | Licença | CC0 1.0 Universal |
 | Idioma do código | Inglês |
-| Mensagens do OLED | Português, exatamente `Boa sorte!` e `Consegui` |
+| Mensagens do OLED | Português, exatamente `Boa sorte!` e `Consegui` (substituídas pelos gráficos do §17 nos dois OLEDs) |
+| Gráficos de uso de recursos nos dois OLEDs | Extensão pedida pelo usuário (§17.2). O valor de "CPU" é tempo real medido de ocupação do barramento I2C/SPI, não um número simulado — o MicroPython no ESP32 bare-metal não expõe métrica de carga do escalonador do SO |
+| LEDs azuis com mesmo intervalo, seis tarefas separadas | Extensão pedida pelo usuário (§17.3). Cada LED continua sendo uma task `asyncio` independente, mesmo com todos no mesmo intervalo de 500 ms |
+
+## 17. Funcionalidades estendidas (além do escopo original)
+
+Esta seção documenta funcionalidades adicionadas, a pedido explícito do
+usuário, depois que o entregável obrigatório original (§2–§14) já estava
+completo e validado. Ela não substitui nem invalida os requisitos
+funcionais das seções anteriores; a tabela do §16 traz a versão resumida
+de cada decisão abaixo. O LED verde e o propósito original do OLED ainda
+estão sendo revisados no momento desta escrita, então **não** foram
+redocumentados aqui ainda — só o que já está definido foi registrado.
+
+### 17.1 Segundo OLED, barramento I2C próprio
+
+Um segundo display OLED SSD1306 (`oled-display-2` / `oled_display_2`)
+roda em seu próprio barramento I2C de hardware, independente:
+`machine.I2C(1)`, em GPIO15 (SCL) / GPIO22 (SDA) — separado do barramento
+`I2C(0)` do primeiro OLED (GPIO32 SCL / GPIO16 SDA, conforme a
+realocação de pinos registrada no §16). Os dois são endereçados ao mesmo
+tempo, sem disputa de barramento.
+
+### 17.2 Os dois OLEDs agora plotam gráficos de uso de recursos, ao vivo
+
+O requisito original exigia que o (único) OLED mostrasse `Boa sorte!` /
+`Consegui` conforme o estado do botão. Nenhum dos dois OLEDs faz mais
+isso — ambos foram reaproveitados como gráficos de barras rolantes, no
+estilo do Gerenciador de Tarefas do Windows, uma amostra por coluna de
+pixel horizontal (até 128 amostras de histórico), redesenhados a cada
+janela de amostragem:
+
+- **Primeiro OLED — "uso de CPU."** O MicroPython no ESP32 puro não expõe
+  nenhuma métrica de carga de escalonador em nível de sistema operacional,
+  então o valor plotado é um substituto real e medido: a fração de cada
+  janela de amostragem de 250 ms gasta dentro de uma transferência
+  bloqueante I2C ou SPI — o único momento em que esta aplicação
+  cooperativa de núcleo único está de fato ocupada executando código, em
+  vez de suspensa num ponto de `await`. Ver `update_cpu_graph()` e os
+  auxiliares de temporização `_bus_busy_begin()` / `_bus_busy_end()` em
+  `main.py`, pelos quais toda escrita bloqueante nos displays (os dois
+  OLEDs e o TFT) agora passa.
+- **Segundo OLED — uso de RAM.** Um valor real, não um substituto: as
+  estatísticas reais de heap do coletor de lixo do MicroPython,
+  `gc.mem_alloc()` / `gc.mem_free()`, amostradas a cada 250 ms. Ver
+  `update_ram_graph()`.
+
+O botão ainda liga/desliga o LED verde e imprime seu estado no monitor
+serial (`apply_button_state()`) — só o retorno em texto no OLED foi
+removido, já que nenhum dos dois OLEDs tem espaço sobrando para um
+gráfico e uma mensagem de texto legível ao mesmo tempo num painel
+monocromático de 128×64.
+
+### 17.3 Seis LEDs, um intervalo compartilhado, seis tarefas independentes
+
+Cinco LEDs adicionais (azul, amarelo, branco, laranja e um segundo
+vermelho) se juntam ao LED vermelho original, todos pintados da mesma cor
+na placa (`#0000FF`), mesmo que o `main.py` continue rastreando cada um
+individualmente (ver `BLINKING_LEDS`). Cada um roda como sua própria task
+`asyncio` independente (`blink_led()`) — o mesmo padrão já estabelecido
+pelo LED vermelho original: mais um LED sempre significa mais uma task
+concorrente, nunca mais lógica adicionada a um laço compartilhado.
+
+Atualmente os seis piscam no mesmo intervalo-base de 500 ms — alternando
+a cada 500 ms, ciclo completo de aproximadamente 1 s, igual à temporização
+original do LED vermelho — funcionando como seis equipamentos idênticos e
+independentes, em vez de seis frequências diferentes. Dois botões extras
+(GPIO34 para diminuir, GPIO35 para aumentar — ambos com resistor de
+pull-down físico externo, já que GPIO34/35 não têm pull-down interno)
+escalam o intervalo de todos os LEDs pelo mesmo fator de potência de 2 ao
+mesmo tempo, limitado entre 125 ms e 4 s, de forma que os seis sempre
+fiquem sincronizados entre si.

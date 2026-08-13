@@ -142,7 +142,10 @@ A simulação executável está publicada no Wokwi em\linebreak[2]
 
 O Wokwi foi adotado como plataforma principal por oferecer suporte nativo ao ESP32 com MicroPython, edição visual do circuito, arquivo de conexão \texttt{diagram.json}, monitor serial e compartilhamento por endereço eletrônico. O repositório GitHub complementa a simulação ao fornecer rastreabilidade, controle de versões e uma estrutura adequada ao desenvolvimento no Visual Studio Code.
 
+\paragraph{Nota sobre o estado do projeto.} As Seções~\ref{sec:requisitos} a~\ref{sec:testes} deste relatório descrevem o entregável obrigatório original -- dois LEDs, um botão e um OLED -- que está completo, validado e estável. A partir dele, a pedido do usuário, o hardware e o \texttt{main.py} foram estendidos experimentalmente com LEDs adicionais, um segundo OLED, um display TFT, botões extras e outros componentes; essa extensão \textbf{ainda está em desenvolvimento ativo} e não é redescrita em detalhe aqui, para evitar que este relatório fique desatualizado a cada iteração. O estado atual e completo dessa extensão é mantido em \texttt{docs/EN/technical-specification.md} (Seção~19, \emph{Extended features}) e seu equivalente em \texttt{docs/PT} (Seção~17). A Figura~\ref{fig:circuito}, na Seção~\ref{sec:circuito}, já reflete o circuito atual, incluindo essa extensão.
+
 \section{Requisitos e definições do projeto}
+\label{sec:requisitos}
 
 \subsection{Requisitos funcionais e estados do sistema}
 
@@ -292,6 +295,7 @@ O mostrador não é redesenhado continuamente. O quadro de imagem é transmitido
 A escolha é especialmente apropriada porque as mensagens permanecem estáticas entre uma transição e outra. Caso as mensagens não fossem estáticas -- por exemplo, um contador ou uma leitura de sensor atualizada continuamente --, a estratégia adequada seria limitar a taxa de atualização do quadro a um intervalo fixo (dezenas ou centenas de milissegundos) em vez de redesenhar a cada iteração do laço, e, quando possível, retransmitir apenas a região alterada do \textit{buffer} em vez do quadro completo, mantendo o tráfego I\textsuperscript{2}C e o tempo de processamento dentro de limites aceitáveis.
 
 \section{Estratégia de verificação e testes isolados}
+\label{sec:testes}
 
 O desenvolvimento foi acompanhado por testes progressivos. A separação dos subsistemas permitiu distinguir erros de ligação, inicialização e lógica de aplicação.
 
@@ -312,8 +316,9 @@ O desenvolvimento foi acompanhado por testes progressivos. A separação dos sub
 A sequência de testes reduziu o espaço de busca de falhas: se um subsistema simples não funcionasse, o problema poderia ser tratado antes da integração com o restante da aplicação.
 
 \section{Circuito simulado}
+\label{sec:circuito}
 
-A Figura~\ref{fig:circuito} apresenta o estado atual do circuito no Wokwi. As cores dos condutores foram usadas para facilitar a inspeção visual: vermelho para alimentação e LED vermelho, preto para terra, verde para o LED verde, azul para o botão, amarelo para SCL e ciano para SDA.
+A Figura~\ref{fig:circuito} apresenta o estado atual do circuito no Wokwi, já incluindo a extensão experimental mencionada na nota da Seção~\ref{sec:requisitos}. Com o número maior de componentes e sinais, as cores dos condutores deixaram de seguir uma convenção única por função; o mapeamento completo de pinos e sinais é mantido em \texttt{docs/EN/technical-specification.md} (Seção~19) e \texttt{docs/PT/technical-specification.md} (Seção~17), não reproduzido aqui.
 
 \begin{figure}[htbp]
   \centering
@@ -322,7 +327,7 @@ A Figura~\ref{fig:circuito} apresenta o estado atual do circuito no Wokwi. As co
     height=0.475\textheight,
     keepaspectratio
   ]{figures/circuito-wokwi.png}
-  \caption{Circuito do projeto no Wokwi: ESP32-DevKitC V4, OLED SSD1306, botão e dois LEDs.}
+  \caption{Circuito do projeto no Wokwi: ESP32-DevKitC V4, dois OLEDs SSD1306, display TFT ILI9341, seis LEDs azuis, um LED verde, três botões pulsadores e uma chave deslizante.}
   \label{fig:circuito}
 \end{figure}
 
