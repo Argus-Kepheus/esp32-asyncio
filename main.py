@@ -2,12 +2,13 @@
 CESS-UFF - ESP32 MicroPython Practical Assessment
 Courses: Instrumentation / Electronics / Programming Logic
 
-Controls seven LEDs (six blinking at independent frequencies, one driven by
-a push button) and updates two displays -- an SSD1306 OLED over I2C and an
-ILI9341 TFT over 4-wire SPI -- based on the button state. Cooperative
-asyncio tasks prevent timing delays from blocking the complete application
-and keep every LED blinking independently of the others and of the
-button-monitoring logic.
+Controls nine LEDs (six blinking at independent, adjustable frequencies,
+one driven by a push button, and two idle indicators) and updates two
+displays -- an SSD1306 OLED over I2C and an ILI9341 TFT over 4-wire SPI --
+based on the button state. Two extra push-buttons speed up or slow down
+every blinking LED at once. Cooperative asyncio tasks prevent timing
+delays from blocking the complete application and keep every LED blinking
+independently of the others and of the button-monitoring logic.
 
 See docs/EN/technical-specification.md for the full requirements and the
 rationale behind every decision below.
@@ -47,6 +48,15 @@ TFT_CS_PIN = 5
 TFT_DC_PIN = 21
 TFT_RST_PIN = 19
 
+# --- Pin assignments (speed buttons + idle indicators) ----------------------
+# GPIO 34/35 are input-only and have no internal pull resistors at all, so
+# (unlike BUTTON_PIN) these two need an external physical pull-down --
+# see diagram.json.
+DECREASE_SPEED_BUTTON_PIN = 34
+INCREASE_SPEED_BUTTON_PIN = 35
+BUS_IDLE_LED_PIN = 13
+SCHEDULER_IDLE_LED_PIN = 2
+
 # --- Timing configuration ----------------------------------------------------
 # Each blinking LED's interval is half the previous one, from 4 s down to
 # 125 ms: RED_LED_2 -> BLUE -> YELLOW -> RED -> WHITE -> ORANGE.
@@ -56,6 +66,14 @@ YELLOW_LED_BLINK_INTERVAL_MS = 1000
 RED_LED_BLINK_INTERVAL_MS = 500
 WHITE_LED_BLINK_INTERVAL_MS = 250
 ORANGE_LED_BLINK_INTERVAL_MS = 125
+
+# Each speed-button press doubles or halves every blinking LED's interval at
+# once (relative to its own base value above), so the 4s/2s/.../125ms ratios
+# never drift. The step is clamped so the fastest LED can't reach 0 ms and
+# the slowest can't run away to an absurd wait.
+BLINK_SPEED_STEP_MIN = -2  # fastest: intervals x0.25 (~31 ms floor)
+BLINK_SPEED_STEP_MAX = 3   # slowest: intervals x8 (~32 s ceiling)
+
 BUTTON_SAMPLE_INTERVAL_MS = 5
 # Wokwi's simulated push-button is bounce-free, so this debounce window is
 # not required to pass the simulation. It is kept because it is the correct
@@ -79,21 +97,61 @@ white_led = Pin(WHITE_LED_PIN, Pin.OUT, value=0)
 orange_led = Pin(ORANGE_LED_PIN, Pin.OUT, value=0)
 red_led_2 = Pin(RED_LED_2_PIN, Pin.OUT, value=0)
 
-# Every LED that blinks on a fixed interval, paired with that interval, so
-# main() can launch one independent asyncio task per LED from a single loop
-# instead of one hand-written coroutine per LED.
-BLINKING_LEDS = (
-    (red_led, RED_LED_BLINK_INTERVAL_MS),
-    (blue_led, BLUE_LED_BLINK_INTERVAL_MS),
-    (yellow_led, YELLOW_LED_BLINK_INTERVAL_MS),
-    (white_led, WHITE_LED_BLINK_INTERVAL_MS),
-    (orange_led, ORANGE_LED_BLINK_INTERVAL_MS),
-    (red_led_2, RED_LED_2_BLINK_INTERVAL_MS),
-)
+# Every LED that blinks on a fixed interval, paired with its current
+# interval, so main() can launch one independent asyncio task per LED from a
+# single loop instead of one hand-written coroutine per LED. Each pair is a
+# mutable list (not a tuple) because the speed buttons rewrite the interval
+# in place while blink_led() is already running its loop on that same entry.
+BLINKING_LEDS = [
+    [red_led, RED_LED_BLINK_INTERVAL_MS],
+    [blue_led, BLUE_LED_BLINK_INTERVAL_MS],
+    [yellow_led, YELLOW_LED_BLINK_INTERVAL_MS],
+    [white_led, WHITE_LED_BLINK_INTERVAL_MS],
+    [orange_led, ORANGE_LED_BLINK_INTERVAL_MS],
+    [red_led_2, RED_LED_2_BLINK_INTERVAL_MS],
+]
+# Snapshot of each LED's un-scaled interval, same order as BLINKING_LEDS --
+# the reference apply_blink_speed_step() always scales from, so repeated
+# presses can't compound rounding error across many small steps.
+BASE_BLINK_INTERVALS_MS = tuple(interval_ms for _, interval_ms in BLINKING_LEDS)
+blink_speed_step = 0
+
+
+def apply_blink_speed_step(step_delta):
+    """Shift every blinking LED's interval by the same power-of-two factor,
+    clamped to [BLINK_SPEED_STEP_MIN, BLINK_SPEED_STEP_MAX]."""
+    global blink_speed_step
+    blink_speed_step = max(
+        BLINK_SPEED_STEP_MIN, min(BLINK_SPEED_STEP_MAX, blink_speed_step + step_delta)
+    )
+    scale = 2**blink_speed_step
+    for entry, base_interval_ms in zip(BLINKING_LEDS, BASE_BLINK_INTERVALS_MS):
+        entry[1] = round(base_interval_ms * scale)
+
 
 # Internal pull-down: the pin reads LOW when idle and HIGH when pressed,
 # as required by the specification. No external resistor is used.
 push_button = Pin(BUTTON_PIN, Pin.IN, Pin.PULL_DOWN)
+
+# GPIO 34/35 have no internal pull resistors, so an external physical
+# pull-down (diagram.json) gives the same released=LOW/pressed=HIGH
+# behavior as push_button's internal one.
+decrease_speed_button = Pin(DECREASE_SPEED_BUTTON_PIN, Pin.IN)
+increase_speed_button = Pin(INCREASE_SPEED_BUTTON_PIN, Pin.IN)
+
+# On by default; draw_centered_message()/draw_frequency_legend() turn it off
+# only for the few milliseconds their I2C/SSD1306 or SPI/ILI9341 write is
+# actually in flight -- the two blocking calls this project has (see
+# docs/EN/technical-specification.md, section 7.2's engineering note).
+bus_idle_led = Pin(BUS_IDLE_LED_PIN, Pin.OUT, value=1)
+
+# Lowest-priority task in the cooperative scheduler: it has no fixed
+# schedule of its own and always asks to run again immediately
+# (asyncio.sleep_ms(0)), so it only gets CPU time in the gaps between every
+# other task's own await point. uasyncio has no real task-priority levels,
+# so this is a coarse visualization of scheduler activity, not a literal
+# RTOS idle task.
+scheduler_idle_led = Pin(SCHEDULER_IDLE_LED_PIN, Pin.OUT, value=0)
 
 # Hardware I2C bus 0, on the mandatory OLED pins. Confirmed working on
 # Wokwi's simulated ESP32 by tests/05_oled_basic.py and
@@ -169,8 +227,10 @@ def draw_frequency_legend():
         return
 
     bar_height = tft_display.height // len(BLINKING_LEDS)
+    bus_idle_led.off()
     for index, color565 in enumerate(BLINKING_LED_COLORS565):
         tft_display.fill_rect(0, index * bar_height, tft_display.width, bar_height, color565)
+    bus_idle_led.on()
 
 
 def draw_centered_message(message):
@@ -185,7 +245,9 @@ def draw_centered_message(message):
 
     oled_display.fill(0)
     oled_display.text(message, x_position, y_position, 1)
+    bus_idle_led.off()
     oled_display.show()
+    bus_idle_led.on()
 
 
 def apply_button_state(is_pressed):
@@ -205,23 +267,28 @@ def apply_button_state(is_pressed):
     ))
 
 
-async def blink_led(led, interval_ms):
-    """Toggle one LED at its own fixed interval, independent of every other
-    task -- one call per entry in BLINKING_LEDS gives each LED its own
-    frequency without blocking, or being blocked by, any other LED."""
+async def blink_led(entry):
+    """Toggle one LED at its own interval, independent of every other task
+    -- one call per entry in BLINKING_LEDS gives each LED its own frequency
+    without blocking, or being blocked by, any other LED. entry[1] is read
+    fresh every cycle (not captured once) so apply_blink_speed_step() can
+    change the running speed without restarting the task."""
+    led, _ = entry
     while True:
         led.value(not led.value())
-        await asyncio.sleep_ms(interval_ms)
+        await asyncio.sleep_ms(entry[1])
 
 
-async def monitor_button(initial_state):
-    """Sample, debounce and react to the push-button state."""
+async def debounce_button(pin, initial_state, on_change):
+    """Sample and debounce a button, calling on_change(stable_state) once
+    per accepted transition. Shared by the main push-button monitor and the
+    two speed step-buttons below."""
     stable_state = initial_state
     candidate_state = initial_state
     candidate_since = time.ticks_ms()
 
     while True:
-        raw_state = bool(push_button.value())
+        raw_state = bool(pin.value())
         now = time.ticks_ms()
 
         if raw_state != candidate_state:
@@ -232,9 +299,34 @@ async def monitor_button(initial_state):
             and time.ticks_diff(now, candidate_since) >= BUTTON_DEBOUNCE_MS
         ):
             stable_state = candidate_state
-            apply_button_state(stable_state)
+            on_change(stable_state)
 
         await asyncio.sleep_ms(BUTTON_SAMPLE_INTERVAL_MS)
+
+
+async def monitor_button(initial_state):
+    """React to every debounced push-button transition (press and release)."""
+    await debounce_button(push_button, initial_state, apply_button_state)
+
+
+async def monitor_step_button(pin, on_press):
+    """React only to the debounced press edge of a momentary button, e.g. a
+    speed-step button that should fire once per press, not on release too."""
+    def on_change(is_pressed):
+        if is_pressed:
+            on_press()
+
+    await debounce_button(pin, False, on_change)
+
+
+async def scheduler_idle_task():
+    """See SCHEDULER_IDLE_LED_PIN's setup comment: on only while no other
+    task's own turn is in progress."""
+    while True:
+        scheduler_idle_led.on()
+        await asyncio.sleep_ms(0)
+        scheduler_idle_led.off()
+        await asyncio.sleep_ms(0)
 
 
 async def main():
@@ -242,8 +334,15 @@ async def main():
     apply_button_state(initial_button_state)
     draw_frequency_legend()
 
-    for led, interval_ms in BLINKING_LEDS:
-        asyncio.create_task(blink_led(led, interval_ms))
+    for entry in BLINKING_LEDS:
+        asyncio.create_task(blink_led(entry))
+    asyncio.create_task(scheduler_idle_task())
+    asyncio.create_task(
+        monitor_step_button(decrease_speed_button, lambda: apply_blink_speed_step(-1))
+    )
+    asyncio.create_task(
+        monitor_step_button(increase_speed_button, lambda: apply_blink_speed_step(+1))
+    )
     await monitor_button(initial_button_state)
 
 
@@ -258,3 +357,4 @@ finally:
     white_led.off()
     orange_led.off()
     red_led_2.off()
+    scheduler_idle_led.off()

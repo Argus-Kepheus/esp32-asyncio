@@ -124,7 +124,69 @@
       "rotate": 270,
       "attrs": { "value": "220" }
     },
-    { "type": "wokwi-ili9341", "id": "tft-display", "top": -277.6, "left": 124.5, "attrs": {} }
+    { "type": "wokwi-ili9341", "id": "tft-display", "top": -277.6, "left": 124.5, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "bus-idle-led",
+      "top": 150,
+      "left": -341.8,
+      "attrs": { "color": "orange", "label": "GPIO 13 - I2C/SPI busy" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "bus-idle-led-resistor",
+      "top": 230,
+      "left": -337.15,
+      "rotate": 270,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "scheduler-idle-led",
+      "top": 150,
+      "left": -265,
+      "attrs": { "color": "yellow" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "scheduler-idle-led-resistor",
+      "top": 230,
+      "left": -269.65,
+      "rotate": 270,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "decrease-speed-button",
+      "top": 150,
+      "left": -160,
+      "rotate": 270,
+      "attrs": { "color": "blue", "label": "Diminuir intervalo - GPIO 34", "key": "a" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "decrease-speed-button-pulldown",
+      "top": 230,
+      "left": -155,
+      "rotate": 270,
+      "attrs": { "value": "10k" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "increase-speed-button",
+      "top": 150,
+      "left": -60,
+      "rotate": 270,
+      "attrs": { "color": "blue", "label": "Aumentar intervalo - GPIO 35", "key": "s" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "increase-speed-button-pulldown",
+      "top": 230,
+      "left": -55,
+      "rotate": 270,
+      "attrs": { "value": "10k" }
+    }
   ],
   "connections": [
     [ "esp32:TX", "$serialMonitor:RX", "", [] ],
@@ -162,7 +224,25 @@
     [ "orange-led:C", "esp32:GND.1", "black", [ "v0" ] ],
     [ "blue-led:C", "esp32:GND.1", "black", [ "v0" ] ],
     [ "red-led-2:C", "esp32:GND.1", "black", [ "v0" ] ],
-    [ "oled-display:GND", "green-led:C", "black", [ "v-105.6", "h38" ] ]
+    [ "oled-display:GND", "green-led:C", "black", [ "v-105.6", "h38" ] ],
+
+    [ "bus-idle-led-resistor:2", "bus-idle-led:A", "orange", [ "h27.6" ] ],
+    [ "esp32:13", "bus-idle-led-resistor:1", "orange", [ "h0" ] ],
+    [ "bus-idle-led:C", "esp32:GND.1", "black", [ "v0" ] ],
+
+    [ "scheduler-idle-led-resistor:2", "scheduler-idle-led:A", "yellow", [ "h27.6" ] ],
+    [ "esp32:2", "scheduler-idle-led-resistor:1", "yellow", [ "h0" ] ],
+    [ "scheduler-idle-led:C", "esp32:GND.1", "black", [ "v0" ] ],
+
+    [ "esp32:3V3", "decrease-speed-button:1.l", "red", [] ],
+    [ "decrease-speed-button:2.l", "esp32:34", "blue", [] ],
+    [ "esp32:34", "decrease-speed-button-pulldown:1", "blue", [] ],
+    [ "decrease-speed-button-pulldown:2", "esp32:GND.1", "black", [] ],
+
+    [ "esp32:3V3", "increase-speed-button:1.l", "red", [] ],
+    [ "increase-speed-button:2.l", "esp32:35", "blue", [] ],
+    [ "esp32:35", "increase-speed-button-pulldown:1", "blue", [] ],
+    [ "increase-speed-button-pulldown:2", "esp32:GND.1", "black", [] ]
   ],
   "dependencies": {}
 }
