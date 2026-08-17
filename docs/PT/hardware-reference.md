@@ -70,25 +70,30 @@ terminal físico.
 
 | Função | Identificador no Wokwi | Variável/constante em Python | GPIO | Terminal do conector |
 |---|---|---|---:|---|
-| Saída do LED vermelho | `red-led` | `red_led` / `RED_LED_PIN` | GPIO2 | J3-15 |
+| Saída do LED vermelho | `red-led` | `red_led` / `RED_LED_PIN` | GPIO26 | J2-10 |
 | Saída do LED verde | `green-led` | `green_led` / `GREEN_LED_PIN` | GPIO4 | J3-13 |
 | Entrada do botão | `push-button` | `push_button` / `BUTTON_PIN` | GPIO17 | J3-11 |
 | Dados I2C do OLED | `oled-display` | `oled_display` / `OLED_SDA_PIN` | GPIO16 | J3-12 |
-| Relógio I2C do OLED | `oled-display` | `oled_display` / `OLED_SCL_PIN` | GPIO25 | J2-9 |
+| Relógio I2C do OLED | `oled-display` | `oled_display` / `OLED_SCL_PIN` | GPIO32 | J2-7 |
 | Alimentação do OLED e do botão | — | — | 3V3 | J2-1 |
 
+Os pinos do LED vermelho e do SCL do OLED foram realocados dos GPIO2/GPIO25
+originalmente atribuídos (registrados em `technical-specification.md`,
+§16) a pedido explícito do usuário, por motivos de layout da placa. Esta
+tabela reflete a fiação atual, não a atribuição original.
+
 ```python
-RED_LED_PIN = 2
+RED_LED_PIN = 26
 GREEN_LED_PIN = 4
 BUTTON_PIN = 17
 OLED_SDA_PIN = 16
-OLED_SCL_PIN = 25
+OLED_SCL_PIN = 32
 ```
 
 Topologia de ligação:
 
 ```text
-GPIO2  ── resistor de 220 Ω ── ânodo do LED vermelho
+GPIO26 ── resistor de 220 Ω ── ânodo do LED vermelho
 cátodo do LED vermelho ── GND
 
 GPIO4  ── resistor de 220 Ω ── ânodo do LED verde
@@ -97,7 +102,7 @@ cátodo do LED verde ── GND
 3V3 ── botão pulsador ── GPIO17
                        entrada ativa em nível alto
 
-GPIO25 = OLED SCL
+GPIO32 = OLED SCL
 GPIO16 = OLED SDA
 3V3    = OLED VCC
 GND    = OLED GND
@@ -105,6 +110,54 @@ GND    = OLED GND
 
 Todos os periféricos devem compartilhar o mesmo GND. O OLED e o botão utilizam
 somente a alimentação de 3,3 V.
+
+### 3.1 Mapeamento de hardware estendido nos conectores
+
+Tudo que foi adicionado depois dos cinco sinais originais acima, a pedido
+explícito do usuário (ver "Funcionalidades estendidas" em
+`technical-specification.md` para a justificativa comportamental — esta
+tabela cobre só a fiação física). Diferente da §3, esse hardware ainda
+está em desenvolvimento ativo e esta tabela pode ficar atrás da última
+iteração; as constantes de pino do `main.py` são a fonte definitiva.
+
+| Função | Variável/constante em Python | GPIO | Terminal do conector |
+|---|---|---:|---|
+| Saída do LED azul | `blue_led` / `BLUE_LED_PIN` | GPIO14 | J2-12 |
+| Saída do LED amarelo | `yellow_led` / `YELLOW_LED_PIN` | GPIO27 | J2-11 |
+| Saída do LED branco | `white_led` / `WHITE_LED_PIN` | GPIO25 | J2-9 |
+| Saída do LED laranja | `orange_led` / `ORANGE_LED_PIN` | GPIO33 | J2-8 |
+| Saída do segundo LED vermelho | `red_led_2` / `RED_LED_2_PIN` | GPIO12 | J2-13 |
+| Botão de diminuir intervalo | `decrease_speed_button` / `DECREASE_SPEED_BUTTON_PIN` | GPIO34 | J2-5 |
+| Botão de aumentar intervalo | `increase_speed_button` / `INCREASE_SPEED_BUTTON_PIN` | GPIO35 | J2-6 |
+| LED de barramento ocupado (laranja) | `bus_idle_led` / `BUS_IDLE_LED_PIN` | GPIO13 | J2-15 |
+| LED de escalonador ocioso (amarelo) | `scheduler_idle_led` / `SCHEDULER_IDLE_LED_PIN` | GPIO2 | J3-15 |
+| Relógio I2C do segundo OLED | `oled_display_2` / `OLED2_SCL_PIN` | GPIO15 | J3-16 |
+| Dados I2C do segundo OLED | `oled_display_2` / `OLED2_SDA_PIN` | GPIO22 | J3-3 |
+| Relógio SPI da TFT | `tft_display` / `TFT_SCK_PIN` | GPIO18 | J3-9 |
+| Dados de saída SPI da TFT | `tft_display` / `TFT_MOSI_PIN` | GPIO23 | J3-2 |
+| Seleção de chip da TFT | `tft_display` / `TFT_CS_PIN` | GPIO5 | J3-10 |
+| Dado/comando da TFT | `tft_display` / `TFT_DC_PIN` | GPIO21 | J3-6 |
+| Reset físico da TFT | `tft_display` / `TFT_RST_PIN` | GPIO19 | J3-8 |
+| Chave deslizante de modo gravação | — (só no `diagram.json`, nenhum código do `main.py` a lê) | GPIO0 | J3-14 |
+
+Notas específicas deste conjunto estendido:
+
+- GPIO34/35 (os dois botões de velocidade) são pinos somente entrada, sem
+  resistor de pull-down interno, diferente do `Pin.PULL_DOWN` do
+  `BUTTON_PIN` — cada um precisa do próprio resistor externo de 10 kΩ
+  até o GND (já presente no `diagram.json`; ver
+  `tests/09_speed_buttons.py`).
+- O GPIO2 agora hospeda o `scheduler_idle_led`, não mais o LED vermelho
+  (que passou para o GPIO26, liberando o GPIO2) — ver a nota atualizada
+  sobre inicialização na §5.
+- O GPIO25, liberado pela mudança do SCL do OLED, agora é o pino do
+  `white_led`.
+- O segundo OLED usa um segundo barramento I2C de hardware, independente
+  (`machine.I2C(1)`), não um segundo endereço no primeiro barramento, para
+  rodar ao mesmo tempo que o primeiro OLED sem disputa.
+- O GPIO0 (chave de modo gravação) é lido pelo bootloader ROM antes de
+  qualquer script MicroPython rodar; nenhum código do `main.py` interage
+  com ele. Ver §7.
 
 ## 4. Compatibilidade dos módulos — WROOM e WROVER
 
@@ -126,23 +179,23 @@ atribuições predefinidas do projeto, esse remapeamento está fora do escopo.
 |---|---|---|
 | Reservados para a memória flash SPI | `CLK`, `D0`, `D1`, `D2`, `D3`, `CMD` | Comunicação interna com a memória flash; usá-los como GPIO pode impedir a inicialização do firmware |
 | Somente entrada | GPIO34 a GPIO39 | Não podem acionar saídas e não possuem resistores internos de elevação ou redução |
-| Configuração de inicialização | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | São amostrados durante a inicialização. O GPIO2 é utilizado pelo LED vermelho por exigência do projeto; o conjunto LED/resistor não força externamente um nível lógico inadequado |
+| Configuração de inicialização | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | São amostrados durante a inicialização. O GPIO0 também carrega a chave deslizante de modo gravação (§3.1); o GPIO2 aciona o `scheduler_idle_led` e o GPIO12 aciona o `red_led_2` (ambos §3.1) — todo circuito de LED/resistor ou chave-para-GND nesses pinos só drena corrente ou conecta ao GND, nunca força um nível alto externo, então nenhum deles interfere na inicialização |
 | UART principal | GPIO1 e GPIO3 | Usados para programação, diagnóstico e monitor serial do Wokwi; não são usados pelos periféricos funcionais |
 
 Nota sobre GPIO1/GPIO3: mesmo sem nenhum LED ou botão ligado a eles no
 `diagram.json`, esses pinos não estão "livres" ou ociosos. O `diagram.json`
 conecta `esp32:TX` / `esp32:RX` ao `$serialMonitor` — o mesmo canal UART0
 usado pelo REPL do MicroPython e por todo `print()` do código. Na prática,
-é esse canal que exibe a linha `"Button: pressed/released | Green LED: ...
-| OLED: ..."` de `apply_button_state()` (e os diagnósticos de falha de
-inicialização do OLED/TFT).
+é esse canal que exibe a linha periódica `"CPU: ...% | RAM: ...% | Blue
+LEDs interval: ... ms"` do `print_status()` (e os diagnósticos de falha
+de inicialização do OLED/TFT).
 
 ## 6. Características elétricas
 
 - **Nível lógico:** 3,3 V. Nunca aplique 5 V diretamente a um GPIO.
 - **Referência comum:** LEDs, botão e OLED devem compartilhar o mesmo GND.
 - **Limitação de corrente:** cada LED deve possuir resistor de 220 Ω em série.
-- **Interface do OLED:** I2C em GPIO25 para SCL e GPIO16 para SDA. Essa
+- **Interface do OLED:** I2C em GPIO32 para SCL e GPIO16 para SDA. Essa
   atribuição é uma predefinição do projeto, não uma otimização.
 - **Botão:** ligado entre GPIO17 e 3V3; o nível em repouso é definido pelo
   `Pin.PULL_DOWN` interno.
@@ -158,13 +211,24 @@ Para uma futura montagem real:
 - alimentar o OLED em 3,3 V;
 - interligar todos os GNDs;
 - instalar um resistor de 220 Ω em série com cada LED;
-- ligar o LED vermelho ao GPIO2 e o LED verde ao GPIO4;
+- ligar o LED vermelho ao GPIO26 e o LED verde ao GPIO4;
 - ligar o botão entre GPIO17 e 3V3;
 - não instalar resistor externo de elevação no GPIO17;
 - ligar SDA do OLED ao GPIO16;
-- ligar SCL do OLED ao GPIO25;
+- ligar SCL do OLED ao GPIO32;
 - não conectar periféricos a `CLK`, `D0`, `D1`, `D2`, `D3` ou `CMD`;
 - não aplicar 5 V a nenhum GPIO.
+
+Para o hardware estendido (§3.1) — ainda em evolução, então trate como um
+ponto de partida, não uma lista final:
+
+- os cinco LEDs extras têm cada um seu próprio resistor de 220 Ω em série;
+- os dois botões de velocidade têm cada um seu próprio resistor externo
+  de 10 kΩ até o GND (não há resistor interno disponível no GPIO34/35);
+- o SCL/SDA do segundo OLED (GPIO15/22) estão ligados ao próprio
+  barramento, não compartilhado com o GPIO32/16 do primeiro OLED;
+- a linha RST da TFT (GPIO19) é fiada mesmo que algumas peças de TFT do
+  Wokwi a marquem como inerte na simulação — um painel real precisa dela.
 
 ## 8. Referências
 

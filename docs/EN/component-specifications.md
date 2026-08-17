@@ -34,10 +34,10 @@ physical wiring checklist, see
 
 | Board pin | GPIO | Connected to |
 |---|---:|---|
-| `2` | GPIO 2 | Red LED (through 220 Ω resistor) |
+| `26` | GPIO 26 | Red LED (through 220 Ω resistor) |
 | `4` | GPIO 4 | Green LED (through 220 Ω resistor) |
 | `17` | GPIO 17 | Push-button |
-| `25` | GPIO 25 | OLED SCL |
+| `32` | GPIO 32 | OLED SCL |
 | `16` | GPIO 16 | OLED SDA |
 | `3V3` | — | Push-button supply, OLED VCC |
 | `GND.2` | — | LED cathodes, OLED GND |
@@ -64,7 +64,7 @@ physical wiring checklist, see
 |---|---|
 | `VCC` | ESP32 `3V3` |
 | `GND` | ESP32 `GND.2` |
-| `SCL` | ESP32 GPIO 25 |
+| `SCL` | ESP32 GPIO 32 |
 | `SDA` | ESP32 GPIO 16 |
 
 ## 3. LEDs
@@ -73,8 +73,8 @@ physical wiring checklist, see
 |---|---|---|
 | Wokwi part identifier | `wokwi-led` | `wokwi-led` |
 | `diagram.json` part id | `red-led` | `green-led` |
-| Color attr | `red` | `green` |
-| Anode (`A`) connected to | 220 Ω resistor `red-led-resistor` → ESP32 GPIO 2 | 220 Ω resistor `green-led-resistor` → ESP32 GPIO 4 |
+| Color attr | `#0000FF` (blue — see "Extended features" in `technical-specification.md`; was `red`) | `green` |
+| Anode (`A`) connected to | 220 Ω resistor `red-led-resistor` → ESP32 GPIO 26 | 220 Ω resistor `green-led-resistor` → ESP32 GPIO 4 |
 | Cathode (`C`) connected to | ESP32 `GND.2` | ESP32 `GND.2` |
 | Behavior | Toggles every 500 ms, always | Mirrors the debounced button state |
 

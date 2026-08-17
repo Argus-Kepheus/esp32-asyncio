@@ -54,33 +54,83 @@ signal named GPIO25, not the 25th physical pin.
 
 | Function | Wokwi ID | Python variable/constant | GPIO | Header pin |
 |---|---|---|---:|---|
-| Red LED output | `red-led` | `red_led` / `RED_LED_PIN` | GPIO2 | J3-15 |
+| Red LED output | `red-led` | `red_led` / `RED_LED_PIN` | GPIO26 | J2-10 |
 | Green LED output | `green-led` | `green_led` / `GREEN_LED_PIN` | GPIO4 | J3-13 |
 | Push-button input | `push-button` | `push_button` / `BUTTON_PIN` | GPIO17 | J3-11 |
 | OLED I²C data | `oled-display` | `oled_display` / `OLED_SDA_PIN` | GPIO16 | J3-12 |
-| OLED I²C clock | `oled-display` | `oled_display` / `OLED_SCL_PIN` | GPIO25 | J2-9 |
+| OLED I²C clock | `oled-display` | `oled_display` / `OLED_SCL_PIN` | GPIO32 | J2-7 |
 | OLED / push-button supply | — | — | 3V3 | J2-1 |
 
+The red LED and OLED SCL pins were moved off GPIO2/GPIO25 (their
+originally-assigned pins, kept in the decision log at
+`technical-specification.md` §16) at the user's explicit request, for
+board layout. This table reflects the current wiring, not the original
+assignment.
+
 ```python
-RED_LED_PIN = 2
+RED_LED_PIN = 26
 GREEN_LED_PIN = 4
 BUTTON_PIN = 17
 OLED_SDA_PIN = 16
-OLED_SCL_PIN = 25
+OLED_SCL_PIN = 32
 ```
 
 Wiring topology (see `component-specifications.md` for exact Wokwi part
 IDs and `diagram.json` for routed connections):
 
 ```text
-GPIO2  ── 220 Ω resistor ── red LED anode   · red LED cathode   ── GND
+GPIO26 ── 220 Ω resistor ── red LED anode   · red LED cathode   ── GND
 GPIO4  ── 220 Ω resistor ── green LED anode · green LED cathode ── GND
 3V3    ── push-button ── GPIO17                       (active HIGH)
-GPIO25 = OLED SCL   GPIO16 = OLED SDA   3V3 = OLED VCC   GND = OLED GND
+GPIO32 = OLED SCL   GPIO16 = OLED SDA   3V3 = OLED VCC   GND = OLED GND
 ```
 
 All peripherals share a common ground; the OLED and push-button use the
 3.3 V rail only.
+
+### 3.1 Extended hardware GPIO-to-header mapping
+
+Everything added after the original five signals above, at the user's
+explicit request (see "Extended features" in `technical-specification.md`
+for the behavioral rationale — this table only covers physical wiring).
+Unlike §3, this hardware is still under active development and this
+table may lag behind the latest iteration; `main.py`'s pin-assignment
+constants are the ultimate source of truth.
+
+| Function | Python variable/constant | GPIO | Header pin |
+|---|---|---:|---|
+| Blue LED output | `blue_led` / `BLUE_LED_PIN` | GPIO14 | J2-12 |
+| Yellow LED output | `yellow_led` / `YELLOW_LED_PIN` | GPIO27 | J2-11 |
+| White LED output | `white_led` / `WHITE_LED_PIN` | GPIO25 | J2-9 |
+| Orange LED output | `orange_led` / `ORANGE_LED_PIN` | GPIO33 | J2-8 |
+| Second red LED output | `red_led_2` / `RED_LED_2_PIN` | GPIO12 | J2-13 |
+| Decrease-speed button | `decrease_speed_button` / `DECREASE_SPEED_BUTTON_PIN` | GPIO34 | J2-5 |
+| Increase-speed button | `increase_speed_button` / `INCREASE_SPEED_BUTTON_PIN` | GPIO35 | J2-6 |
+| Bus-idle LED (orange) | `bus_idle_led` / `BUS_IDLE_LED_PIN` | GPIO13 | J2-15 |
+| Scheduler-idle LED (yellow) | `scheduler_idle_led` / `SCHEDULER_IDLE_LED_PIN` | GPIO2 | J3-15 |
+| Second OLED, I²C clock | `oled_display_2` / `OLED2_SCL_PIN` | GPIO15 | J3-16 |
+| Second OLED, I²C data | `oled_display_2` / `OLED2_SDA_PIN` | GPIO22 | J3-3 |
+| TFT SPI clock | `tft_display` / `TFT_SCK_PIN` | GPIO18 | J3-9 |
+| TFT SPI data out | `tft_display` / `TFT_MOSI_PIN` | GPIO23 | J3-2 |
+| TFT chip select | `tft_display` / `TFT_CS_PIN` | GPIO5 | J3-10 |
+| TFT data/command | `tft_display` / `TFT_DC_PIN` | GPIO21 | J3-6 |
+| TFT hardware reset | `tft_display` / `TFT_RST_PIN` | GPIO19 | J3-8 |
+| Flash-mode slide switch | — (`diagram.json` only, no `main.py` code reads it) | GPIO0 | J3-14 |
+
+Notes specific to this extended set:
+
+- GPIO34/35 (the two speed buttons) are input-only and have no internal
+  pull resistors, unlike `BUTTON_PIN`'s `Pin.PULL_DOWN` — each needs its
+  own external 10 kΩ pull-down resistor to GND (already in
+  `diagram.json`; see `tests/09_speed_buttons.py`).
+- GPIO2 now hosts `scheduler_idle_led`, not the red LED (which moved to
+  GPIO26, freeing GPIO2 up) — see the updated bootstrapping note in §5.
+- GPIO25, vacated by the OLED SCL move, is now `white_led`'s pin.
+- The second OLED uses a second, independent hardware I²C bus
+  (`machine.I2C(1)`), not a second address on the first bus, so it runs
+  concurrently with the first OLED without contention.
+- GPIO0 (the flash-mode switch) is read by the ROM bootloader before any
+  MicroPython script runs; no `main.py` code interacts with it. See §7.
 
 ## 4. Module compatibility — WROOM vs. WROVER
 
@@ -102,16 +152,16 @@ predefined project requirements, that reassignment is out of scope here.
 |---|---|---|
 | Reserved for SPI flash | `CLK`, `D0`, `D1`, `D2`, `D3`, `CMD` | Internal flash communication; using them as GPIO can prevent the firmware from booting |
 | Input-only | GPIO34–GPIO39 | Cannot drive outputs; no internal pull-up/pull-down |
-| Bootstrapping | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | Sampled at boot to select boot mode. GPIO2 is used here for the red LED (a required assignment) — the LED/resistor circuit does not force an external level on it, so it does not interfere with boot |
+| Bootstrapping | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | Sampled at boot to select boot mode. GPIO0 also carries the flash-mode slide switch (§3.1); GPIO2 drives `scheduler_idle_led` and GPIO12 drives `red_led_2` (both §3.1) — every LED/resistor or switch-to-GND circuit on these pins only ever sinks current or connects to GND, never forces an external HIGH level, so none of them interfere with boot |
 | Primary UART | GPIO1, GPIO3 | Used for programming/diagnostic output and the Wokwi serial monitor; not used by project peripherals |
 
 Note on GPIO1/GPIO3: even though `diagram.json` wires no LED or button to
 them, they are not "free" or unused. `diagram.json` connects `esp32:TX` /
 `esp32:RX` to `$serialMonitor` — the same UART0 channel MicroPython's REPL
-and every `print()` call use. Concretely, this is the channel the
-`"Button: pressed/released | Green LED: ... | OLED: ..."` line from
-`apply_button_state()` (and the OLED/TFT initialization-failure
-diagnostics) is printed to.
+and every `print()` call use. Concretely, this is the channel
+`print_status()`'s periodic `"CPU: ...% | RAM: ...% | Blue LEDs interval:
+... ms"` line, and the OLED/TFT initialization-failure diagnostics, are
+printed to.
 
 ## 6. Electrical characteristics
 
@@ -120,7 +170,7 @@ diagnostics) is printed to.
   same GND reference, or GPIO/I²C signal levels are undefined.
 - **LED current limiting:** each LED uses a 220 Ω series resistor; do not
   omit it in a physical build.
-- **OLED interface:** I²C only, on GPIO25 (SCL) / GPIO16 (SDA) — this is a
+- **OLED interface:** I²C only, on GPIO32 (SCL) / GPIO16 (SDA) — this is a
   predefined project requirement, not an optimization; see
   `technical-specification.md` §6.3 for why I²C was chosen over SPI, and
   `component-specifications.md` §2 for the driver/bus details (hardware
@@ -134,11 +184,22 @@ simulation only):
 - board is an ESP32-DevKitC V4 (or verified-compatible equivalent) fitted
   with a WROOM, not WROVER, module;
 - OLED powered from 3.3 V; all grounds tied together;
-- each LED has its 220 Ω series resistor; red → GPIO2, green → GPIO4;
+- each LED has its 220 Ω series resistor; red → GPIO26, green → GPIO4;
 - push-button between GPIO17 and 3V3, no external pull-up;
-- OLED SDA → GPIO16, OLED SCL → GPIO25;
+- OLED SDA → GPIO16, OLED SCL → GPIO32;
 - nothing connected to `CLK`, `D0`–`D3`, `CMD`;
 - no GPIO receives 5 V.
+
+For the extended hardware (§3.1) -- still evolving, so treat this as a
+starting checklist, not a final one:
+
+- the five extra LEDs each have their own 220 Ω series resistor;
+- the two speed buttons each have their own external 10 kΩ pull-down
+  resistor to GND (no internal one available on GPIO34/35);
+- the second OLED's SCL/SDA (GPIO15/22) are wired to its own bus, not
+  shared with the first OLED's GPIO32/16;
+- the TFT's RST line (GPIO19) is wired even though some Wokwi TFT parts
+  mark it non-functional in simulation -- a real panel needs it.
 
 ## 8. References
 

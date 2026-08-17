@@ -87,7 +87,8 @@ GPIO17 podem estar reservados à PSRAM.
 - Identificador no Wokwi: `red-led`;
 - variável em Python: `red_led`;
 - constante: `RED_LED_PIN`;
-- GPIO: 2;
+- GPIO: 26 (realocado do GPIO 2, originalmente fixo, a pedido explícito do
+  usuário, por layout da placa — ver §16, registro de decisões);
 - estado alternado a cada 500 ms;
 - funcionamento contínuo;
 - independente do botão, do LED verde e do OLED;
@@ -129,7 +130,9 @@ Interpretação temporal:
 - resolução: 128 × 64 pixels;
 - interface: I2C;
 - endereço: `0x3C`;
-- GPIO25: SCL;
+- GPIO32: SCL (realocado do GPIO 25, originalmente fixo, a pedido
+  explícito do usuário, por layout da placa — ver §16, registro de
+  decisões);
 - GPIO16: SDA;
 - botão solto: exibir exatamente `Boa sorte!`;
 - botão pressionado: exibir exatamente `Consegui`;
@@ -215,16 +218,19 @@ sem benefício funcional relevante.
 Cada LED possui resistor de 220 Ω em série.
 
 ```text
-GPIO2 ── 220 Ω ── ânodo do LED vermelho
+GPIO26 ── 220 Ω ── ânodo do LED vermelho
 cátodo ── GND
 
 GPIO4 ── 220 Ω ── ânodo do LED verde
 cátodo ── GND
 ```
 
-O GPIO2 é um terminal de configuração de inicialização do ESP32. Seu uso é uma
-exigência do projeto e é aceitável desde que o circuito externo não imponha
-nível inadequado durante a energização.
+O LED vermelho foi realocado do GPIO2 (originalmente fixo) para o GPIO26 a
+pedido explícito do usuário, por layout da placa — ver §16, registro de
+decisões. O GPIO2, liberado por essa mudança, hoje aciona o
+`scheduler_idle_led` (ver §17, funcionalidades estendidas); esse uso
+continua aceitável porque o circuito externo (LED + resistor até o GND)
+nunca impõe um nível inadequado durante a energização.
 
 ### 6.2 Botão, resistor interno e antirrepique
 
@@ -269,13 +275,15 @@ Os nomes dos terminais do botão em `diagram.json` devem respeitar exatamente:
 O projeto determina previamente:
 
 ```text
-GPIO25 = SCL
+GPIO32 = SCL
 GPIO16 = SDA
 ```
 
 Essa atribuição não foi escolhida por ser o mapeamento padrão do ESP32 nem por
 um estudo de desempenho. Ela deve ser declarada explicitamente no código, no
-circuito e na documentação.
+circuito e na documentação. O SCL foi originalmente fixado no GPIO25 e
+depois realocado para o GPIO32 a pedido explícito do usuário, por layout
+da placa — ver §16, registro de decisões.
 
 A versão consolidada utiliza `machine.I2C` (barramento de hardware), que
 declara os sinais de forma explícita:
@@ -467,7 +475,7 @@ Critérios:
 
 - monitor serial indica alternância entre 0 e 1;
 - LED acende e apaga a cada aproximadamente 500 ms;
-- ligação GPIO2 → resistor → ânodo → cátodo → GND.
+- ligação GPIO26 → resistor → ânodo → cátodo → GND.
 
 Atraso bloqueante pode ser usado somente neste teste temporário, pois o objetivo
 é isolar o hardware.
@@ -503,6 +511,11 @@ Critérios:
 - o OLED não é atualizado repetidamente enquanto o estado não muda;
 - não há exceções no monitor serial.
 
+Os três primeiros critérios sobre o OLED descrevem o comportamento
+*original*; hoje ambos os OLEDs foram **substituídos** por gráficos de
+uso de CPU/RAM ao vivo, não redesenhados só na mudança de estado do botão
+(ver §17, funcionalidades estendidas).
+
 ## 15. Limitações e implementação física
 
 A simulação valida lógica, pinagem e comportamento, mas não substitui todas as
@@ -531,11 +544,12 @@ Em uma montagem física devem ser considerados:
 | Temporizador de hardware | Não necessário |
 | Botão | GPIO17, ativo em HIGH, `Pin.PULL_DOWN` |
 | Antirrepique | Software, aproximadamente 30 ms; sem filtro RC |
-| LED vermelho | GPIO2, alternância a cada 500 ms |
+| LED vermelho | GPIO26 (realocado do GPIO2 originalmente fixo — ver linha abaixo), alternância a cada 500 ms |
 | LED verde | GPIO4, acompanha o estado estável do botão |
 | OLED | SSD1306 128 × 64, endereço `0x3C` |
 | Barramento do OLED | `machine.I2C` (hardware); `SoftI2C` foi adotado defensivamente numa revisão anterior e revertido após confirmação em `tests/05_oled_basic.py` e `tests/06_oled_full_diagnostic.py` |
-| Mapeamento OLED | GPIO25 = SCL; GPIO16 = SDA, por predefinição |
+| Mapeamento OLED | GPIO32 = SCL (realocado do GPIO25 originalmente fixo); GPIO16 = SDA |
+| `RED_LED_PIN` → GPIO26, `OLED_SCL_PIN` → GPIO32 | Realocados a pedido explícito do usuário, por layout da placa, à medida que o circuito cresceu. GPIO2 passou a acionar o `scheduler_idle_led`; GPIO25 passou a acionar o `white_led` (§17) |
 | Atualização OLED | Somente na inicialização e nas transições estáveis |
 | Versão do firmware no `diagram.json` | Não fixar `attrs.env`; usar a versão padrão/atual do Wokwi |
 | Licença | CC0 1.0 Universal |

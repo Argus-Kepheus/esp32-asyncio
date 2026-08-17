@@ -71,7 +71,9 @@ checklist are kept in
 ### FR-01 — Independent red LED
 
 - Component ID: `red-led` · Python variable: `red_led` · Pin constant: `RED_LED_PIN`
-- GPIO: 2 · Direction: digital output
+- GPIO: 26 (moved from the originally-fixed GPIO 2 at the user's explicit
+  request, for board layout — see §16 decision log) · Direction: digital
+  output
 - Behavior: toggle continuously every 500 ms (≈1 s full cycle)
 - Constraint: must never block, and must never be blocked by, the button,
   green LED, or OLED logic
@@ -93,14 +95,17 @@ checklist are kept in
 
 - Component ID: `oled-display` · Python variable: `oled_display`
 - Controller: SSD1306 · Resolution: 128 × 64 · Interface: I2C · Address: `0x3C`
-- SCL: GPIO 25 · SDA: GPIO 16 · Supply: 3.3 V and GND
+- SCL: GPIO 32 (moved from the originally-fixed GPIO 25 at the user's
+  explicit request, for board layout — see §16 decision log) · SDA: GPIO 16
+  · Supply: 3.3 V and GND
 
 The original assignment only requires the OLED to show the messages
 according to the button state — it does not specify a communication
 interface or pins. The I2C interface and the GPIO 25 (SCL) / GPIO 16 (SDA)
 mapping were fixed by the candidate before development started, not chosen
 through an optimization study, and then treated as a fixed predefined
-assignment for the rest of the project (see §6.3).
+assignment for the rest of the project (see §6.3); SCL was later moved to
+GPIO 32, see above.
 
 ### FR-05 — OLED content
 
@@ -382,6 +387,7 @@ a row, keep the reasoning short and explicit.
 
 | Decision | Rationale | Alternatives considered |
 |---|---|---|
+| `RED_LED_PIN` moved to GPIO 26, `OLED_SCL_PIN` moved to GPIO 32 | User's explicit request, for board layout as the circuit grew (FR-01/FR-04 originally fixed these at GPIO 2 / GPIO 25 before development started, §6.3). GPIO 2 was later reused for `scheduler_idle_led`, GPIO 25 for `white_led` (§19). | Keeping the original pins and fitting new hardware around them (rejected: made the diagram layout harder to read as more peripherals were added) |
 | Wokwi over Tinkercad | Wokwi natively produces both mandatory deliverables: an executable MicroPython `main.py` and a shareable project link. Tinkercad cannot execute MicroPython at all. | A C/C++ Tinkercad sketch alongside the MicroPython version; Tinkercad for the schematic only, no code execution |
 | `board-esp32-devkit-c-v4` as the target board | An official Espressif development board supported natively by Wokwi, providing all GPIO pins required by the specification and complete manufacturer documentation. Improves reproducibility and removes ambiguities associated with generic or unofficial ESP32 boards. | Other Wokwi ESP32 board parts (e.g. `board-esp32-devkit-v1`), which one of the original drafts used and which uses different pin-label conventions |
 | Cooperative `asyncio` tasks instead of a manual super loop | Scalability and separation of concerns as the project grows (see §7.2). Does **not** make the OLED I2C write non-blocking (§7.2 engineering note). | Manual super loop with `ticks_ms()`/`ticks_diff()` per task (simpler, functionally equivalent here, scales worse) |

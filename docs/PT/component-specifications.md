@@ -35,10 +35,10 @@ elétricas e a lista de verificação da montagem física, consulte
 
 | Terminal da placa | GPIO | Conectado a |
 |---|---:|---|
-| `2` | GPIO 2 | LED vermelho, por meio de resistor de 220 Ω |
+| `26` | GPIO 26 | LED vermelho, por meio de resistor de 220 Ω |
 | `4` | GPIO 4 | LED verde, por meio de resistor de 220 Ω |
 | `17` | GPIO 17 | Botão pulsador |
-| `25` | GPIO 25 | SCL do OLED |
+| `32` | GPIO 32 | SCL do OLED |
 | `16` | GPIO 16 | SDA do OLED |
 | `3V3` | — | Alimentação do botão e VCC do OLED |
 | `GND.2` | — | Cátodos dos LEDs e GND do OLED |
@@ -65,7 +65,7 @@ elétricas e a lista de verificação da montagem física, consulte
 |---|---|
 | `VCC` | `3V3` do ESP32 |
 | `GND` | `GND.2` do ESP32 |
-| `SCL` | GPIO 25 do ESP32 |
+| `SCL` | GPIO 32 do ESP32 |
 | `SDA` | GPIO 16 do ESP32 |
 
 ## 3. LEDs
@@ -74,8 +74,8 @@ elétricas e a lista de verificação da montagem física, consulte
 |---|---|---|
 | Identificador do componente no Wokwi | `wokwi-led` | `wokwi-led` |
 | Identificador da peça em `diagram.json` | `red-led` | `green-led` |
-| Atributo de cor | `red` | `green` |
-| Ânodo (`A`) conectado a | Resistor de 220 Ω `red-led-resistor`, ligado ao GPIO 2 | Resistor de 220 Ω `green-led-resistor`, ligado ao GPIO 4 |
+| Atributo de cor | `#0000FF` (azul — ver "Funcionalidades estendidas" em `technical-specification.md`; era `red`) | `green` |
+| Ânodo (`A`) conectado a | Resistor de 220 Ω `red-led-resistor`, ligado ao GPIO 26 | Resistor de 220 Ω `green-led-resistor`, ligado ao GPIO 4 |
 | Cátodo (`C`) conectado a | `GND.2` do ESP32 | `GND.2` do ESP32 |
 | Comportamento | Alterna de estado a cada 500 ms, continuamente | Reproduz o estado estável e tratado do botão |
 
