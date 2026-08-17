@@ -555,7 +555,7 @@ Em uma montagem física devem ser considerados:
 | Licença | CC0 1.0 Universal |
 | Idioma do código | Inglês |
 | Mensagens do OLED | Português, exatamente `Boa sorte!` e `Consegui` (substituídas pelos gráficos do §17 nos dois OLEDs) |
-| Gráficos de uso de recursos nos dois OLEDs | Extensão pedida pelo usuário (§17.2). O valor de "CPU" é tempo real medido de ocupação do barramento I2C/SPI, não um número simulado — o MicroPython no ESP32 bare-metal não expõe métrica de carga do escalonador do SO |
+| Gráficos de uso de recursos nos dois OLEDs | Extensão pedida pelo usuário (§17.2). O valor de "CPU" é tempo real medido dentro das chamadas instrumentadas de desenho/transferência dos mostradores (desenho mais transferência I2C/SPI, não só o barramento), um substituto parcial e aproximado mantido porque o MicroPython no ESP32 bare-metal não expõe métrica de carga do escalonador do SO — ver §17.2 para o que ele cobre e o que não cobre |
 | LEDs azuis com mesmo intervalo, seis tarefas separadas | Extensão pedida pelo usuário (§17.3). Cada LED continua sendo uma task `asyncio` independente, mesmo com todos no mesmo intervalo de 500 ms |
 
 ## 17. Funcionalidades estendidas (além do escopo original)
@@ -586,20 +586,31 @@ estilo do Gerenciador de Tarefas do Windows, uma amostra por coluna de
 pixel horizontal (até 128 amostras de histórico), redesenhados a cada
 janela de amostragem:
 
-- **Primeiro OLED — "uso de CPU."** O MicroPython no ESP32 puro não expõe
+- **Primeiro OLED — rotulado "CPU".** O MicroPython no ESP32 puro não expõe
   nenhuma métrica de carga de escalonador em nível de sistema operacional,
-  então o valor plotado é um substituto real e medido: a fração de cada
-  janela de amostragem de 250 ms gasta dentro de uma transferência
-  bloqueante I2C ou SPI — o único momento em que esta aplicação
-  cooperativa de núcleo único está de fato ocupada executando código, em
-  vez de suspensa num ponto de `await`. Ver `update_cpu_graph()` e os
-  auxiliares de temporização `_bus_busy_begin()` / `_bus_busy_end()` em
-  `main.py`, pelos quais toda escrita bloqueante nos displays (os dois
-  OLEDs e o TFT) agora passa.
-- **Segundo OLED — uso de RAM.** Um valor real, não um substituto: as
-  estatísticas reais de heap do coletor de lixo do MicroPython,
-  `gc.mem_alloc()` / `gc.mem_free()`, amostradas a cada 250 ms. Ver
-  `update_ram_graph()`.
+  então o valor plotado é um substituto parcial e aproximado, não uma
+  métrica completa de utilização de CPU: a fração de cada janela de
+  amostragem de no mínimo 250 ms (um piso, não um período exato — ver o
+  próprio comentário de temporização de `update_cpu_graph()`) gasta dentro
+  das chamadas síncronas instrumentadas dos três mostradores, cronometradas
+  por inteiro entre `_bus_busy_begin()` / `_bus_busy_end()`. Esse intervalo
+  cobre tanto o trabalho de *framebuffer*/desenho em Python (o laço de até
+  128 colunas em `draw_usage_graph()`, a conversão de glifo para pixels em
+  `ili9341.py`) quanto a transferência I2C/SPI em si — não é uma medição
+  pura de barramento. Também não cobre toda fonte de uso de CPU da
+  aplicação: amostragem/antirrepique dos botões, a contabilidade de
+  `scheduler_idle_task()`, a formatação de `print_status()` e o restante
+  do código Python também consomem CPU fora dessa janela. O rótulo `CPU`
+  foi mantido (em vez de renomeado para algo como `DISPLAY`) por já estar
+  consolidado na linha de status serial, no esquema de cores do console da
+  TFT e nesta documentação, e por caber na tela pequena do OLED — ver a
+  docstring de `update_cpu_graph()` em `main.py` para a ressalva completa.
+- **Segundo OLED — rotulado "RAM".** Um valor real e medido, não simulado,
+  mas restrito às estatísticas de heap do coletor de lixo do MicroPython
+  (`gc.mem_alloc()` / `gc.mem_free()`), amostradas a cada no mínimo 250 ms
+  — não à RAM física total do ESP32. A pilha de execução, alocações
+  nativas/C internas ao firmware e qualquer memória fora do heap gerenciado
+  pelo coletor de lixo não estão incluídas. Ver `update_ram_graph()`.
 
 O botão ainda liga/desliga o LED verde e imprime seu estado no monitor
 serial (`apply_button_state()`) — só o retorno em texto no OLED foi

@@ -100,6 +100,10 @@
 \newcommand{\AuthorName}{\href{\AuthorWebsite}{Sergio Cordero Calvimontes}}
 \newcommand{\WokwiURL}{https://wokwi.com/projects/471528241540407297}
 \newcommand{\GitHubURL}{https://github.com/Argus-Kepheus/esp32-asyncio}
+\newcommand{\RevisionDate}{17 de agosto de 2026}
+\newcommand{\RevisionCommit}{872d096}
+\newcommand{\FirmwareFile}{ESP32\_GENERIC-20260406-v1.28.0.bin}
+\newcommand{\FirmwareSHA}{cd7820d02c35d34dd403b44263129c6a511b350aea8446c229890753fe240784}
 
 \begin{document}
 
@@ -128,7 +132,7 @@
 
   \vfill
 
-  {\large \today\par}
+  {\large \RevisionDate\par}
 \end{titlepage}
 
 \tableofcontents
@@ -144,15 +148,37 @@ A simulação executável está publicada no Wokwi em\linebreak[2]
 
 O Wokwi foi adotado como plataforma principal por oferecer suporte nativo ao ESP32 com MicroPython, edição visual do circuito, arquivo de conexão \texttt{diagram.json}, monitor serial e compartilhamento por endereço eletrônico. O repositório GitHub complementa a simulação ao fornecer rastreabilidade, controle de versões e uma estrutura adequada ao desenvolvimento no Visual Studio Code.
 
+\subsection{Controle documental desta revisão}
+\label{sec:controle-documental}
+
+Este relatório descreve uma revisão específica e datada do projeto, identificada pelos itens abaixo -- não um estado "final": o projeto continua sujeito a evolução, e mudanças futuras no código, no circuito ou nos testes podem tornar trechos deste texto desatualizados até a próxima revisão do relatório. "Validação", nesta revisão, significa consistência verificada entre código-fonte, circuito e texto -- não a reexecução de toda a simulação Wokwi ou de todos os testes de \texttt{tests/} nesta data (ver Seção~\ref{sec:testes} para o que foi de fato executado e quando).
+
+\begin{center}
+\begin{tabular}{rl}
+  \toprule
+  Commit do Git examinado: & \texttt{\RevisionCommit} (branch \texttt{main}) \\
+  Data desta revisão: & \RevisionDate \\
+  Placa-alvo: & Espressif ESP32-DevKitC V4 (\texttt{board-esp32-devkit-c-v4}) \\
+  Firmware MicroPython (local): & \texttt{\FirmwareFile}$^{1}$ \\
+  Projeto Wokwi: & \url{\WokwiURL} \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.3em}
+\raggedright\footnotesize
+$^{1}$Nome de arquivo declarado no comentário de \texttt{wokwi.toml}, onde o binário é baixado manualmente e renomeado para \texttt{firmware.bin} antes do uso local. \texttt{SHA-256} do binário efetivamente presente neste repositório: \texttt{\FirmwareSHA{}} -- calculado localmente nesta revisão, não conferido de forma independente contra o servidor de download do MicroPython. Qualquer reprodução futura deve conferir esse hash antes de assumir que obteve exatamente o mesmo \textit{build}.
+\normalsize\raggedright
+
 \section{Requisitos e definições do projeto}
 \label{sec:requisitos}
 
 \subsection{Requisitos funcionais e estados do sistema}
 
-O sistema satisfaz seus requisitos funcionais por meio de várias tarefas independentes, executadas concorrentemente sob escalonamento cooperativo (\texttt{asyncio}): uma tarefa por LED azul, uma tarefa que relaciona o botão ao LED verde, duas tarefas indicadoras do estado do sistema (barramento e escalonador) e uma tarefa de atualização para cada um dos três mostradores.
+O sistema satisfaz seus requisitos funcionais por meio de treze fluxos concorrentes sob um único escalonador cooperativo (\texttt{asyncio}): seis tarefas de LED (uma por LED azul), duas tarefas de mostrador (uma por OLED), uma tarefa de status serial, uma tarefa indicadora de escalonador ocioso, e três fluxos de monitoramento de botão -- o do botão principal, aguardado diretamente por \texttt{main()}, e os dois dos botões de velocidade, despachados com \texttt{asyncio.create\_task()} (Seção~\ref{sec:estrutura-geral}). O indicador de barramento ocupado (LED laranja) não tem uma tarefa própria: é alternado de forma síncrona, por chamada de função direta, a partir de qualquer tarefa que esteja escrevendo em um dos três mostradores naquele instante (Seção~\ref{sec:idle-leds}); a TFT, pelo mesmo motivo, também não tem uma tarefa de atualização própria -- recebe escritas síncronas disparadas a partir de várias tarefas diferentes, não de um laço periódico dedicado.
 
 \begin{description}
-  \item[Seis LEDs azuis, seis tarefas independentes:] Cada um dos seis LEDs (GPIO~26, 14, 27, 25, 33 e 12) alterna seu próprio estado em uma tarefa \texttt{asyncio} própria, sem depender de nenhuma outra tarefa nem ser bloqueado por ela. Todos compartilham um mesmo intervalo, ajustável em tempo real por dois botões dedicados (GPIO~34 diminui, GPIO~35 aumenta) que escalam o intervalo de todos os seis simultaneamente pelo mesmo fator. Na teoria, isso mantém os seis sincronizados entre si; na prática, essa sincronia é apenas nominal. Por serem tarefas independentes, cada uma mede sua própria pausa a partir do instante em que retoma a execução, e não a partir de um relógio absoluto compartilhado -- pequenos atrasos causados por outras tarefas (sobretudo as escritas bloqueantes nos mostradores) se acumulam de forma diferente em cada LED a cada ciclo. Após alguns minutos de operação contínua, torna-se perceptível a dessincronização visual entre os seis, independentemente do intervalo configurado no momento. Essa dessincronização não é um defeito de implementação, e sim uma limitação inerente ao escalonamento cooperativo: nada garante que tarefas nominalmente idênticas permaneçam em fase entre si indefinidamente.
+  \item[Seis LEDs azuis, seis tarefas independentes:] Cada um dos seis LEDs (GPIO~26, 14, 27, 25, 33 e 12) alterna seu próprio estado em uma tarefa \texttt{asyncio} própria, logicamente independente das demais: nenhuma delas chama ou espera diretamente por outra. Isso não as isola de atrasos -- sob um único escalonador cooperativo, uma escrita síncrona longa em qualquer mostrador (Seção~\ref{sec:tft-console}) ainda atrasa a retomada de todas as demais tarefas, LEDs piscantes inclusive, até que essa escrita retorne (Seção~\ref{sec:limites-cooperativos}). Todos compartilham um mesmo intervalo, ajustável em tempo real por dois botões dedicados (GPIO~34 diminui, GPIO~35 aumenta) que escalam o intervalo de todos os seis simultaneamente pelo mesmo fator. Na teoria, isso mantém os seis sincronizados entre si; na prática, essa sincronia é apenas nominal. Por serem tarefas independentes, cada uma mede sua própria pausa a partir do instante em que retoma a execução, e não a partir de um relógio absoluto compartilhado -- pequenos atrasos causados por outras tarefas (sobretudo as escritas bloqueantes nos mostradores) se acumulam de forma diferente em cada LED a cada ciclo. Após alguns minutos de operação contínua, torna-se perceptível a dessincronização visual entre os seis, independentemente do intervalo configurado no momento. Essa dessincronização não é um defeito de implementação, e sim uma limitação inerente ao escalonamento cooperativo: nada garante que tarefas nominalmente idênticas permaneçam em fase entre si indefinidamente.
 
   \item[Botão e LED verde:] Lê o botão conectado ao GPIO~17, com antirrepique por software, e reflete o estado estável no LED verde (GPIO~4): \textbf{solto} desliga o LED, \textbf{pressionado} liga o LED. Cada transição é registrada no console da tela TFT, em verde. Pelo mesmo motivo da dessincronização acima, a amostragem do botão compete por tempo de processamento com as demais tarefas assíncronas; em alguns instantes -- tipicamente quando uma escrita bloqueante nos mostradores está em andamento -- é necessário manter o botão pressionado por mais tempo que o nominal para que a janela de estabilidade de 30~[ms] do antirrepique seja efetivamente acumulada, já que ciclos de amostragem podem ser adiados enquanto o processador está ocupado.
 
@@ -160,9 +186,9 @@ O sistema satisfaz seus requisitos funcionais por meio de várias tarefas indepe
 
   \item[LED amarelo -- escalonador ocioso:] Liga somente quando nenhuma outra tarefa tem trabalho pendente naquele instante, funcionando como indicador de quão ocioso está o escalonador cooperativo -- análogo a uma tarefa de prioridade mínima em um sistema operacional de tempo real.
 
-  \item[Mostrador de uso de CPU (primeiro OLED):] Atualizado a cada 250~[ms] com a fração real do tempo gasto em transferências I\textsuperscript{2}C/SPI bloqueantes desde a última amostra -- um substituto medido para \enquote{uso de CPU}, já que o MicroPython no ESP32 não expõe essa métrica diretamente.
+  \item[Mostrador de uso de CPU (primeiro OLED):] Atualizado a cada 250~[ms] no mínimo (Seção~\ref{sec:limites-cooperativos}) com a fração da janela de amostragem ocupada pelas chamadas síncronas instrumentadas de desenho e transferência dos três mostradores -- um substituto parcial e aproximado para \enquote{uso de CPU}, detalhado na Seção~\ref{sec:oled-graphs}, já que o MicroPython no ESP32 não expõe essa métrica diretamente.
 
-  \item[Mostrador de uso de RAM (segundo OLED):] Atualizado a cada 250~[ms] com o uso real de memória do coletor de lixo do MicroPython (\texttt{gc.mem\_alloc()} / \texttt{gc.mem\_free()}), em um barramento I\textsuperscript{2}C independente do primeiro OLED.
+  \item[Mostrador de uso de RAM (segundo OLED):] Atualizado a cada 250~[ms] no mínimo com a fração ocupada do heap gerenciado pelo coletor de lixo do MicroPython (\texttt{gc.mem\_alloc()} / \texttt{gc.mem\_free()}), não da RAM física total do ESP32 (Seção~\ref{sec:oled-graphs}), em um barramento I\textsuperscript{2}C independente do primeiro OLED.
 
   \item[Console de registro (tela TFT):] Recebe, de forma assíncrona e a partir de várias tarefas diferentes, linhas de texto coloridas sobre os eventos do sistema -- uma cor por subsistema -- rolando pela tela como um registro (\textit{log}) de atividade.
 \end{description}
@@ -269,6 +295,7 @@ A tela TFT ILI9341, por sua vez, usa SPI genuíno de 4 fios -- relógio (SCK), d
 \section{Desenvolvimento do programa \texttt{main.py}}
 
 \subsection{Estrutura geral}
+\label{sec:estrutura-geral}
 
 O arquivo \texttt{main.py} concentra a inicialização do hardware e a coordenação das tarefas.
 
@@ -316,6 +343,8 @@ async def main():
 
 Este trecho é uma síntese da arquitetura; o código completo e executável está disponível no repositório.
 
+Onze dessas corrotinas -- as seis tarefas de LED, \texttt{scheduler\_idle\_task()}, as duas tarefas de mostrador e as duas dos botões de velocidade -- são despachadas com \texttt{asyncio.create\_task()} dentro de \texttt{main()} e passam a rodar de forma independente a partir desse ponto. O monitoramento do botão principal é tratado de forma diferente: \texttt{main()} termina com \texttt{await monitor\_button(initial\_button\_state)} em vez de mais um \texttt{create\_task()}. Como \texttt{monitor\_button()} roda em laço infinito e nunca retorna, \texttt{main()} nunca chega a terminar sua própria execução -- ela efetivamente passa a \emph{ser} o monitoramento do botão principal a partir dali, e não uma tarefa separada dele. Sob o escalonador cooperativo, isso não distingue esse fluxo dos demais em termos de comportamento observável: \texttt{main()} continua cedendo o controle nos mesmos pontos de espera que qualquer outra tarefa.
+
 \subsection{Assincronismo cooperativo}
 
 A biblioteca \texttt{asyncio} do MicroPython foi escolhida como arquitetura exclusiva do projeto. Em vez de um superlaço (\textit{superloop}) que verifica manualmente diversos temporizadores, cada função independente pode ser organizada como uma corrotina (\textit{coroutine}). A instrução \texttt{await asyncio.sleep\_ms(...)} suspende apenas a tarefa atual e devolve o controle ao escalonador (\textit{scheduler}).
@@ -325,9 +354,21 @@ Essa decisão foi tomada pelos seguintes motivos:
 \begin{itemize}
   \item Separação clara entre o piscar de cada LED, a leitura de cada botão e a atualização de cada mostrador;
   \item Menor acoplamento entre funcionalidades e facilidade de manutenção e escalabilidade;
-  \item Prevenção de congelamentos causados por \texttt{time.sleep()} no fluxo principal;
-  \item Melhor tolerância às pequenas latências introduzidas pela transmissão por meio do barramento I\textsuperscript{2}C.
+  \item Prevenção de congelamentos indefinidos causados por \texttt{time.sleep()} no fluxo principal, já que \texttt{await asyncio.sleep\_ms(...)} devolve o controle ao escalonador em vez de travar a CPU.
 \end{itemize}
+
+\subsection{O que o escalonamento cooperativo garante -- e o que não garante}
+\label{sec:limites-cooperativos}
+
+O \texttt{asyncio} do MicroPython roda em um único núcleo, sem preempção e sem paralelismo real: a qualquer instante, no máximo uma corrotina está de fato executando; todas as demais estão suspensas, aguardando sua vez. "Independente" e "concorrente", nas seções deste relatório, significam independência \emph{lógica} -- nenhuma tarefa chama ou espera diretamente por outra -- não isolamento de tempo de execução. Especificamente:
+
+\begin{itemize}
+  \item \textbf{Escritas nos mostradores bloqueiam o escalonador inteiro.} \texttt{show()}, \texttt{fill\_rect()} e \texttt{text()} (SSD1306 e ILI9341) são chamadas síncronas, sem nenhum ponto \texttt{await} interno: enquanto uma delas está em andamento, nenhuma outra tarefa -- LED piscante, botão ou outro mostrador -- pode ser retomada, por mais tempo que essa escrita leve. O \texttt{asyncio} evita que um \texttt{time.sleep()} explícito trave o programa indefinidamente, mas não transforma essas transferências I\textsuperscript{2}C/SPI em operações não bloqueantes.
+  \item \textbf{Os intervalos de 250~[ms] dos dois OLEDs são um piso, não um período exato.} \texttt{await asyncio.sleep\_ms(250)} garante apenas que pelo menos 250~[ms] se passem antes da retomada; se o restante do ciclo (leitura do sensor, desenho, escrita bloqueante) levar tempo adicional, a cadência real observada é maior que 250~[ms] e pode variar de amostra para amostra -- ver a medição explícita por \texttt{time.ticks\_us()} em \texttt{update\_cpu\_graph()} (Seção~\ref{sec:oled-graphs}).
+  \item \textbf{Uma pressão de botão pode não ser amostrada.} O botão principal e os dois de velocidade são lidos a cada 5~[ms] (Seção~\ref{sec:antirrepique}), mas essa amostragem só ocorre quando a tarefa de monitoramento correspondente é retomada. Se uma escrita bloqueante em algum mostrador estiver em andamento durante uma pressão inteira -- início e fim do contato dentro dessa mesma janela --, nenhuma amostra intermediária existe para detectá-la, e a transição pode não ser registrada.
+\end{itemize}
+
+Essas limitações não invalidam a arquitetura: para os intervalos de LED (centenas de milissegundos a segundos) e para uma aplicação interativa, não crítica em tempo real, os atrasos introduzidos por uma única escrita de mostrador (tipicamente frações de milissegundo a poucos milissegundos) são pequenos e normalmente imperceptíveis. Eles são, porém, reais, mensuráveis e vistos diretamente nos LEDs laranja e amarelo (Seção~\ref{sec:idle-leds}) -- e são a causa raiz da dessincronização dos LEDs azuis e da eventual necessidade de segurar o botão por mais tempo, ambas já descritas nesta seção.
 
 O assincronismo adotado é cooperativo. Portanto, as tarefas devem alcançar pontos de espera com frequência e evitar rotinas longas ou bloqueantes.
 
@@ -357,9 +398,14 @@ O LED amarelo (GPIO~2, \texttt{scheduler\_idle\_led}) liga e desliga em uma tare
 
 Os dois OLEDs SSD1306 funcionam como gráficos de barras rolantes, no estilo de um monitor de tarefas, atualizados a cada 250~[ms] (\texttt{update\_cpu\_graph()} e \texttt{update\_ram\_graph()}). Cada amostra ocupa uma coluna de pixels na largura do OLED (até 128 amostras de histórico); ao atingir o limite, a amostra mais antiga é descartada e todas as colunas são redesenhadas a cada janela.
 
-O primeiro OLED plota um substituto medido para "uso de CPU": como o MicroPython no ESP32 não expõe nenhuma métrica de carga de um escalonador de sistema operacional, o valor plotado é, em vez disso, a fração real de cada janela de amostragem gasta dentro de uma transferência I\textsuperscript{2}C/SPI bloqueante -- acumulada via \texttt{bus\_busy\_time\_us} (Seção~\ref{sec:idle-leds}) --, já que essa é a única situação em que esta aplicação de núcleo único e escalonamento cooperativo está de fato ocupada executando, em vez de suspensa em um ponto de espera (\texttt{await}). A janela de amostragem em si é medida com \texttt{time.ticks\_us()}, não assumida como exatamente 250~[ms]: \texttt{asyncio.sleep\_ms()} garante apenas um atraso mínimo, e uma chamada mais lenta a \texttt{console\_log()} em outra tarefa pode empurrar o intervalo real bem além do solicitado -- dividir pelo intervalo assumido, quando mais curto que o real, foi a causa de uma leitura defeituosa acima de 100\% observada durante os testes e desde então corrigida.
+O primeiro OLED plota um rótulo chamado \enquote{CPU}$^{4}$, mas o valor efetivamente medido é mais estreito do que esse nome sugere: é a fração de cada janela de amostragem ocupada pelas chamadas síncronas instrumentadas de desenho e transferência dos três mostradores -- \texttt{show()}, \texttt{fill\_rect()} e \texttt{text()}, cronometradas por inteiro entre \texttt{\_bus\_busy\_begin()} e \texttt{\_bus\_busy\_end()} (Seção~\ref{sec:idle-leds}) e acumuladas em \texttt{bus\_busy\_time\_us}. Como o cronômetro envolve a chamada inteira, e não apenas a transferência física, o valor inclui tanto o trabalho de \textit{framebuffer} e desenho feito em Python (por exemplo, o laço de até 128 colunas em \texttt{draw\_usage\_graph()}, ou a conversão de glifo para pixels em \texttt{ili9341.py}) quanto a própria transferência I\textsuperscript{2}C/SPI -- as duas coisas juntas, não isoladamente uma ou outra. Isso não é a única fonte de uso de CPU da aplicação: amostragem e antirrepique dos três botões, a contabilidade de \texttt{scheduler\_idle\_task()}, a formatação da linha impressa por \texttt{print\_status()} e o restante do código Python também consomem tempo de processador e não entram nessa soma. O gráfico é, portanto, um indicador parcial e aproximado -- a fração de tempo gasta especificamente dentro das escritas de mostrador instrumentadas -- não uma medição completa de utilização de CPU. A janela de amostragem em si é medida com \texttt{time.ticks\_us()}, não assumida como exatamente 250~[ms] (Seção~\ref{sec:limites-cooperativos}): \texttt{asyncio.sleep\_ms()} garante apenas um atraso mínimo, e uma chamada mais lenta a \texttt{console\_log()} em outra tarefa pode empurrar o intervalo real bem além do solicitado -- dividir pelo intervalo assumido, quando mais curto que o real, foi a causa de uma leitura defeituosa acima de 100\% observada durante os testes e desde então corrigida.
 
-O segundo OLED plota o uso real de memória do coletor de lixo do MicroPython (\texttt{gc.mem\_alloc()} / \texttt{gc.mem\_free()}), em seu próprio barramento I\textsuperscript{2}C independente (Seção~\ref{sec:mostrador-interface}).
+O segundo OLED plota a fração ocupada do heap gerenciado pelo coletor de lixo do MicroPython (\texttt{gc.mem\_alloc()} / \texttt{gc.mem\_free()}), em seu próprio barramento I\textsuperscript{2}C independente (Seção~\ref{sec:mostrador-interface}). Esse valor não é a RAM física total do ESP32: exclui, entre outros, a pilha (\textit{stack}) de execução, alocações nativas/C internas ao firmware e qualquer memória reservada fora do heap gerenciado pelo coletor de lixo -- é uma medida real, porém parcial, de pressão de memória sobre esse heap especificamente.
+
+\vspace{0.3em}
+\raggedright\footnotesize
+$^{4}$O rótulo \texttt{CPU} foi mantido, tanto no código quanto neste relatório, por já estar consolidado no console serial (\texttt{print\_status()}) e no esquema de cores do console da TFT (Seção~\ref{sec:tft-console}), e por caber no espaço reduzido de um mostrador de 128 por 64~[pixels] monocromático; a alternativa seria substituí-lo por um nome tecnicamente mais preciso, como \texttt{DISPLAY} ou \texttt{SYNC}, em troca de exigir uma mudança coordenada em \texttt{main.py}, no console da TFT e em toda a documentação. Optou-se por manter o rótulo curto e qualificar seu significado explicitamente neste parágrafo, em vez de renomeá-lo.
+\normalsize\raggedright
 
 \subsection{Console de registro colorido (TFT)}
 \label{sec:tft-console}
@@ -433,7 +479,7 @@ A Figura~\ref{fig:circuito} apresenta o estado atual do circuito no Wokwi. Com o
 
 O projeto atende aos requisitos definidos por meio de uma implementação modular e reproduzível. A escolha da ESP32-DevKitC V4 reduz ambiguidades de pinagem, enquanto o uso explícito de cada GPIO (Tabela~\ref{tab:pinagem}) preserva a correspondência entre código, documentação e circuito. As duas interfaces de comunicação adotadas -- I\textsuperscript{2}C para os dois OLEDs e SPI de 4 fios para a TFT -- atendem adequadamente à natureza distinta do tráfego de cada mostrador, conforme discutido na Seção~\ref{sec:mostrador-interface}.
 
-A arquitetura assíncrona permite a concorrência de seis tarefas de LED, duas tarefas indicadoras de estado, três tarefas de atualização de mostrador e o monitoramento de três botões, sem que nenhuma delas bloqueie as demais. O antirrepique compartilhado elimina a necessidade de filtro externo nesta aplicação e em suas três variantes de botão, e as otimizações aplicadas ao console de registro da TFT -- tabela de conversão de cor pré-calculada, limpeza apenas do trecho residual de cada linha -- mantêm o tempo de escrita bloqueante baixo o suficiente para não dominar o próprio gráfico de uso de CPU que ele ajuda a alimentar. Por fim, os treze testes isolados e progressivos (Seção~\ref{sec:testes}) forneceram evidências de funcionamento de cada subsistema antes da integração completa.
+A arquitetura assíncrona permite a concorrência de treze fluxos independentes (Seção~\ref{sec:estrutura-geral}) sob um único escalonador cooperativo. O antirrepique compartilhado elimina a necessidade de filtro externo nesta aplicação e em suas três variantes de botão, e as otimizações aplicadas ao console de registro da TFT -- tabela de conversão de cor pré-calculada, limpeza apenas do trecho residual de cada linha -- mantêm o tempo de escrita bloqueante baixo o suficiente para não dominar o próprio gráfico de uso de CPU que ele ajuda a alimentar. Por fim, os treze testes isolados e progressivos (Seção~\ref{sec:testes}) forneceram evidências de funcionamento de cada subsistema antes da integração completa.
 
 A entrega é complementada por dois meios de acesso: a simulação pública no Wokwi e o repositório versionado no GitHub. Em conjunto, eles possibilitam executar, inspecionar, reproduzir e evoluir o projeto.
 

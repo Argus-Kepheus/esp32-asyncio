@@ -6,9 +6,12 @@ Controls nine LEDs (six blinking at the same adjustable interval, each its
 own independent task, plus one driven by a push button and two idle
 indicators) and updates three displays -- two SSD1306 OLEDs, each on its
 own I2C bus, and an ILI9341 TFT over 4-wire SPI. The two OLEDs are live
-Task-Manager-style resource graphs: the first plots real I2C/SPI bus-busy
-time as a stand-in "CPU usage," the second plots real MicroPython heap
-usage as "RAM usage." Two extra push-buttons speed up or slow down every
+Task-Manager-style resource graphs: the first plots the fraction of each
+window spent inside the displays' instrumented, blocking draw/transfer
+calls as a partial, approximate stand-in for "CPU usage" (see
+update_cpu_graph()'s docstring for what that does and doesn't cover); the
+second plots real MicroPython heap usage, not total physical RAM, as
+"RAM usage." Two extra push-buttons speed up or slow down every
 blinking LED at once. Once a second, the serial console prints the same
 CPU/RAM percentages alongside the blinking LEDs' current on/off interval
 in milliseconds. Cooperative asyncio tasks prevent timing delays from
@@ -459,11 +462,20 @@ def make_throttle(every):
 
 
 async def update_cpu_graph():
-    """First OLED: "CPU usage" graph. The percentage is the real fraction of
-    each sampling window spent inside a blocking I2C/SPI transfer (the only
-    time this single-core cooperative app is actually busy, as opposed to
-    suspended in an await) -- not a value read from an OS scheduler, since
-    MicroPython on bare ESP32 exposes no such thing.
+    """First OLED: "CPU" graph -- not a value read from an OS scheduler,
+    since MicroPython on bare ESP32 exposes no such thing. The percentage
+    is the fraction of each sampling window spent inside the three
+    displays' instrumented synchronous calls (show()/fill_rect()/text()),
+    timed end-to-end via _bus_busy_begin()/_bus_busy_end(). That span
+    covers the Python-side framebuffer/drawing work (e.g. draw_usage_graph()'s
+    per-column loop, ili9341.py's glyph-to-pixel conversion) as well as the
+    I2C/SPI transfer itself -- it is not a pure bus-transfer measurement.
+    It is also not the only source of CPU use in this application: button
+    debounce sampling, scheduler_idle_task()'s own bookkeeping,
+    print_status()'s formatting, and the rest of the Python code all
+    consume CPU time and are not included here. Treat this graph as a
+    partial, approximate indicator of display-write cost, not a complete
+    CPU utilization metric.
 
     The window itself is measured with ticks_us(), not assumed to be
     exactly CPU_GRAPH_SAMPLE_INTERVAL_MS: asyncio.sleep_ms() only
@@ -498,7 +510,10 @@ async def update_cpu_graph():
 async def update_ram_graph():
     """Second OLED: RAM usage graph, from MicroPython's real gc heap stats
     (gc.mem_alloc() / gc.mem_free()) -- an actual measured value, not a
-    simulated one."""
+    simulated one. This is occupancy of the gc-managed heap specifically,
+    not total physical RAM on the ESP32: the execution stack, native/C
+    allocations internal to the firmware, and anything outside the gc
+    heap are not included."""
     global ram_usage_percent
     should_log = make_throttle(CONSOLE_LOG_THROTTLE)
     while True:

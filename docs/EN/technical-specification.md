@@ -399,7 +399,7 @@ a row, keep the reasoning short and explicit.
 | `machine.I2C` (hardware), not `machine.SoftI2C` | **Confirmed on a live wokwi.com run**: `tests/05_oled_basic.py` and `tests/06_oled_full_diagnostic.py`, both using hardware `I2C(0, scl=Pin(25), sda=Pin(16), freq=400_000)`, passed — including every `ssd1306.py` drawing primitive. This retroactively shows hardware I2C was never actually the cause of the original wokwi.com issues (the real cause was the `attrs.env` boot loop, see the row below); `SoftI2C` had been adopted earlier as an unconfirmed, purely defensive substitute and is no longer needed. `main.py` was reverted to hardware `I2C` accordingly. | `machine.SoftI2C` (previously adopted defensively, now confirmed unnecessary; kept only as a documented fallback if a future hardware-I2C regression appears) |
 | `push-button` wired with pin names `1.l` / `2.l` | These are the actual pin names exposed by the Wokwi `wokwi-pushbutton` part. One of the three original drafts used `1.R` / `2.R` (wrong case, wrong side), which Wokwi cannot resolve — the connection silently fails and the button never registers a press in that simulation. | `1.R` / `2.R` naming (rejected: invalid pin reference) |
 | `esp32` board part uses `"attrs": {}` (no pinned firmware `env`) | **Confirmed root cause of a live wokwi.com failure**: pinning `"env": "micropython-20240602-v1.23.0"` (carried over from the `p/` draft) caused an infinite boot loop — the console showed repeated `POWERON_RESET` / `SW_RESET` cycles and MicroPython never started, so *nothing* ran, not even a trivial one-GPIO test script (see TC-07). Removing the pin and letting Wokwi select its default/current MicroPython build resolved it. This also retroactively confirms this exact line was very likely the original issue reported against the `p/` draft before consolidation. | Pinning a specific firmware `env` string for reproducibility (rejected: the specific string used was invalid/unsupported and silently broke boot, with no error surfaced other than the reset loop) |
-| Both OLEDs repurposed as live resource-usage graphs (§19.2) | User-requested extension, after the mandatory FR-05 behavior was already validated. The "CPU usage" value is real measured I2C/SPI bus-busy time, not a synthetic/simulated number, since bare-metal MicroPython on the ESP32 exposes no OS-level scheduler load metric to read instead. | A synthetic/simulated waveform for "CPU usage" (rejected: would not reflect anything real about the running program); reusing the original text message alongside a graph (rejected: no space on a 128×64 monochrome panel without shrinking the graph) |
+| Both OLEDs repurposed as live resource-usage graphs (§19.2) | User-requested extension, after the mandatory FR-05 behavior was already validated. The "CPU" value is real measured time inside the displays' instrumented draw/transfer calls (drawing plus I2C/SPI transfer, not bus transfer alone), a partial approximation kept because bare-metal MicroPython on the ESP32 exposes no OS-level scheduler load metric to read instead — see §19.2 for what it does and doesn't cover. | A synthetic/simulated waveform for "CPU usage" (rejected: would not reflect anything real about the running program); reusing the original text message alongside a graph (rejected: no space on a 128×64 monochrome panel without shrinking the graph) |
 | Six blinking LEDs share one interval, still six separate `asyncio` tasks (§19.3) | User-requested extension: demonstrates that adding "more of the same" only ever means one more concurrent task, never more shared-loop logic — same principle FR-01 already established for the original red LED. | A single task toggling all six LEDs together (rejected: defeats the point of demonstrating independent concurrent equipment, and reintroduces the coupling `asyncio` was adopted to avoid, §7.2) |
 
 ## 17. Future work (physical hardware phase, out of scope here)
@@ -452,18 +452,30 @@ anymore — both were repurposed as Task-Manager-style scrolling bar graphs,
 one sample per horizontal pixel column (up to 128 samples of history),
 redrawn every sampling window:
 
-- **First OLED — "CPU usage."** MicroPython on bare ESP32 exposes no
-  OS-level scheduler load metric, so the plotted value is a real, measured
-  stand-in: the fraction of each 250 ms sampling window spent inside a
-  blocking I2C or SPI transfer — the only time this single-core,
-  cooperatively-scheduled application is actually busy executing, as
-  opposed to suspended at an `await` point. See `main.py`'s
-  `update_cpu_graph()` and the `_bus_busy_begin()` / `_bus_busy_end()`
-  timing helpers, which every blocking display write (both OLEDs and the
-  TFT) now goes through.
-- **Second OLED — RAM usage.** A real value, not a stand-in: MicroPython's
-  own garbage-collector heap statistics, `gc.mem_alloc()` /
-  `gc.mem_free()`, sampled every 250 ms. See `update_ram_graph()`.
+- **First OLED — labeled "CPU."** MicroPython on bare ESP32 exposes no
+  OS-level scheduler load metric, so the plotted value is a partial,
+  approximate stand-in, not a full CPU utilization metric: the fraction
+  of each ≥250 ms sampling window (a floor, not an exact period — see
+  `update_cpu_graph()`'s own timing comment) spent inside the three
+  displays' instrumented synchronous calls, timed end-to-end by
+  `_bus_busy_begin()` / `_bus_busy_end()`. That span covers both the
+  Python-side framebuffer/drawing work (`draw_usage_graph()`'s per-column
+  loop, `ili9341.py`'s glyph-to-pixel conversion) and the I2C/SPI transfer
+  itself — it is not a pure bus-transfer measurement. It also does not
+  cover every source of CPU use: button debounce sampling,
+  `scheduler_idle_task()`'s own bookkeeping, `print_status()`'s
+  formatting, and the rest of the Python code all consume CPU time
+  outside this window. The `CPU` label was kept (rather than renamed to
+  something like `DISPLAY`) because it is already consolidated across the
+  serial status line, the TFT console color scheme, and this
+  documentation, and fits the OLED's small screen — see `main.py`'s
+  `update_cpu_graph()` docstring for the full caveat.
+- **Second OLED — labeled "RAM."** A real measured value, not a
+  simulated one, but scoped to MicroPython's own garbage-collector heap
+  statistics (`gc.mem_alloc()` / `gc.mem_free()`), sampled every ≥250 ms
+  — not total physical RAM on the ESP32. The execution stack, native/C
+  allocations internal to the firmware, and anything outside the
+  gc-managed heap are not included. See `update_ram_graph()`.
 
 The push-button still turns the green LED on/off and prints its state to
 the serial console (`apply_button_state()`) — only the OLED text feedback
