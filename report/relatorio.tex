@@ -152,7 +152,7 @@ O Wokwi foi adotado como plataforma principal por oferecer suporte nativo ao ESP
 O sistema deve satisfazer os requisitos funcionais por meio de dois comportamentos independentes, executados concorrentemente sob escalonamento cooperativo: um controla exclusivamente o LED vermelho e o outro relaciona o estado do botão às saídas do LED verde e do mostrador OLED.
 
 \begin{description}
-  \item[Sinalização periódica do LED vermelho:] Alterna continuamente, independentemente do botão, do LED verde e do OLED, entre os estados \textbf{desligado} (GPIO~2 em nível baixo por aproximadamente 500~[ms]) e \textbf{ligado} (GPIO~2 em nível alto por aproximadamente 500~[ms]), compondo um ciclo completo de aproximadamente 1~[s].
+  \item[Sinalização periódica do LED vermelho:] Alterna continuamente, independentemente do botão, do LED verde e do OLED, entre os estados \textbf{desligado} (GPIO~26 em nível baixo por aproximadamente 500~[ms]) e \textbf{ligado} (GPIO~26 em nível alto por aproximadamente 500~[ms]), compondo um ciclo completo de aproximadamente 1~[s].
 
   \item[Interface com o usuário:] Lê o botão conectado ao GPIO~17 e atualiza o LED verde e o OLED: com o \textbf{botão solto}, GPIO~17 em nível baixo, LED verde (GPIO~4) desligado e OLED exibindo \enquote{\texttt{Boa sorte!}}; com o \textbf{botão pressionado}, GPIO~17 em nível alto, LED verde ligado e OLED exibindo \enquote{\texttt{Consegui}}. O display é atualizado apenas na transição estável, evitando atualizações redundantes.
 \end{description}
@@ -168,7 +168,7 @@ Além da placa selecionada, outras placas de desenvolvimento poderiam ser utiliz
 \begin{itemize}
   \item Espressif ESP32-DevKitC V2, a revisão anterior da placa adotada, com o mesmo módulo ESP32-WROOM-32 e cabeçalho (\textit{header}) de 38 pinos;
   \item placas genéricas \enquote{NodeMCU-32S} (ESP-WROOM-32), amplamente disponíveis de diversos fabricantes, com layout de 38 pinos equivalente;
-  \item \enquote{DOIT ESP32 DevKit V1}, com módulo ESP32-WROOM-32 em cabeçalho de 30 pinos, desde que os GPIOs~2, 4, 16, 17 e 25 estejam expostos;
+  \item \enquote{DOIT ESP32 DevKit V1}, com módulo ESP32-WROOM-32 em cabeçalho de 30 pinos, desde que os GPIOs~26, 4, 16, 17 e 32 estejam expostos;
   \item Clones com módulo WROOM-32 de fabricantes como AZ-Delivery ou HiLetgo, que replicam o mesmo mapeamento de GPIOs do módulo original.
 \end{itemize}
 
@@ -182,11 +182,11 @@ Em todos os casos, é necessário confirmar que os GPIOs~16 e 17 não estão res
     \toprule
     Função & GPIO & Terminal físico$^{1}$ & Identificador no Wokwi & Identificador no código \\
     \midrule
-    LED vermelho & 2 & J3-15 & \texttt{red-led} & \texttt{red\_led} \\
+    LED vermelho & 26 & J2-10 & \texttt{red-led} & \texttt{red\_led} \\
     LED verde & 4 & J3-13 & \texttt{green-led} & \texttt{green\_led} \\
     Botão pulsador & 17 & J3-11 & \texttt{push-button} & \texttt{push\_button} \\
     OLED, dados I\textsuperscript{2}C & 16 & J3-12 & \texttt{oled-display:SDA} & \texttt{OLED\_SDA\_PIN} \\
-    OLED, relógio I\textsuperscript{2}C & 25 & J2-9 & \texttt{oled-display:SCL} & \texttt{OLED\_SCL\_PIN} \\
+    OLED, relógio I\textsuperscript{2}C & 32 & J2-7 & \texttt{oled-display:SCL} & \texttt{OLED\_SCL\_PIN} \\
     \bottomrule
   \end{tabularx}
 
@@ -194,6 +194,8 @@ Em todos os casos, é necessário confirmar que os GPIOs~16 e 17 não estão res
   \raggedright\footnotesize
   $^{1}$Identificação do conector (J2 ou J3) e da posição do terminal no cabeçalho físico de 38 pinos da ESP32-DevKitC V4, conforme \texttt{docs/EN/hardware-reference.md}.
 \end{table}
+
+O LED vermelho e o SCL do OLED foram realocados dos GPIO~2 e GPIO~25, originalmente fixados antes do início do desenvolvimento, para os GPIO~26 e GPIO~32 acima, a pedido explícito do usuário, por motivos de layout da placa à medida que mais periféricos foram adicionados (ver a nota da Seção~\ref{sec:requisitos} e o registro de decisões em \texttt{docs/EN/technical-specification.md}, §16). A Tabela~\ref{tab:pinagem} reflete a fiação atual, não a atribuição original.
 
 A numeração utilizada corresponde aos números dos GPIOs do microcontrolador e não à posição sequencial dos terminais físicos da placa; a coluna ``Terminal físico'' indica exatamente essa posição sequencial, para referência ao montar o circuito fisicamente. Os dois LEDs possuem resistores limitadores de 220~[$\Omega$], e todos os componentes compartilham a mesma referência de terra.
 
@@ -209,7 +211,7 @@ Essas duas medidas fazem sentido sobretudo para uma implementação física: um 
 
 \subsection{Interface do mostrador}
 
-O enunciado original exige apenas que o mostrador OLED exiba as mensagens conforme o estado do botão, sem especificar interface de comunicação ou pinos. A utilização da comunicação I\textsuperscript{2}C, com GPIO~25 como SCL e GPIO~16 como SDA, foi definida antes da etapa de desenvolvimento, e não decorre de uma exigência explícita do enunciado. Uma vez definida, essa escolha foi tratada como fixa e declarada explicitamente no código, no diagrama e na documentação, para evitar ambiguidades ao longo do desenvolvimento.
+O enunciado original exige apenas que o mostrador OLED exiba as mensagens conforme o estado do botão, sem especificar interface de comunicação ou pinos. A utilização da comunicação I\textsuperscript{2}C, com GPIO~25 como SCL e GPIO~16 como SDA, foi definida antes da etapa de desenvolvimento, e não decorre de uma exigência explícita do enunciado. Uma vez definida, essa escolha foi tratada como fixa e declarada explicitamente no código, no diagrama e na documentação, para evitar ambiguidades ao longo do desenvolvimento. O SCL foi posteriormente realocado para o GPIO~32 (Tabela~\ref{tab:pinagem}); a interface I\textsuperscript{2}C em si permanece inalterada.
 
 A interface I\textsuperscript{2}C utiliza apenas dois sinais de comunicação e é adequada às mensagens curtas e estáticas desta aplicação. Uma implementação SPI poderia alcançar maior taxa de transferência, porém exigiria mais sinais de controle e não proporcionaria vantagem relevante para as atualizações pouco frequentes deste projeto. O endereço adotado para o SSD1306 é \texttt{0x3C}, com resolução de 128 por 64~[pixels].
 
@@ -300,13 +302,13 @@ A escolha é especialmente apropriada porque as mensagens permanecem estáticas 
 O desenvolvimento foi acompanhado por testes progressivos. A separação dos subsistemas permitiu distinguir erros de ligação, inicialização e lógica de aplicação.
 
 \begin{enumerate}
-  \item \textbf{Teste isolado do LED vermelho:} Utilizou um laço bloqueante mínimo somente para diagnóstico. O GPIO~2 foi alternado a cada 500~[ms] e o estado foi registrado no monitor serial. O objetivo foi confirmar placa, pino, resistor, polaridade e retorno ao terra sem interferência das demais funções.
+  \item \textbf{Teste isolado do LED vermelho:} Utilizou um laço bloqueante mínimo somente para diagnóstico. O GPIO~26 foi alternado a cada 500~[ms] e o estado foi registrado no monitor serial. O objetivo foi confirmar placa, pino, resistor, polaridade e retorno ao terra sem interferência das demais funções.
 
   \item \textbf{Teste do LED vermelho com \texttt{asyncio}:} Repetiu o teste anterior, agora encapsulado em uma corrotina agendada com \texttt{asyncio.create\_task()} dentro de \texttt{asyncio.run()}, isolando especificamente o suporte a \texttt{asyncio} do firmware como variável, separado da fiação já confirmada.
 
   \item \textbf{Teste isolado do botão e do LED verde:} Amostrou o GPIO~17 periodicamente e refletiu o estado lido no GPIO~4, sem qualquer dependência do LED vermelho ou do OLED. O objetivo foi confirmar a fiação do botão, o resistor interno de redução e o comportamento ativo em nível alto isoladamente.
 
-  \item \textbf{Teste básico do OLED:} Inicializou o barramento I\textsuperscript{2}C em GPIO~25 e GPIO~16, confirmou a detecção do endereço \texttt{0x3C} por meio de \texttt{i2c.scan()} e apresentou uma mensagem simples.
+  \item \textbf{Teste básico do OLED:} Inicializou o barramento I\textsuperscript{2}C em GPIO~32 e GPIO~16, confirmou a detecção do endereço \texttt{0x3C} por meio de \texttt{i2c.scan()} e apresentou uma mensagem simples.
 
   \item \textbf{Diagnóstico gráfico do SSD1306:} Exercitou todos os pixels ligados e desligados, padrões quadriculados complementares, varreduras horizontais e verticais, grade, pixels individuais, linhas, retângulos, áreas preenchidas, texto, inversão, contraste, desligamento, religamento e deslocamento do quadro.
 
@@ -314,6 +316,8 @@ O desenvolvimento foi acompanhado por testes progressivos. A separação dos sub
 \end{enumerate}
 
 A sequência de testes reduziu o espaço de busca de falhas: se um subsistema simples não funcionasse, o problema poderia ser tratado antes da integração com o restante da aplicação.
+
+Os seis testes acima cobrem o escopo original do projeto. Sete testes adicionais (\texttt{tests/07} a \texttt{tests/13}) foram criados posteriormente, seguindo a mesma lógica progressiva, para os LEDs extras, os botões de velocidade, os LEDs indicadores, o segundo OLED e a TFT da extensão experimental mencionada na Seção~\ref{sec:requisitos}; não são detalhados aqui pelo mesmo motivo -- ver \texttt{tests/README.md} para a lista completa e as dependências entre eles.
 
 \section{Circuito simulado}
 \label{sec:circuito}
