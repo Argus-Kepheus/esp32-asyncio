@@ -46,14 +46,14 @@
   linkcolor=linkblue,
   urlcolor=linkblue,
   citecolor=linkblue,
-  pdfauthor={Projeto CESS-UFF / SGIMP},
+  pdfauthor={Sergio Cordero Calvimontes},
   pdftitle={Relatório técnico do projeto ESP32, MicroPython e OLED SSD1306},
-  pdfsubject={Avaliação prática CESS-UFF / SGIMP}
+  pdfsubject={Projeto pessoal: processamento assíncrono no ESP32}
 }
 
 \pagestyle{fancy}
 \fancyhf{}
-\lhead{CESS-UFF / SGIMP}
+\lhead{esp32-asyncio}
 \rhead{Relatório técnico}
 \cfoot{Página \thepage\ de \pageref{LastPage}}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -94,8 +94,8 @@
 \lstset{style=pythonstyle}
 
 \newcommand{\ProjectTitle}{Sistema de sinalização com ESP32, LEDs, botão e OLED SSD1306}
-\newcommand{\CandidateWebsite}{https://argus-kepheus.github.io/sergio-cordero-calvimontes/\#home}
-\newcommand{\CandidateName}{\href{\CandidateWebsite}{Sergio Cordero Calvimontes}}
+\newcommand{\AuthorWebsite}{https://argus-kepheus.github.io/sergio-cordero-calvimontes/\#home}
+\newcommand{\AuthorName}{\href{\AuthorWebsite}{Sergio Cordero Calvimontes}}
 \newcommand{\WokwiURL}{https://wokwi.com/projects/471528241540407297}
 \newcommand{\GitHubURL}{https://github.com/Argus-Kepheus/esp32-asyncio}
 
@@ -105,9 +105,9 @@
   \centering
   \vspace*{1.5cm}
 
-  {\Large \textbf{CESS-UFF / SGIMP}\par}
+  {\Large \textbf{Projeto pessoal}\par}
   \vspace{0.7cm}
-  {\large Avaliação prática do processo seletivo\par}
+  {\large Explorando o processamento assíncrono do ESP32\par}
 
   \vfill
 
@@ -118,7 +118,7 @@
   \vfill
 
   \begin{tabular}{rl}
-    Candidato: & \CandidateName \\
+    Autor: & \AuthorName \\
     Plataforma de simulação: & Wokwi \\
     Linguagem: & MicroPython \\
     Placa-alvo: & Espressif ESP32-DevKitC V4 \\
@@ -134,7 +134,7 @@
 
 \section{Introdução}
 
-Este projeto integra uma avaliação prática do processo seletivo \textbf{CESS-UFF / SGIMP}. A proposta reúne conteúdos de instrumentação, eletrônica e lógica de programação por meio da simulação de um sistema embarcado baseado em ESP32, dois diodos emissores de luz (LEDs), um botão pulsador -- um tipo de interruptor que atua apenas enquanto está sendo acionado -- e um mostrador (\textit{display}) OLED controlado pelo circuito integrado SSD1306.
+Este é um projeto pessoal que explora as capacidades de processamento assíncrono (\texttt{asyncio}) do microcontrolador ESP32. A proposta reúne conteúdos de instrumentação, eletrônica e lógica de programação por meio da simulação de um sistema embarcado baseado em ESP32, dois diodos emissores de luz (LEDs), um botão pulsador -- um tipo de interruptor que atua apenas enquanto está sendo acionado -- e um mostrador (\textit{display}) OLED controlado pelo circuito integrado SSD1306.
 
 A simulação executável está publicada no Wokwi em\linebreak[2]
 \url{\WokwiURL}. O código-fonte, o diagrama do circuito, a documentação e o histórico de versões estão disponíveis no repositório GitHub em\linebreak[2]
@@ -142,7 +142,7 @@ A simulação executável está publicada no Wokwi em\linebreak[2]
 
 O Wokwi foi adotado como plataforma principal por oferecer suporte nativo ao ESP32 com MicroPython, edição visual do circuito, arquivo de conexão \texttt{diagram.json}, monitor serial e compartilhamento por endereço eletrônico. O repositório GitHub complementa a simulação ao fornecer rastreabilidade, controle de versões e uma estrutura adequada ao desenvolvimento no Visual Studio Code.
 
-\paragraph{Nota sobre o estado do projeto.} As Seções~\ref{sec:requisitos} a~\ref{sec:testes} deste relatório descrevem o entregável obrigatório original -- dois LEDs, um botão e um OLED -- que está completo, validado e estável. A partir dele, a pedido do usuário, o hardware e o \texttt{main.py} foram estendidos experimentalmente com LEDs adicionais, um segundo OLED, um display TFT, botões extras e outros componentes; essa extensão \textbf{ainda está em desenvolvimento ativo} e não é redescrita em detalhe aqui, para evitar que este relatório fique desatualizado a cada iteração. O estado atual e completo dessa extensão é mantido em \texttt{docs/EN/technical-specification.md} (Seção~19, \emph{Extended features}) e seu equivalente em \texttt{docs/PT} (Seção~17). A Figura~\ref{fig:circuito}, na Seção~\ref{sec:circuito}, já reflete o circuito atual, incluindo essa extensão.
+\paragraph{Nota sobre o estado do projeto.} As Seções~\ref{sec:requisitos} a~\ref{sec:testes} deste relatório descrevem o escopo original do projeto -- dois LEDs, um botão e um OLED -- que está completo, validado e estável. A partir dele, a pedido do usuário, o hardware e o \texttt{main.py} foram estendidos experimentalmente com LEDs adicionais, um segundo OLED, um display TFT, botões extras e outros componentes; essa extensão \textbf{ainda está em desenvolvimento ativo} e não é redescrita em detalhe aqui, para evitar que este relatório fique desatualizado a cada iteração. O estado atual e completo dessa extensão é mantido em \texttt{docs/EN/technical-specification.md} (Seção~19, \emph{Extended features}) e seu equivalente em \texttt{docs/PT} (Seção~17). A Figura~\ref{fig:circuito}, na Seção~\ref{sec:circuito}, já reflete o circuito atual, incluindo essa extensão.
 
 \section{Requisitos e definições do projeto}
 \label{sec:requisitos}

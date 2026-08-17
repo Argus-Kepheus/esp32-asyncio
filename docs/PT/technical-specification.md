@@ -4,7 +4,7 @@
 
 | Campo | Valor |
 |---|---|
-| Projeto | Avaliação prática CESS-UFF com ESP32 e MicroPython |
+| Projeto | Projeto pessoal de exploração do asyncio no ESP32 |
 | Disciplinas | Instrumentação, Eletrônica e Lógica de Programação |
 | Plataforma-alvo | ESP32 com MicroPython |
 | Plataforma de simulação | Wokwi |

@@ -1,6 +1,6 @@
 # Relatório LaTeX
 
-Esta pasta contém o relatório técnico do projeto CESS-UFF / SGIMP:
+Esta pasta contém o relatório técnico deste projeto pessoal:
 `relatorio.tex`.
 
 ## Estrutura

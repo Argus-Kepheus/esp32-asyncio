@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "author": "CESS-UFF project team",
+  "author": "Sergio Cordero Calvimontes",
   "editor": "wokwi",
   "parts": [
     { "type": "board-esp32-devkit-c-v4", "id": "esp32", "top": 20, "left": -20, "attrs": {} },

@@ -1,6 +1,6 @@
 """
-CESS-UFF - ESP32 MicroPython Practical Assessment
-Courses: Instrumentation / Electronics / Programming Logic
+esp32-asyncio - Personal ESP32 MicroPython project
+Exploring the ESP32's asynchronous (asyncio) processing capabilities
 
 Controls nine LEDs (six blinking at the same adjustable interval, each its
 own independent task, plus one driven by a push button and two idle
