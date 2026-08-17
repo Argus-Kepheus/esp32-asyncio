@@ -147,12 +147,16 @@ O Wokwi foi adotado como plataforma principal por oferecer suporte nativo ao ESP
 
 \subsection{Requisitos funcionais e estados do sistema}
 
-O sistema satisfaz seus requisitos funcionais por meio de várias tarefas independentes, executadas concorrentemente sob escalonamento cooperativo (\texttt{asyncio}): uma tarefa por LED azul, uma tarefa que relaciona o botão ao LED verde, e uma tarefa de atualização para cada um dos três mostradores.
+O sistema satisfaz seus requisitos funcionais por meio de várias tarefas independentes, executadas concorrentemente sob escalonamento cooperativo (\texttt{asyncio}): uma tarefa por LED azul, uma tarefa que relaciona o botão ao LED verde, duas tarefas indicadoras do estado do sistema (barramento e escalonador) e uma tarefa de atualização para cada um dos três mostradores.
 
 \begin{description}
-  \item[Seis LEDs azuis, seis tarefas independentes:] Cada um dos seis LEDs (GPIO~26, 14, 27, 25, 33 e 12) alterna seu próprio estado em uma tarefa \texttt{asyncio} própria, sem depender de nenhuma outra tarefa nem ser bloqueado por ela. Todos compartilham um mesmo intervalo, ajustável em tempo real por dois botões dedicados (GPIO~34 diminui, GPIO~35 aumenta) que escalam o intervalo de todos os seis simultaneamente pelo mesmo fator, mantendo-os sempre sincronizados entre si.
+  \item[Seis LEDs azuis, seis tarefas independentes:] Cada um dos seis LEDs (GPIO~26, 14, 27, 25, 33 e 12) alterna seu próprio estado em uma tarefa \texttt{asyncio} própria, sem depender de nenhuma outra tarefa nem ser bloqueado por ela. Todos compartilham um mesmo intervalo, ajustável em tempo real por dois botões dedicados (GPIO~34 diminui, GPIO~35 aumenta) que escalam o intervalo de todos os seis simultaneamente pelo mesmo fator. Na teoria, isso mantém os seis sincronizados entre si; na prática, essa sincronia é apenas nominal. Por serem tarefas independentes, cada uma mede sua própria pausa a partir do instante em que retoma a execução, e não a partir de um relógio absoluto compartilhado -- pequenos atrasos causados por outras tarefas (sobretudo as escritas bloqueantes nos mostradores) se acumulam de forma diferente em cada LED a cada ciclo. Após alguns minutos de operação contínua, torna-se perceptível a dessincronização visual entre os seis, independentemente do intervalo configurado no momento. Essa dessincronização não é um defeito de implementação, e sim uma limitação inerente ao escalonamento cooperativo: nada garante que tarefas nominalmente idênticas permaneçam em fase entre si indefinidamente.
 
-  \item[Botão e LED verde:] Lê o botão conectado ao GPIO~17, com antirrepique por software, e reflete o estado estável no LED verde (GPIO~4): \textbf{solto} desliga o LED, \textbf{pressionado} liga o LED. Cada transição é registrada no console da tela TFT, em verde.
+  \item[Botão e LED verde:] Lê o botão conectado ao GPIO~17, com antirrepique por software, e reflete o estado estável no LED verde (GPIO~4): \textbf{solto} desliga o LED, \textbf{pressionado} liga o LED. Cada transição é registrada no console da tela TFT, em verde. Pelo mesmo motivo da dessincronização acima, a amostragem do botão compete por tempo de processamento com as demais tarefas assíncronas; em alguns instantes -- tipicamente quando uma escrita bloqueante nos mostradores está em andamento -- é necessário manter o botão pressionado por mais tempo que o nominal para que a janela de estabilidade de 30~[ms] do antirrepique seja efetivamente acumulada, já que ciclos de amostragem podem ser adiados enquanto o processador está ocupado.
+
+  \item[LED laranja -- barramento ocupado:] Fica aceso por padrão e apaga apenas durante as escritas bloqueantes nos mostradores (\texttt{show()} / \texttt{fill\_rect()}), funcionando como um indicador invertido de \enquote{\textit{bus busy}}: apagado significa que o barramento I\textsuperscript{2}C ou SPI está, naquele instante, efetivamente ocupado transferindo dados.
+
+  \item[LED amarelo -- escalonador ocioso:] Liga somente quando nenhuma outra tarefa tem trabalho pendente naquele instante, funcionando como indicador de quão ocioso está o escalonador cooperativo -- análogo a uma tarefa de prioridade mínima em um sistema operacional de tempo real.
 
   \item[Mostrador de uso de CPU (primeiro OLED):] Atualizado a cada 250~[ms] com a fração real do tempo gasto em transferências I\textsuperscript{2}C/SPI bloqueantes desde a última amostra -- um substituto medido para \enquote{uso de CPU}, já que o MicroPython no ESP32 não expõe essa métrica diretamente.
 
@@ -160,6 +164,8 @@ O sistema satisfaz seus requisitos funcionais por meio de várias tarefas indepe
 
   \item[Console de registro (tela TFT):] Recebe, de forma assíncrona e a partir de várias tarefas diferentes, linhas de texto coloridas sobre os eventos do sistema -- uma cor por subsistema -- rolando pela tela como um registro (\textit{log}) de atividade.
 \end{description}
+
+A atualização periódica dos três mostradores não serve apenas para exibir informação: sua função também é manter o processador deliberadamente ocupado, evitando que fique ocioso por longos períodos. É justamente essa carga que torna visíveis, através dos LEDs laranja e amarelo descritos acima, os instantes reais de ocupação e ociosidade do sistema -- e é essa mesma disputa por tempo de processamento que explica tanto a dessincronização dos LEDs azuis quanto a eventual necessidade de segurar o botão por mais tempo.
 
 \subsection{Definições de hardware}
 
