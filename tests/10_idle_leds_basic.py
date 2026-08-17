@@ -1,9 +1,12 @@
 """Test 10/13 — Idle-indicator LEDs, basic wiring check (GPIO 13, GPIO 2).
 
 Isolates the two LEDs main.py drives as activity indicators rather than a
-fixed blink pattern: bus_idle_led (orange, GPIO 13, I2C/SPI busy) and
-scheduler_idle_led (yellow, GPIO 2, scheduler activity). See
-tests/README.md for how to run this on wokwi.com.
+fixed blink pattern: bus_idle_led (orange, GPIO 13, ON when the I2C/SPI
+bus is idle, OFF while a display write is in flight -- an inverted
+"busy" reading) and scheduler_idle_led (yellow, GPIO 2, scheduler
+throughput, not a literal idle/priority signal -- see main.py's
+scheduler_idle_task() docstring). See tests/README.md for how to run
+this on wokwi.com.
 
 This test only confirms the GPIO/resistor/LED wiring itself by
 alternating both LEDs on a fixed timer -- it does not exercise the real

@@ -129,7 +129,7 @@ iteração; as constantes de pino do `main.py` são a fonte definitiva.
 | Saída do segundo LED vermelho | `red_led_2` / `RED_LED_2_PIN` | GPIO12 | J2-13 |
 | Botão de diminuir intervalo | `decrease_speed_button` / `DECREASE_SPEED_BUTTON_PIN` | GPIO34 | J2-5 |
 | Botão de aumentar intervalo | `increase_speed_button` / `INCREASE_SPEED_BUTTON_PIN` | GPIO35 | J2-6 |
-| LED de barramento ocupado (laranja) | `bus_idle_led` / `BUS_IDLE_LED_PIN` | GPIO13 | J2-15 |
+| LED de barramento ocioso (laranja) | `bus_idle_led` / `BUS_IDLE_LED_PIN` | GPIO13 | J2-15 |
 | LED de escalonador ocioso (amarelo) | `scheduler_idle_led` / `SCHEDULER_IDLE_LED_PIN` | GPIO2 | J3-15 |
 | Relógio I2C do segundo OLED | `oled_display_2` / `OLED2_SCL_PIN` | GPIO15 | J3-16 |
 | Dados I2C do segundo OLED | `oled_display_2` / `OLED2_SDA_PIN` | GPIO22 | J3-3 |

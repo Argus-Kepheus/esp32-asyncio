@@ -182,12 +182,12 @@ def _bus_busy_end(started_at_us):
     bus_idle_led.on()
 
 
-# Lowest-priority task in the cooperative scheduler: it has no fixed
-# schedule of its own and always asks to run again immediately
-# (asyncio.sleep_ms(0)), so it only gets CPU time in the gaps between every
-# other task's own await point. uasyncio has no real task-priority levels,
-# so this is a coarse visualization of scheduler activity, not a literal
-# RTOS idle task.
+# asyncio.sleep_ms(0) yields control and re-queues this task for its next
+# turn immediately -- it does NOT lower this task's priority. uasyncio has
+# no real priority levels, so this task competes in the same round-robin
+# as every other ready task, not "only in the gaps" between them.
+# Toggling this LED every loop iteration is a coarse visualization of how
+# often this task gets scheduled, not a literal RTOS idle task.
 scheduler_idle_led = Pin(SCHEDULER_IDLE_LED_PIN, Pin.OUT, value=0)
 
 # Hardware I2C bus 0, on the mandatory OLED pins. Confirmed working on
@@ -423,10 +423,14 @@ async def monitor_step_button(pin, on_press):
 
 
 async def scheduler_idle_task():
-    """See SCHEDULER_IDLE_LED_PIN's setup comment: on only while no other
-    task's own turn is in progress. Also counts its own iterations and
-    reports the rate to the TFT console (yellow) about once a second -- a
-    rough measure of how much spare scheduler throughput is available."""
+    """See SCHEDULER_IDLE_LED_PIN's setup comment: sleep_ms(0) yields and
+    re-queues this task immediately, without lowering its priority --
+    uasyncio has none. Toggling the LED every loop iteration visualizes
+    how often this task gets scheduled, not literal scheduler idleness.
+    Also counts its own iterations and reports the rate to the TFT
+    console (yellow) about once a second -- a throughput number
+    comparable across runs of this same task, not a calibrated
+    idle/spare-capacity percentage."""
     iterations = 0
     window_started_at = time.ticks_ms()
     while True:
