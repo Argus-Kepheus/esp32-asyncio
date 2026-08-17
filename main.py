@@ -275,21 +275,38 @@ CONSOLE_PURPLE = 0xCD1C    # RAM usage
 CONSOLE_WHITE = 0xFFFF     # everything else (startup, init diagnostics)
 CONSOLE_BACKGROUND = 0x0000
 
+# update_cpu_graph()/update_ram_graph() only log their ORANGE/RED/PURPLE
+# lines once every this-many samples (see make_throttle()).
+CONSOLE_LOG_THROTTLE = 4
+
 console_row = 0
 CONSOLE_MAX_ROWS = tft_display.height // CHAR_HEIGHT if tft_display else 0
 CONSOLE_MAX_CHARS = tft_display.width // CHAR_WIDTH if tft_display else 0
 
 
 def console_log(message, color565):
-    """Print one line to the TFT console in the given color."""
+    """Print one line to the TFT console in the given color.
+
+    Only the trailing sliver past the message's own width needs an
+    explicit clear -- text() already paints its background color for
+    every pixel it covers, so re-clearing the whole row underneath it
+    would just be redoing (and re-transmitting over SPI) work text() is
+    about to do anyway. Most console lines are well short of the full row
+    width, so this materially cuts the bytes sent per line.
+    """
     global console_row
     if tft_display is None:
         return
 
+    message = message[:CONSOLE_MAX_CHARS]
+    message_width = len(message) * CHAR_WIDTH
     y = console_row * CHAR_HEIGHT
     started_at = _bus_busy_begin()
-    tft_display.fill_rect(0, y, tft_display.width, CHAR_HEIGHT, CONSOLE_BACKGROUND)
-    tft_display.text(message[:CONSOLE_MAX_CHARS], 0, y, color565, CONSOLE_BACKGROUND)
+    if message_width < tft_display.width:
+        tft_display.fill_rect(
+            message_width, y, tft_display.width - message_width, CHAR_HEIGHT, CONSOLE_BACKGROUND
+        )
+    tft_display.text(message, 0, y, color565, CONSOLE_BACKGROUND)
     _bus_busy_end(started_at)
     console_row = (console_row + 1) % CONSOLE_MAX_ROWS
 
@@ -331,16 +348,21 @@ def apply_button_state(is_pressed):
     """Update the green LED for a stable button state and log it to the
     TFT console (green) -- the OLEDs are resource graphs now, and the
     serial console prints a periodic status line instead (print_status()),
-    so this event's only remaining visible trace is the TFT console.
+    so the TFT console is this event's only remaining *dedicated* trace.
+    Falls back to printing over serial when there is no TFT to log to, so
+    a TFT wiring mistake can't silence button/debounce feedback entirely.
 
     Called only at startup and after a debounced state transition.
     """
     green_led.value(1 if is_pressed else 0)
+    message = "Button {} -> Green LED {}".format(
+        "pressed" if is_pressed else "released",
+        "ON" if is_pressed else "OFF",
+    )
+    if tft_display is None:
+        print(message)
     console_log(
-        "Button {} -> Green LED {}".format(
-            "pressed" if is_pressed else "released",
-            "ON" if is_pressed else "OFF",
-        ),
+        message,
         CONSOLE_GREEN,
     )
 
@@ -421,6 +443,21 @@ async def scheduler_idle_task():
             window_started_at = time.ticks_ms()
 
 
+def make_throttle(every):
+    """Return a callable that returns True once every `every` calls --
+    factors out the "iterations = 0 / += 1 / % every == 0" pattern that
+    update_cpu_graph() and update_ram_graph() both needed, so each only
+    keeps one throttled console_log() pair instead of duplicating the
+    counter bookkeeping around it."""
+    state = [0]
+
+    def should_log():
+        state[0] += 1
+        return state[0] % every == 0
+
+    return should_log
+
+
 async def update_cpu_graph():
     """First OLED: "CPU usage" graph. The percentage is the real fraction of
     each sampling window spent inside a blocking I2C/SPI transfer (the only
@@ -437,7 +474,10 @@ async def update_cpu_graph():
     previously produced nonsense readings above 100%.
     """
     global bus_busy_time_us, cpu_usage_percent
-    iterations = 0
+    # Throttled to roughly once a second, not every 250 ms sample -- the
+    # TFT is itself an I2C/SPI bus user, so logging every sample would
+    # make the console the dominant source of its own "busy" time.
+    should_log = make_throttle(CONSOLE_LOG_THROTTLE)
     window_started_at_us = time.ticks_us()
     while True:
         now_us = time.ticks_us()
@@ -448,11 +488,7 @@ async def update_cpu_graph():
         cpu_usage_percent = cpu_percent
         draw_usage_graph(oled_display, cpu_usage_history, cpu_percent, "CPU")
 
-        # Throttled to roughly once a second, not every 250 ms sample --
-        # the TFT is itself an I2C/SPI bus user, so logging every sample
-        # would make the console the dominant source of its own "busy" time.
-        iterations += 1
-        if iterations % 4 == 0:
+        if should_log():
             console_log("OLED1 (CPU graph) refreshed", CONSOLE_ORANGE)
             console_log("CPU usage: {}%".format(cpu_percent), CONSOLE_RED)
 
@@ -464,7 +500,7 @@ async def update_ram_graph():
     (gc.mem_alloc() / gc.mem_free()) -- an actual measured value, not a
     simulated one."""
     global ram_usage_percent
-    iterations = 0
+    should_log = make_throttle(CONSOLE_LOG_THROTTLE)
     while True:
         allocated = gc.mem_alloc()
         free = gc.mem_free()
@@ -472,8 +508,7 @@ async def update_ram_graph():
         ram_usage_percent = ram_percent
         draw_usage_graph(oled_display_2, ram_usage_history, ram_percent, "RAM")
 
-        iterations += 1
-        if iterations % 4 == 0:
+        if should_log():
             console_log("OLED2 (RAM graph) refreshed", CONSOLE_ORANGE)
             console_log("RAM usage: {}%".format(ram_percent), CONSOLE_PURPLE)
 
@@ -495,11 +530,20 @@ async def print_status():
 
 
 async def main():
+    global bus_busy_time_us
+
     console_log("System starting...", CONSOLE_WHITE)
 
     initial_button_state = bool(push_button.value())
     apply_button_state(initial_button_state)
     console_log("6 LEDs blinking @ {} ms".format(BLINKING_LEDS[0][1]), CONSOLE_BLUE)
+
+    # The startup console_log() calls above are real, synchronous I2C/SPI
+    # writes -- discount them so update_cpu_graph()'s first window doesn't
+    # start out charged with time from before any task, or its own timing
+    # window, existed (the same class of bug as the >100% one already
+    # fixed: a busy-time number attributed to too short an elapsed window).
+    bus_busy_time_us = 0
 
     for entry in BLINKING_LEDS:
         asyncio.create_task(blink_led(entry))
