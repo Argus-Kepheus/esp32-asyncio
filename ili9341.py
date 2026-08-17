@@ -1,12 +1,16 @@
 """Minimal SPI driver for the ILI9341 TFT controller.
 
-Only what this project needs: hardware reset, panel initialization and
-solid-color rectangle fills over the 4-wire SPI command interface (SCK,
-MOSI, CS, D/C) -- no framebuffer, no text rendering.
+What this project needs: hardware reset, panel initialization,
+solid-color rectangle fills, and one line of colored text, over the
+4-wire SPI command interface (SCK, MOSI, CS, D/C).
 """
 
+import framebuf
 import time
 from micropython import const
+
+CHAR_WIDTH = const(8)
+CHAR_HEIGHT = const(8)
 
 _SWRESET = const(0x01)
 _SLPOUT = const(0x11)
@@ -76,3 +80,39 @@ class ILI9341:
 
     def fill(self, color565):
         self.fill_rect(0, 0, self.width, self.height, color565)
+
+    def blit(self, x, y, width, height, pixel_bytes):
+        """Write raw RGB565 pixel data (row-major, 2 bytes/pixel) into the
+        given window -- used by text() to paint pre-rendered glyphs."""
+        self._set_window(x, y, x + width - 1, y + height - 1)
+        self.dc.value(1)
+        self.cs.value(0)
+        self.spi.write(pixel_bytes)
+        self.cs.value(1)
+
+    def text(self, string, x, y, color565, bg565=0x0000):
+        """Draw one line of monospace 8x8-font text at (x, y).
+
+        Renders into an off-screen 1-bit framebuf.FrameBuffer (reusing
+        MicroPython's built-in font, the same one ssd1306.py uses) and
+        expands it to RGB565 before sending a single blit -- avoids
+        shipping a custom font table just for this.
+        """
+        width = len(string) * CHAR_WIDTH
+        if width == 0:
+            return
+        stride = (width + 7) // 8
+        mono = bytearray(stride * CHAR_HEIGHT)
+        glyphs = framebuf.FrameBuffer(mono, width, CHAR_HEIGHT, framebuf.MONO_HLSB)
+        glyphs.text(string, 0, 0, 1)
+
+        fg = bytes([color565 >> 8, color565 & 0xFF])
+        bg = bytes([bg565 >> 8, bg565 & 0xFF])
+        pixels = bytearray(width * CHAR_HEIGHT * 2)
+        i = 0
+        for row in range(CHAR_HEIGHT):
+            for col in range(width):
+                pixels[i:i + 2] = fg if glyphs.pixel(col, row) else bg
+                i += 2
+
+        self.blit(x, y, width, CHAR_HEIGHT, pixels)

@@ -9,7 +9,9 @@ own I2C bus, and an ILI9341 TFT over 4-wire SPI. The two OLEDs are live
 Task-Manager-style resource graphs: the first plots real I2C/SPI bus-busy
 time as a stand-in "CPU usage," the second plots real MicroPython heap
 usage as "RAM usage." Two extra push-buttons speed up or slow down every
-blinking LED at once. Cooperative asyncio tasks prevent timing delays from
+blinking LED at once. Once a second, the serial console prints the same
+CPU/RAM percentages alongside the blinking LEDs' current on/off interval
+in milliseconds. Cooperative asyncio tasks prevent timing delays from
 blocking the complete application and keep every LED and every display
 update running independently of each other and of the button-monitoring
 logic.
@@ -24,7 +26,7 @@ import time
 from machine import Pin, I2C, SPI
 
 from ssd1306 import SSD1306_I2C
-from ili9341 import ILI9341
+from ili9341 import ILI9341, CHAR_WIDTH, CHAR_HEIGHT
 
 # --- Pin assignments (mandatory project requirements) -----------------------
 # NOTE: RED_LED_PIN and OLED_SCL_PIN were moved off their original fixed
@@ -99,6 +101,7 @@ OLED_I2C_ADDRESS = 0x3C
 OLED_I2C_FREQUENCY_HZ = 400_000
 CPU_GRAPH_SAMPLE_INTERVAL_MS = 250
 RAM_GRAPH_SAMPLE_INTERVAL_MS = 250
+PRINT_STATUS_INTERVAL_MS = 1000
 
 # --- Peripheral setup ----------------------------------------------------
 red_led = Pin(RED_LED_PIN, Pin.OUT, value=0)
@@ -139,6 +142,7 @@ def apply_blink_speed_step(step_delta):
     scale = 2**blink_speed_step
     for entry, base_interval_ms in zip(BLINKING_LEDS, BASE_BLINK_INTERVALS_MS):
         entry[1] = round(base_interval_ms * scale)
+    console_log("Blue LEDs: interval -> {} ms".format(BLINKING_LEDS[0][1]), CONSOLE_BLUE)
 
 
 # Internal pull-down: the pin reads LOW when idle and HIGH when pressed,
@@ -256,29 +260,49 @@ def create_tft_display():
 
 tft_display = create_tft_display()
 
-# RGB565 colors, one per entry in BLINKING_LEDS, in the same order.
-BLINKING_LED_COLORS565 = (0xF800, 0x001F, 0xFFE0, 0xFFFF, 0xFD20, 0x7800)
+# --- TFT log console -----------------------------------------------------
+# The TFT is a scrolling activity log, like `dmesg` or a package-manager
+# install log: one colored line per event, oldest lines wrap back to the
+# top once the screen fills (no true scrolling -- see console_log()).
+# Each color is tied to one subsystem, matching that subsystem's physical
+# LED where it has one:
+CONSOLE_BLUE = 0x001F      # blinking LEDs (blue_led and friends)
+CONSOLE_ORANGE = 0xFD20    # bus_idle_led -- I2C/SPI activity
+CONSOLE_YELLOW = 0xFFE0    # scheduler_idle_led -- scheduler activity
+CONSOLE_GREEN = 0x07E0     # push_button / green_led
+CONSOLE_RED = 0xF800       # CPU usage
+CONSOLE_PURPLE = 0xCD1C    # RAM usage
+CONSOLE_WHITE = 0xFFFF     # everything else (startup, init diagnostics)
+CONSOLE_BACKGROUND = 0x0000
+
+console_row = 0
+CONSOLE_MAX_ROWS = tft_display.height // CHAR_HEIGHT if tft_display else 0
+CONSOLE_MAX_CHARS = tft_display.width // CHAR_WIDTH if tft_display else 0
 
 
-def draw_frequency_legend():
-    """Draw one color bar per blinking LED, ordered top-to-bottom to match
-    BLINKING_LEDS -- a static legend, drawn once at startup like the OLED's
-    initial message, not redrawn on a timer.
-    """
+def console_log(message, color565):
+    """Print one line to the TFT console in the given color."""
+    global console_row
     if tft_display is None:
         return
 
-    bar_height = tft_display.height // len(BLINKING_LEDS)
+    y = console_row * CHAR_HEIGHT
     started_at = _bus_busy_begin()
-    for index, color565 in enumerate(BLINKING_LED_COLORS565):
-        tft_display.fill_rect(0, index * bar_height, tft_display.width, bar_height, color565)
+    tft_display.fill_rect(0, y, tft_display.width, CHAR_HEIGHT, CONSOLE_BACKGROUND)
+    tft_display.text(message[:CONSOLE_MAX_CHARS], 0, y, color565, CONSOLE_BACKGROUND)
     _bus_busy_end(started_at)
+    console_row = (console_row + 1) % CONSOLE_MAX_ROWS
 
 
 # One history buffer per OLED graph, one sample per horizontal pixel column
 # (oldest sample scrolls off the left edge once the buffer is full).
 cpu_usage_history = []
 ram_usage_history = []
+
+# Latest sampled percentage from update_cpu_graph()/update_ram_graph(),
+# read by print_status() independently of the graphs' own redraw cadence.
+cpu_usage_percent = 0
+ram_usage_percent = 0
 
 
 def draw_usage_graph(display, history, value_percent, label):
@@ -304,17 +328,21 @@ def draw_usage_graph(display, history, value_percent, label):
 
 
 def apply_button_state(is_pressed):
-    """Update the green LED for a stable button state.
+    """Update the green LED for a stable button state and log it to the
+    TFT console (green) -- the OLEDs are resource graphs now, and the
+    serial console prints a periodic status line instead (print_status()),
+    so this event's only remaining visible trace is the TFT console.
 
-    Called only at startup and after a debounced state transition. The
-    OLEDs no longer show button text -- both are now live resource-usage
-    graphs (see draw_usage_graph()), unrelated to the button.
+    Called only at startup and after a debounced state transition.
     """
     green_led.value(1 if is_pressed else 0)
-    print("Button: {} | Green LED: {}".format(
-        "pressed" if is_pressed else "released",
-        "ON" if is_pressed else "OFF",
-    ))
+    console_log(
+        "Button {} -> Green LED {}".format(
+            "pressed" if is_pressed else "released",
+            "ON" if is_pressed else "OFF",
+        ),
+        CONSOLE_GREEN,
+    )
 
 
 async def blink_led(entry):
@@ -371,12 +399,26 @@ async def monitor_step_button(pin, on_press):
 
 async def scheduler_idle_task():
     """See SCHEDULER_IDLE_LED_PIN's setup comment: on only while no other
-    task's own turn is in progress."""
+    task's own turn is in progress. Also counts its own iterations and
+    reports the rate to the TFT console (yellow) about once a second -- a
+    rough measure of how much spare scheduler throughput is available."""
+    iterations = 0
+    window_started_at = time.ticks_ms()
     while True:
         scheduler_idle_led.on()
         await asyncio.sleep_ms(0)
         scheduler_idle_led.off()
         await asyncio.sleep_ms(0)
+        iterations += 1
+
+        elapsed_ms = time.ticks_diff(time.ticks_ms(), window_started_at)
+        if elapsed_ms >= 1000:
+            console_log(
+                "Scheduler idle-task: {} iters/s".format(round(iterations * 1000 / elapsed_ms)),
+                CONSOLE_YELLOW,
+            )
+            iterations = 0
+            window_started_at = time.ticks_ms()
 
 
 async def update_cpu_graph():
@@ -384,13 +426,36 @@ async def update_cpu_graph():
     each sampling window spent inside a blocking I2C/SPI transfer (the only
     time this single-core cooperative app is actually busy, as opposed to
     suspended in an await) -- not a value read from an OS scheduler, since
-    MicroPython on bare ESP32 exposes no such thing."""
-    global bus_busy_time_us
+    MicroPython on bare ESP32 exposes no such thing.
+
+    The window itself is measured with ticks_us(), not assumed to be
+    exactly CPU_GRAPH_SAMPLE_INTERVAL_MS: asyncio.sleep_ms() only
+    guarantees a minimum delay, and a slow console_log() elsewhere (a
+    console line costs a Python-level pixel loop plus two SPI transfers)
+    can easily push the real gap well past the requested one. Dividing by
+    an assumed-fixed window that's actually shorter than the real one
+    previously produced nonsense readings above 100%.
+    """
+    global bus_busy_time_us, cpu_usage_percent
+    iterations = 0
+    window_started_at_us = time.ticks_us()
     while True:
-        window_us = CPU_GRAPH_SAMPLE_INTERVAL_MS * 1000
-        cpu_percent = round(bus_busy_time_us / window_us * 100)
+        now_us = time.ticks_us()
+        elapsed_us = time.ticks_diff(now_us, window_started_at_us)
+        cpu_percent = max(0, min(100, round(bus_busy_time_us / elapsed_us * 100))) if elapsed_us > 0 else 0
         bus_busy_time_us = 0
+        window_started_at_us = now_us
+        cpu_usage_percent = cpu_percent
         draw_usage_graph(oled_display, cpu_usage_history, cpu_percent, "CPU")
+
+        # Throttled to roughly once a second, not every 250 ms sample --
+        # the TFT is itself an I2C/SPI bus user, so logging every sample
+        # would make the console the dominant source of its own "busy" time.
+        iterations += 1
+        if iterations % 4 == 0:
+            console_log("OLED1 (CPU graph) refreshed", CONSOLE_ORANGE)
+            console_log("CPU usage: {}%".format(cpu_percent), CONSOLE_RED)
+
         await asyncio.sleep_ms(CPU_GRAPH_SAMPLE_INTERVAL_MS)
 
 
@@ -398,24 +463,50 @@ async def update_ram_graph():
     """Second OLED: RAM usage graph, from MicroPython's real gc heap stats
     (gc.mem_alloc() / gc.mem_free()) -- an actual measured value, not a
     simulated one."""
+    global ram_usage_percent
+    iterations = 0
     while True:
         allocated = gc.mem_alloc()
         free = gc.mem_free()
         ram_percent = round(allocated / (allocated + free) * 100)
+        ram_usage_percent = ram_percent
         draw_usage_graph(oled_display_2, ram_usage_history, ram_percent, "RAM")
+
+        iterations += 1
+        if iterations % 4 == 0:
+            console_log("OLED2 (RAM graph) refreshed", CONSOLE_ORANGE)
+            console_log("RAM usage: {}%".format(ram_percent), CONSOLE_PURPLE)
+
         await asyncio.sleep_ms(RAM_GRAPH_SAMPLE_INTERVAL_MS)
 
 
+async def print_status():
+    """Serial-console status line, replacing the old button/green-LED log:
+    the latest sampled CPU/RAM percentages (see update_cpu_graph()/
+    update_ram_graph()) and the blinking LEDs' current on/off interval --
+    they all currently share one interval, see BLINKING_LEDS."""
+    while True:
+        print("CPU: {}% | RAM: {}% | Blue LEDs interval: {} ms".format(
+            cpu_usage_percent,
+            ram_usage_percent,
+            BLINKING_LEDS[0][1],
+        ))
+        await asyncio.sleep_ms(PRINT_STATUS_INTERVAL_MS)
+
+
 async def main():
+    console_log("System starting...", CONSOLE_WHITE)
+
     initial_button_state = bool(push_button.value())
     apply_button_state(initial_button_state)
-    draw_frequency_legend()
+    console_log("6 LEDs blinking @ {} ms".format(BLINKING_LEDS[0][1]), CONSOLE_BLUE)
 
     for entry in BLINKING_LEDS:
         asyncio.create_task(blink_led(entry))
     asyncio.create_task(scheduler_idle_task())
     asyncio.create_task(update_cpu_graph())
     asyncio.create_task(update_ram_graph())
+    asyncio.create_task(print_status())
     asyncio.create_task(
         monitor_step_button(decrease_speed_button, lambda: apply_blink_speed_step(-1))
     )
