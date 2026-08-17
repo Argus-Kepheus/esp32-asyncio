@@ -10,7 +10,7 @@
 \setsansfont{Latin Modern Sans}
 \setmonofont{Latin Modern Mono}
 
-\usepackage[brazil]{babel}
+\usepackage[brazilian]{babel}
 \usepackage{csquotes}
 \usepackage{geometry}
 \geometry{
@@ -92,6 +92,7 @@
 }
 
 \lstset{style=pythonstyle}
+\renewcommand{\lstlistingname}{Listagem}
 
 \newcommand{\ProjectTitle}{Sistema de sinalização com ESP32, LEDs, botão e OLED SSD1306}
 \newcommand{\AuthorWebsite}{https://argus-kepheus.github.io/sergio-cordero-calvimontes/\#home}
@@ -260,9 +261,9 @@ Essas duas medidas fazem sentido sobretudo para uma implementação física: um 
 
 Os três mostradores do sistema usam duas interfaces de comunicação diferentes, cada uma escolhida pela natureza do tráfego que efetivamente precisa suportar.
 
-Os dois OLEDs SSD1306 se comunicam por I\textsuperscript{2}C, cada um em seu próprio barramento de hardware independente (\texttt{machine.I2C(0)} e \texttt{machine.I2C(1)}), de modo que ambos podem ser endereçados ao mesmo tempo sem disputa de barramento. O primeiro usa GPIO~32 como relógio (SCL) e GPIO~16 como dados (SDA); o segundo usa GPIO~15 (SCL) e GPIO~22 (SDA). O endereço adotado para os dois é \texttt{0x3C}, com resolução de 128 por 64~[pixels] cada. A utilização de I\textsuperscript{2}C para o primeiro OLED foi definida antes da etapa de desenvolvimento -- o enunciado original exigia apenas que um mostrador refletisse o estado do botão, sem especificar interface ou pinos --, e, uma vez definida, foi tratada como fixa e reaplicada ao segundo OLED quando este foi adicionado, para manter a mesma interface nos dois mostradores monocromáticos. A interface I\textsuperscript{2}C usa apenas dois sinais de comunicação por barramento e é adequada às atualizações periódicas, porém pouco frequentes (a cada 250~[ms]), dos dois gráficos de uso de CPU e RAM (Seção~\ref{sec:oled-graphs}).
+Os dois OLEDs SSD1306 se comunicam por I\textsuperscript{2}C, cada um em seu próprio barramento de hardware independente (\texttt{machine.I2C(0)} e \texttt{machine.I2C(1)}), de modo que ambos podem ser endereçados ao mesmo tempo sem disputa de barramento. O primeiro usa GPIO~32 como relógio (SCL) e GPIO~16 como dados (SDA); o segundo usa GPIO~15 (SCL) e GPIO~22 (SDA). O endereço adotado para os dois é \texttt{0x3C}, com resolução de 128 por 64~[pixels] cada. A interface I\textsuperscript{2}C é um requisito fixo do projeto, declarado explicitamente no código, no diagrama e na documentação, e aplicado igualmente aos dois mostradores monocromáticos. Ela usa apenas dois sinais de comunicação por barramento e é adequada às atualizações periódicas, porém pouco frequentes (a cada 250~[ms]), dos dois gráficos de uso de CPU e RAM (Seção~\ref{sec:oled-graphs}).
 
-A tela TFT ILI9341, por sua vez, usa SPI genuíno de 4 fios -- relógio (SCK), dados de saída (MOSI), seleção de circuito (CS) e dado/comando (D/C), além de uma linha independente de reinicialização (RST) --, em GPIO~18, 23, 5, 21 e 19 respectivamente, com resolução de 240 por 320~[pixels] e cor de 16 bits (RGB565). Diferentemente dos dois OLEDs, a TFT funciona como um console de registro (\textit{log}) colorido (Seção~\ref{sec:tft-console}) que recebe uma nova linha de texto a cada evento relevante do sistema -- uma frequência de atualização bem maior e mais irregular que a dos dois gráficos de uso de CPU/RAM. SPI oferece maior taxa de transferência que I\textsuperscript{2}C à custa de mais sinais de controle, o que se justifica aqui pelo volume de dados que esse console efetivamente movimenta, bem maior que as mensagens estáticas do enunciado original.
+A tela TFT ILI9341, por sua vez, usa SPI genuíno de 4 fios -- relógio (SCK), dados de saída (MOSI), seleção de circuito (CS) e dado/comando (D/C), além de uma linha independente de reinicialização (RST) --, em GPIO~18, 23, 5, 21 e 19 respectivamente, com resolução de 240 por 320~[pixels] e cor de 16 bits (RGB565). Diferentemente dos dois OLEDs, a TFT funciona como um console de registro (\textit{log}) colorido (Seção~\ref{sec:tft-console}) que recebe uma nova linha de texto a cada evento relevante do sistema -- uma frequência de atualização bem maior e mais irregular que a dos dois gráficos de uso de CPU/RAM. SPI oferece maior taxa de transferência que I\textsuperscript{2}C à custa de mais sinais de controle, o que se justifica aqui pelo volume de dados que esse console efetivamente movimenta.
 
 \section{Desenvolvimento do programa \texttt{main.py}}
 
@@ -331,7 +332,7 @@ O assincronismo adotado é cooperativo. Portanto, as tarefas devem alcançar pon
 
 \subsection{LEDs piscantes e controle de velocidade}
 
-O sistema controla seis LEDs piscantes independentes (Tabela~\ref{tab:pinagem}), todos fisicamente azuis no circuito atual. Em vez de uma corrotina escrita à mão para cada LED, \texttt{main.py} mantém uma única lista, \texttt{BLINKING\_LEDS}, com um par \texttt{[objeto Pin, intervalo em milissegundos]} por LED, e lança uma tarefa \texttt{blink\_led()} idêntica para cada par dessa lista, em um laço \texttt{for} (Código~\ref{lst:estrutura}). Cada par é uma lista mutável, não uma tupla, porque o intervalo é reescrito em tempo real pelos botões de velocidade enquanto a tarefa correspondente já está em execução: \texttt{blink\_led()} relê \texttt{entry[1]} a cada ciclo, em vez de capturá-lo uma única vez no início, permitindo que uma mudança de velocidade tenha efeito imediato sem reiniciar nenhuma tarefa.
+O sistema controla seis LEDs piscantes independentes (Tabela~\ref{tab:pinagem}), todos fisicamente azuis no circuito atual. Em vez de uma corrotina escrita à mão para cada LED, \texttt{main.py} mantém uma única lista, \texttt{BLINKING\_LEDS}, com um par \texttt{[objeto Pin, intervalo em milissegundos]} por LED, e lança uma tarefa \texttt{blink\_led()} idêntica para cada par dessa lista, em um laço \texttt{for} (Listagem~\ref{lst:estrutura}). Cada par é uma lista mutável, não uma tupla, porque o intervalo é reescrito em tempo real pelos botões de velocidade enquanto a tarefa correspondente já está em execução: \texttt{blink\_led()} relê \texttt{entry[1]} a cada ciclo, em vez de capturá-lo uma única vez no início, permitindo que uma mudança de velocidade tenha efeito imediato sem reiniciar nenhuma tarefa.
 
 Os dois botões de controle de velocidade (GPIO~34 diminui, GPIO~35 aumenta -- Seção~\ref{sec:antirrepique}) alteram a velocidade dos seis LEDs de uma só vez: cada pressão desloca, em uma unidade, um fator de escala em potência de dois aplicado sobre o intervalo-base de 500~[ms] de cada LED, limitado a um intervalo mínimo de 125~[ms] e máximo de 4~[s]. A cada mudança, o novo intervalo é registrado no console da TFT em azul (Seção~\ref{sec:tft-console}).
 
@@ -339,7 +340,7 @@ Os dois botões de controle de velocidade (GPIO~34 diminui, GPIO~35 aumenta -- S
 
 O botão principal (GPIO~17) e os dois botões de velocidade compartilham a mesma corrotina genérica de antirrepique, \texttt{debounce\_button()}: ela amostra o pino periodicamente, aguarda 30~[ms] de estabilidade (Seção~\ref{sec:antirrepique}) e só então invoca uma função de retorno (\textit{callback}) específica para cada botão. Para o botão principal, essa função é \texttt{apply\_button\_state()}: liga ou desliga o LED verde (GPIO~4) conforme o novo estado estável e registra a transição no console da TFT, em verde.
 
-Diferentemente da versão original deste projeto, nenhum OLED recebe mais uma mensagem de texto associada ao botão -- essa responsabilidade foi completamente substituída pelo console de registro da TFT, já que os dois OLEDs passaram a ser gráficos de uso de CPU e RAM (Seção~\ref{sec:oled-graphs}) sem espaço livre para texto adicional. Caso a TFT não tenha sido detectada na inicialização, \texttt{apply\_button\_state()} também imprime a mesma mensagem no console serial, para que uma falha de fiação da TFT não silencie por completo a realimentação de estado do botão.
+O console de registro da TFT é o único registro dedicado a esse evento: nenhum OLED exibe mensagem de texto associada ao botão, já que os dois OLEDs são gráficos de uso de CPU e RAM (Seção~\ref{sec:oled-graphs}) sem espaço livre para texto adicional. Caso a TFT não tenha sido detectada na inicialização, \texttt{apply\_button\_state()} também imprime a mesma mensagem no console serial, para que uma falha de fiação da TFT não silencie por completo a realimentação de estado do botão.
 
 \subsection{Indicadores de barramento ocupado e escalonador ocioso}
 \label{sec:idle-leds}
@@ -353,7 +354,7 @@ O LED amarelo (GPIO~2, \texttt{scheduler\_idle\_led}) liga e desliga em uma tare
 \subsection{Mostradores de uso de CPU e RAM (dois OLEDs)}
 \label{sec:oled-graphs}
 
-Os dois OLEDs SSD1306 não exibem mais nenhuma mensagem de texto estática: cada um foi convertido em um gráfico de barras rolante, no estilo de um monitor de tarefas, atualizado a cada 250~[ms] (\texttt{update\_cpu\_graph()} e \texttt{update\_ram\_graph()}). Cada amostra ocupa uma coluna de pixels na largura do OLED (até 128 amostras de histórico); ao atingir o limite, a amostra mais antiga é descartada e todas as colunas são redesenhadas a cada janela.
+Os dois OLEDs SSD1306 funcionam como gráficos de barras rolantes, no estilo de um monitor de tarefas, atualizados a cada 250~[ms] (\texttt{update\_cpu\_graph()} e \texttt{update\_ram\_graph()}). Cada amostra ocupa uma coluna de pixels na largura do OLED (até 128 amostras de histórico); ao atingir o limite, a amostra mais antiga é descartada e todas as colunas são redesenhadas a cada janela.
 
 O primeiro OLED plota um substituto medido para "uso de CPU": como o MicroPython no ESP32 não expõe nenhuma métrica de carga de um escalonador de sistema operacional, o valor plotado é, em vez disso, a fração real de cada janela de amostragem gasta dentro de uma transferência I\textsuperscript{2}C/SPI bloqueante -- acumulada via \texttt{bus\_busy\_time\_us} (Seção~\ref{sec:idle-leds}) --, já que essa é a única situação em que esta aplicação de núcleo único e escalonamento cooperativo está de fato ocupada executando, em vez de suspensa em um ponto de espera (\texttt{await}). A janela de amostragem em si é medida com \texttt{time.ticks\_us()}, não assumida como exatamente 250~[ms]: \texttt{asyncio.sleep\_ms()} garante apenas um atraso mínimo, e uma chamada mais lenta a \texttt{console\_log()} em outra tarefa pode empurrar o intervalo real bem além do solicitado -- dividir pelo intervalo assumido, quando mais curto que o real, foi a causa de uma leitura defeituosa acima de 100\% observada durante os testes e desde então corrigida.
 
