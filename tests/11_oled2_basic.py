@@ -1,4 +1,4 @@
-"""Test 11/13 — Second OLED basic check: its own I2C bus, I2C scan + text.
+"""Test 11/14 — Second OLED basic check: its own I2C bus, I2C scan + text.
 
 Isolates main.py's second OLED (oled_display_2): its own independent
 hardware I2C bus, machine.I2C(1), on GPIO 15 (SCL) / GPIO 22 (SDA) --
@@ -8,6 +8,10 @@ without contention. See tests/README.md for how to run this on wokwi.com.
 
 Run this independently of test 5 -- a failure here says nothing about the
 first OLED, and vice versa, since they are on entirely separate buses.
+This script only initializes I2C(1) alone, though: it does not open
+I2C(0) at the same time, so passing this test does not confirm the two
+buses actually work concurrently, the way main.py runs them together --
+only that this bus works in isolation, same as test 5 for the other one.
 
 Expected: the serial monitor lists 0x3C among the detected I2C devices on
 bus 1, and this OLED shows "OLED 2 OK".

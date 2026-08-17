@@ -1,4 +1,4 @@
-"""Test 6/13 — First OLED full diagnostic suite.
+"""Test 6/14 — First OLED full diagnostic suite.
 
 The most complete check: exercises full-screen pixel activation, pixel
 addressing, drawing primitives, text, inversion, contrast, display power

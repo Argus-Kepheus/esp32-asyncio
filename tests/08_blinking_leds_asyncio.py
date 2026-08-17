@@ -1,4 +1,4 @@
-"""Test 8/13 — All six blinking LEDs, concurrently, via asyncio.
+"""Test 8/14 — All six blinking LEDs, concurrently, via asyncio.
 
 Integration step for the LED side of the project: red (GPIO 26), blue
 (GPIO 14), yellow (GPIO 27), white (GPIO 25), orange (GPIO 33) and a

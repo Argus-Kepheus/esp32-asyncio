@@ -1,4 +1,4 @@
-"""Test 1/13 — Red LED, basic on/off (GPIO 26).
+"""Test 1/14 — Red LED, basic on/off (GPIO 26).
 
 The simplest possible check: prove the red LED circuit and GPIO 26 wiring
 work at all, with explicit on()/off() calls (no toggle logic, no state

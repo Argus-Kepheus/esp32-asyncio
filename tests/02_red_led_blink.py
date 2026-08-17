@@ -1,4 +1,4 @@
-"""Test 2/13 — Red LED, toggle-loop blink (GPIO 26).
+"""Test 2/14 — Red LED, toggle-loop blink (GPIO 26).
 
 Same circuit as test 1, but using the toggle idiom
 (`value(not value())`) that the real main.py uses for the red LED task —

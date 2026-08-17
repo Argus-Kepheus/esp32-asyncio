@@ -516,6 +516,62 @@ Os três primeiros critérios sobre o OLED descrevem o comportamento
 uso de CPU/RAM ao vivo, não redesenhados só na mudança de estado do botão
 (ver §17, funcionalidades estendidas).
 
+### 14.5 Limites de intervalo dos botões de velocidade
+
+Critérios:
+
+- pressionar repetidamente o botão de diminuir intervalo (GPIO~34) faz o
+  intervalo dos LEDs piscantes parar de encolher ao atingir 125~ms
+  (`BLINK_SPEED_STEP_MIN`);
+- pressionar repetidamente o botão de aumentar intervalo (GPIO~35) faz o
+  intervalo parar de crescer ao atingir 4~s (`BLINK_SPEED_STEP_MAX`);
+- a linha serial de `print_status()` confirma o valor travado em ambos os
+  extremos.
+
+**Ainda não executado** -- ver a matriz de verificação em `report/relatorio.tex`.
+
+### 14.6 Operação simultânea dos três mostradores
+
+Critérios:
+
+- os dois gráficos OLED continuam atualizando em seus barramentos I2C
+  independentes enquanto o console da TFT também está ativo;
+- nenhuma escrita em um mostrador trava visivelmente os demais por mais
+  tempo do que uma única chamada de desenho/transferência instrumentada
+  (§17.2);
+- nenhum dos três mostradores para de atualizar silenciosamente enquanto
+  os outros continuam.
+
+**Ainda não executado** -- ver a matriz de verificação em `report/relatorio.tex`.
+
+### 14.7 Caminho de falha da TFT
+
+Critérios:
+
+- ao remover a fiação SPI (ou o GND) da TFT em `diagram.json` e rodar a
+  simulação, não há garantia de falha detectada -- `tft_display` pode
+  continuar sendo um objeto válido mesmo sem painel algum respondendo,
+  pois o barramento SPI é somente de escrita (ver §17.4);
+- em compensação, toda linha passada a `console_log()` continua sendo
+  impressa no console serial, então nenhum evento é perdido mesmo que a
+  própria TFT nunca mostre nada.
+
+**Ainda não executado** -- ver a matriz de verificação em `report/relatorio.tex`.
+
+### 14.8 Dessincronização de longa duração e latência do botão
+
+Critérios:
+
+- com `main.py` rodando continuamente por pelo menos 10-15 minutos, os
+  seis LEDs piscantes -- nominalmente com o mesmo intervalo -- se
+  dessincronizam visivelmente entre si ao longo da janela (ver a
+  explicação de dessincronização em §4);
+- ocasionalmente, uma pressão do botão principal precisa ser mantida por
+  mais tempo que o nominal para ser registrada, sobretudo durante
+  períodos de escrita intensa nos mostradores.
+
+**Ainda não executado** -- ver a matriz de verificação em `report/relatorio.tex`.
+
 ## 15. Limitações e implementação física
 
 A simulação valida lógica, pinagem e comportamento, mas não substitui todas as
@@ -612,11 +668,11 @@ janela de amostragem:
   nativas/C internas ao firmware e qualquer memória fora do heap gerenciado
   pelo coletor de lixo não estão incluídas. Ver `update_ram_graph()`.
 
-O botão ainda liga/desliga o LED verde e imprime seu estado no monitor
-serial (`apply_button_state()`) — só o retorno em texto no OLED foi
-removido, já que nenhum dos dois OLEDs tem espaço sobrando para um
-gráfico e uma mensagem de texto legível ao mesmo tempo num painel
-monocromático de 128×64.
+O botão ainda liga/desliga o LED verde; seu estado agora passa por
+`console_log()` (§17.4) em vez de uma mensagem de texto em qualquer
+OLED, já que nenhum dos dois tem espaço sobrando para um gráfico e uma
+mensagem de texto legível ao mesmo tempo num painel monocromático de
+128×64.
 
 ### 17.3 Seis LEDs, um intervalo compartilhado, seis tarefas independentes
 
@@ -637,3 +693,39 @@ pull-down físico externo, já que GPIO34/35 não têm pull-down interno)
 escalam o intervalo de todos os LEDs pelo mesmo fator de potência de 2 ao
 mesmo tempo, limitado entre 125 ms e 4 s, de forma que os seis sempre
 fiquem sincronizados entre si.
+
+### 17.4 Console de registro na TFT, SPI somente de escrita, e a decisão de espelhar no serial
+
+Um terceiro mostrador, uma TFT ILI9341, foi adicionado por SPI genuíno de
+4 fios (SCK, MOSI, CS, D/C, mais uma linha de reinicialização —
+GPIO~18/23/5/21/19). Diferentemente dos gráficos dos dois OLEDs, a TFT
+(`tft_display`, controlada por `ili9341.py`) funciona como um registro de
+atividade colorido e rolante: `console_log()` escreve uma linha por
+evento do sistema, uma cor por subsistema, voltando ao topo da tela ao
+preenchê-la por completo (sem rolagem real).
+
+Esse barramento SPI é somente de escrita: não tem linha MISO, e
+`ili9341.py` nunca lê nada de volta do painel (sem consulta de
+identificação, sem leitura de status). Por isso, `create_tft_display()`
+só retorna `None` quando a própria construção do objeto `ILI9341` levanta
+`OSError` — uma falha de driver/periférico, não uma detecção geral de
+"TFT ausente". Um painel fisicamente desconectado, porém eletricamente
+silencioso, muito provavelmente não levanta erro algum, deixando
+`tft_display` como um objeto válido sem nenhuma tela real respondendo no
+barramento.
+
+Como essa detecção não é confiável, `console_log()` não condiciona seu
+retorno ao serial a `tft_display is None`: toda linha é impressa no
+console serial incondicionalmente, além de escrita na TFT quando esta
+está presente. É o único mecanismo que de fato cobre um painel
+fisicamente ausente porém eletricamente silencioso, que uma verificação
+`is None` sozinha não cobre.
+
+A renderização de texto de `console_log()` (`text()` em `ili9341.py`)
+também passou por uma otimização de desempenho: a implementação inicial
+convertia cada glifo em pixels individuais via
+`framebuf.FrameBuffer.pixel()`, até ~1920 chamadas por linha de texto. A
+versão atual pré-calcula, uma vez por combinação de cor de texto/fundo,
+uma tabela de 256 entradas de byte para os 16 bytes RGB565 correspondentes
+a essa fatia de 8 pixels do glifo, reutilizada a cada caractere
+renderizado.

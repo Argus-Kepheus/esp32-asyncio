@@ -1,4 +1,4 @@
-"""Test 13/13 — TFT text-rendering diagnostic (the console mechanism).
+"""Test 13/14 — TFT text-rendering diagnostic (the console mechanism).
 
 Exercises ili9341.py's text() -- the same primitive main.py's TFT log
 console (console_log()) is built on -- across every color the console

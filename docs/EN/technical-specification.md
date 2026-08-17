@@ -333,6 +333,52 @@ application code, wiring of individual peripherals, or GPIO assignment.
 When this signature appears, check `diagram.json`'s `esp32` part `attrs`
 for a pinned `env` value first.
 
+### TC-08 — Speed-button interval limits (clamping)
+
+**Action:** press the decrease-speed button (GPIO 34) repeatedly, well
+past the point where the blinking LEDs' interval should stop shrinking;
+then do the same with the increase-speed button (GPIO 35) in the other
+direction.
+**Expected:** the interval stops changing once it reaches 125 ms
+(fastest, `BLINK_SPEED_STEP_MIN`) or 4 s (slowest,
+`BLINK_SPEED_STEP_MAX`) — further presses in the same direction have no
+additional effect, confirmed by `print_status()`'s serial line.
+**Not yet executed** — see the verification matrix in `report/relatorio.tex`.
+
+### TC-09 — Simultaneous three-display operation
+
+**Action:** let `main.py` run continuously and observe both OLEDs and
+the TFT at the same time for several minutes.
+**Expected:** both OLED graphs keep updating on their independent I2C
+buses, and the TFT console keeps logging, without one display's write
+visibly stalling the others for longer than a single instrumented
+draw/transfer call (§19.2); no display silently stops updating while the
+others continue.
+**Not yet executed** — see the verification matrix in `report/relatorio.tex`.
+
+### TC-10 — TFT failure path
+
+**Action:** remove the TFT's SPI wiring (or its GND) in `diagram.json`,
+run the simulation, and watch the serial console.
+**Expected:** per §19.4, this is not guaranteed to produce a detected
+failure — `tft_display` may remain a live object even with no panel
+responding, since the SPI link is write-only. What is guaranteed: every
+`console_log()` line is still printed to serial regardless, so no event
+is silently lost even if the TFT itself never shows anything.
+**Not yet executed** — see the verification matrix in `report/relatorio.tex`.
+
+### TC-11 — Long-run LED desynchronization and button-hold latency
+
+**Action:** let `main.py` run continuously, unmodified, for at least
+10–15 minutes, watching the six blinking LEDs' relative phase and
+periodically pressing the main button.
+**Expected:** the six LEDs, nominally sharing one interval, visibly
+drift out of phase with each other over that window (§2.1 desync
+explanation in the report); occasionally a button press needs to be held
+longer than the nominal debounce window to register, especially during
+display-heavy periods.
+**Not yet executed** — see the verification matrix in `report/relatorio.tex`.
+
 ## 13. Wokwi, VS Code and GitHub workflow
 
 The GitHub repository is the version-controlled source of truth. Wokwi
@@ -477,10 +523,10 @@ redrawn every sampling window:
   allocations internal to the firmware, and anything outside the
   gc-managed heap are not included. See `update_ram_graph()`.
 
-The push-button still turns the green LED on/off and prints its state to
-the serial console (`apply_button_state()`) — only the OLED text feedback
-for it was removed, since neither OLED has room left for both a graph and
-a legible text message on a 128×64 monochrome panel.
+The push-button still turns the green LED on/off; its state now goes
+through `console_log()` (§19.4) rather than a text message on either
+OLED, since neither has room left for both a graph and a legible text
+message on a 128×64 monochrome panel.
 
 ### 19.3 Six LEDs, one shared interval, six independent tasks
 
@@ -491,6 +537,38 @@ the original FR-01 red LED, all painted the same color on the board
 (`blink_led()`) — the same pattern FR-01 already established: one more LED
 is always one more concurrent task, never more logic added to a shared
 loop.
+
+### 19.4 TFT log console, write-only SPI, and the serial-mirroring decision
+
+A third display, an ILI9341 TFT, was added over genuine 4-wire SPI (SCK,
+MOSI, CS, D/C, plus a reset line — GPIO 18/23/5/21/19). Unlike the two
+OLEDs' graphs, the TFT (`tft_display`, driven by `ili9341.py`) works as a
+scrolling, colored activity log: `console_log()` writes one line per
+system event, one color per subsystem, wrapping back to the top of the
+screen once it fills (no true scrolling).
+
+This SPI link is write-only: it has no MISO line, and `ili9341.py` never
+reads anything back from the panel (no ID query, no status read).
+`create_tft_display()` therefore only returns `None` when constructing
+the `ILI9341` object itself raises `OSError` — a driver/peripheral-level
+failure, not general "TFT missing" detection. A physically disconnected
+but electrically quiet panel very likely raises nothing at all, leaving
+`tft_display` a live object with no real display listening on the bus.
+
+Because that detection is unreliable, `console_log()` does not gate its
+serial fallback on `tft_display is None`: every line is printed to the
+serial console unconditionally, in addition to being written to the TFT
+when one is present. This is the one fallback that actually covers a
+physically-missing-but-electrically-silent panel, which an
+`is None` check alone cannot.
+
+`console_log()`'s text rendering (`ili9341.py`'s `text()`) also went
+through a performance pass: the initial implementation converted each
+glyph to individual pixels via `framebuf.FrameBuffer.pixel()`, up to
+~1920 calls per line of text. The current version precomputes, once per
+text/background color pair, a 256-entry lookup table from byte value to
+the corresponding 16 RGB565 bytes for that 8-pixel glyph slice, and reuses
+it per character rendered.
 
 All six currently blink on the same 500 ms base interval — toggling every
 500 ms, ≈1 s full cycle, matching the original FR-01 timing — functionally

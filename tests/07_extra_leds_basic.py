@@ -1,4 +1,4 @@
-"""Test 7/13 — Five extra LEDs, basic wiring check (one at a time).
+"""Test 7/14 — Five extra LEDs, basic wiring check (one at a time).
 
 Isolates the five LEDs added after the original red/green pair: blue
 (GPIO 14), yellow (GPIO 27), white (GPIO 25), orange (GPIO 33) and a

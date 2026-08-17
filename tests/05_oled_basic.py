@@ -1,4 +1,4 @@
-"""Test 5/13 — First OLED basic check: I2C scan + one static message.
+"""Test 5/14 — First OLED basic check: I2C scan + one static message.
 
 The simplest possible OLED check: confirm the display answers on the I2C
 bus at the expected address and can render one line of static text. See

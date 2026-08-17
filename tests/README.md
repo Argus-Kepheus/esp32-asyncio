@@ -25,16 +25,25 @@ guessing across the whole circuit and task set at once.
 | 7 | [`07_extra_leds_basic.py`](07_extra_leds_basic.py) | The five other blinking LEDs' wiring: blue (14), yellow (27), white (25), orange (33), red 2 (12) — one at a time | Independent of 1–6 |
 | 8 | [`08_blinking_leds_asyncio.py`](08_blinking_leds_asyncio.py) | All six blinking LEDs (test 1–3's red plus test 7's five) running concurrently as independent asyncio tasks, exactly like `BLINKING_LEDS` in `main.py` | Tests 3 and 7 passing |
 | 9 | [`09_speed_buttons.py`](09_speed_buttons.py) | Speed step-buttons, GPIO 34/35, **external** pull-down (unlike test 4's internal one) | Independent of 1–8 |
-| 10 | [`10_idle_leds_basic.py`](10_idle_leds_basic.py) | Idle-indicator LEDs' wiring: bus-busy orange (GPIO 13), scheduler yellow (GPIO 2) | Independent of 1–9 |
-| 11 | [`11_oled2_basic.py`](11_oled2_basic.py) | Second OLED's own I2C bus (`I2C(1)`, GPIO 15/22), independent of the first OLED's bus | Independent of 1–10 |
+| 10 | [`10_idle_leds_basic.py`](10_idle_leds_basic.py) | Idle-indicator LEDs' wiring only: bus-idle orange (GPIO 13, ON=idle/OFF=busy), scheduler yellow (GPIO 2) — a fixed alternating pattern, not `main.py`'s real busy/activity logic | Independent of 1–9 |
+| 11 | [`11_oled2_basic.py`](11_oled2_basic.py) | Second OLED's own I2C bus (`I2C(1)`, GPIO 15/22) in isolation, independent of the first OLED's bus — does **not** open both buses at once, so it doesn't confirm they work concurrently | Independent of 1–10 |
 | 12 | [`12_tft_basic.py`](12_tft_basic.py) | TFT's 4-wire SPI wiring (SCK 18, MOSI 23, CS 5, D/C 21) and reset line (RST 19): panel init + solid-color fills | Independent of 1–11 |
 | 13 | [`13_tft_text_diagnostic.py`](13_tft_text_diagnostic.py) | `ili9341.py`'s `text()` — the primitive `main.py`'s TFT log console is built on — across every console color, plus row-wrapping | Test 12 passing |
 | 14 | [`14_console_serial_fallback.py`](14_console_serial_fallback.py) | `console_log()`'s serial-mirroring logic: every line prints to serial regardless of whether `tft_display` is `None`, since a physically absent TFT on this write-only SPI link may never actually become `None` (see `create_tft_display()`'s docstring) | Independent of 1–13; no GPIO or peripheral touched, runs under plain CPython or MicroPython |
 
-If you only have time for a smoke test, running 3, 4, 5, 9, 11 and 12
-covers every GPIO the project uses plus the `asyncio` mechanism with the
-least effort; run 6, 8, 10, or 13 when you specifically need to debug
-that subsystem.
+If you only have time for a smoke test, running 4, 5, 8, 9, 10, 11 and 12
+covers every GPIO `main.py` actually drives, with the fewest combined
+script runs: test 8 alone covers all six blinking LEDs' GPIOs (14, 27,
+25, 33, 12, 26) plus the `asyncio` task mechanism, test 4 the button and
+green LED (17, 4), test 5 and 11 the two OLED I2C buses (32/16 and
+15/22), test 9 both speed buttons (34, 35), test 10 both indicator LEDs
+(13, 2), and test 12 the TFT's SPI wiring (18, 23, 5, 21, 19).
+Run 1, 2, 3, 6, 7, 13 or 14 individually when you need to isolate a fault
+within one specific subsystem instead (e.g. if test 8 fails and you need
+to know whether it's one bad LED or an `asyncio`-level problem). GPIO 0
+(the flash-mode switch) is not covered by any numbered test — see the
+note below; it must be verified separately, during an actual flashing
+attempt.
 
 Test 3 exists specifically because `import asyncio` was one of the
 suspected — but, until this test existed, never isolated — causes behind

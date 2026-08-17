@@ -1,4 +1,4 @@
-"""Test 10/13 — Idle-indicator LEDs, basic wiring check (GPIO 13, GPIO 2).
+"""Test 10/14 — Idle-indicator LEDs, basic wiring check (GPIO 13, GPIO 2).
 
 Isolates the two LEDs main.py drives as activity indicators rather than a
 fixed blink pattern: bus_idle_led (orange, GPIO 13, ON when the I2C/SPI

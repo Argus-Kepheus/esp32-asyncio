@@ -1,4 +1,4 @@
-"""Test 9/13 — Speed buttons, GPIO 34/35, external pull-down required.
+"""Test 9/14 — Speed buttons, GPIO 34/35, external pull-down required.
 
 Isolates the two step-buttons that scale the blinking LEDs' interval:
 decrease on GPIO 34, increase on GPIO 35. See tests/README.md for how to
