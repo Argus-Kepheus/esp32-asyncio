@@ -134,7 +134,7 @@
 
 \section{Introdução}
 
-Este é um projeto pessoal que explora as capacidades de processamento assíncrono (\texttt{asyncio}) do microcontrolador ESP32. A proposta reúne conteúdos de instrumentação, eletrônica e lógica de programação por meio da simulação de um sistema embarcado baseado em ESP32, dois diodos emissores de luz (LEDs), um botão pulsador -- um tipo de interruptor que atua apenas enquanto está sendo acionado -- e um mostrador (\textit{display}) OLED controlado pelo circuito integrado SSD1306.
+Este é um projeto pessoal que explora as capacidades de processamento assíncrono (\texttt{asyncio}) do microcontrolador ESP32. A proposta reúne conteúdos de instrumentação, eletrônica e lógica de programação por meio da simulação de um sistema embarcado baseado em ESP32: seis LEDs azuis piscando de forma assíncrona e independente entre si, um botão pulsador -- um tipo de interruptor que atua apenas enquanto está sendo acionado -- associado a um LED verde, e três mostradores (\textit{displays}) atualizados concorrentemente: dois OLEDs controlados pelo circuito integrado SSD1306, exibindo em tempo real o uso de CPU e de memória RAM, e uma tela TFT ILI9341 funcionando como um console de registro (\textit{log}) colorido.
 
 A simulação executável está publicada no Wokwi em\linebreak[2]
 \url{\WokwiURL}. O código-fonte, o diagrama do circuito, a documentação e o histórico de versões estão disponíveis no repositório GitHub em\linebreak[2]
@@ -142,19 +142,23 @@ A simulação executável está publicada no Wokwi em\linebreak[2]
 
 O Wokwi foi adotado como plataforma principal por oferecer suporte nativo ao ESP32 com MicroPython, edição visual do circuito, arquivo de conexão \texttt{diagram.json}, monitor serial e compartilhamento por endereço eletrônico. O repositório GitHub complementa a simulação ao fornecer rastreabilidade, controle de versões e uma estrutura adequada ao desenvolvimento no Visual Studio Code.
 
-\paragraph{Nota sobre o estado do projeto.} As Seções~\ref{sec:requisitos} a~\ref{sec:testes} deste relatório descrevem o escopo original do projeto -- dois LEDs, um botão e um OLED -- que está completo, validado e estável. A partir dele, a pedido do usuário, o hardware e o \texttt{main.py} foram estendidos experimentalmente com LEDs adicionais, um segundo OLED, um display TFT, botões extras e outros componentes; essa extensão \textbf{ainda está em desenvolvimento ativo} e não é redescrita em detalhe aqui, para evitar que este relatório fique desatualizado a cada iteração. O estado atual e completo dessa extensão é mantido em \texttt{docs/EN/technical-specification.md} (Seção~19, \emph{Extended features}) e seu equivalente em \texttt{docs/PT} (Seção~17). A Figura~\ref{fig:circuito}, na Seção~\ref{sec:circuito}, já reflete o circuito atual, incluindo essa extensão.
-
 \section{Requisitos e definições do projeto}
 \label{sec:requisitos}
 
 \subsection{Requisitos funcionais e estados do sistema}
 
-O sistema deve satisfazer os requisitos funcionais por meio de dois comportamentos independentes, executados concorrentemente sob escalonamento cooperativo: um controla exclusivamente o LED vermelho e o outro relaciona o estado do botão às saídas do LED verde e do mostrador OLED.
+O sistema satisfaz seus requisitos funcionais por meio de várias tarefas independentes, executadas concorrentemente sob escalonamento cooperativo (\texttt{asyncio}): uma tarefa por LED azul, uma tarefa que relaciona o botão ao LED verde, e uma tarefa de atualização para cada um dos três mostradores.
 
 \begin{description}
-  \item[Sinalização periódica do LED vermelho:] Alterna continuamente, independentemente do botão, do LED verde e do OLED, entre os estados \textbf{desligado} (GPIO~26 em nível baixo por aproximadamente 500~[ms]) e \textbf{ligado} (GPIO~26 em nível alto por aproximadamente 500~[ms]), compondo um ciclo completo de aproximadamente 1~[s].
+  \item[Seis LEDs azuis, seis tarefas independentes:] Cada um dos seis LEDs (GPIO~26, 14, 27, 25, 33 e 12) alterna seu próprio estado em uma tarefa \texttt{asyncio} própria, sem depender de nenhuma outra tarefa nem ser bloqueado por ela. Todos compartilham um mesmo intervalo, ajustável em tempo real por dois botões dedicados (GPIO~34 diminui, GPIO~35 aumenta) que escalam o intervalo de todos os seis simultaneamente pelo mesmo fator, mantendo-os sempre sincronizados entre si.
 
-  \item[Interface com o usuário:] Lê o botão conectado ao GPIO~17 e atualiza o LED verde e o OLED: com o \textbf{botão solto}, GPIO~17 em nível baixo, LED verde (GPIO~4) desligado e OLED exibindo \enquote{\texttt{Boa sorte!}}; com o \textbf{botão pressionado}, GPIO~17 em nível alto, LED verde ligado e OLED exibindo \enquote{\texttt{Consegui}}. O display é atualizado apenas na transição estável, evitando atualizações redundantes.
+  \item[Botão e LED verde:] Lê o botão conectado ao GPIO~17, com antirrepique por software, e reflete o estado estável no LED verde (GPIO~4): \textbf{solto} desliga o LED, \textbf{pressionado} liga o LED. Cada transição é registrada no console da tela TFT, em verde.
+
+  \item[Mostrador de uso de CPU (primeiro OLED):] Atualizado a cada 250~[ms] com a fração real do tempo gasto em transferências I\textsuperscript{2}C/SPI bloqueantes desde a última amostra -- um substituto medido para \enquote{uso de CPU}, já que o MicroPython no ESP32 não expõe essa métrica diretamente.
+
+  \item[Mostrador de uso de RAM (segundo OLED):] Atualizado a cada 250~[ms] com o uso real de memória do coletor de lixo do MicroPython (\texttt{gc.mem\_alloc()} / \texttt{gc.mem\_free()}), em um barramento I\textsuperscript{2}C independente do primeiro OLED.
+
+  \item[Console de registro (tela TFT):] Recebe, de forma assíncrona e a partir de várias tarefas diferentes, linhas de texto coloridas sobre os eventos do sistema -- uma cor por subsistema -- rolando pela tela como um registro (\textit{log}) de atividade.
 \end{description}
 
 \subsection{Definições de hardware}
@@ -195,7 +199,7 @@ Em todos os casos, é necessário confirmar que os GPIOs~16 e 17 não estão res
   $^{1}$Identificação do conector (J2 ou J3) e da posição do terminal no cabeçalho físico de 38 pinos da ESP32-DevKitC V4, conforme \texttt{docs/EN/hardware-reference.md}.
 \end{table}
 
-O LED vermelho e o SCL do OLED foram realocados dos GPIO~2 e GPIO~25, originalmente fixados antes do início do desenvolvimento, para os GPIO~26 e GPIO~32 acima, a pedido explícito do usuário, por motivos de layout da placa à medida que mais periféricos foram adicionados (ver a nota da Seção~\ref{sec:requisitos} e o registro de decisões em \texttt{docs/EN/technical-specification.md}, §16). A Tabela~\ref{tab:pinagem} reflete a fiação atual, não a atribuição original.
+O LED vermelho e o SCL do OLED foram realocados dos GPIO~2 e GPIO~25, originalmente fixados antes do início do desenvolvimento, para os GPIO~26 e GPIO~32 acima, a pedido explícito do usuário, por motivos de layout da placa à medida que mais periféricos foram adicionados (ver o registro de decisões em \texttt{docs/EN/technical-specification.md}, §16). A Tabela~\ref{tab:pinagem} reflete a fiação atual, não a atribuição original.
 
 A numeração utilizada corresponde aos números dos GPIOs do microcontrolador e não à posição sequencial dos terminais físicos da placa; a coluna ``Terminal físico'' indica exatamente essa posição sequencial, para referência ao montar o circuito fisicamente. Os dois LEDs possuem resistores limitadores de 220~[$\Omega$], e todos os componentes compartilham a mesma referência de terra.
 
@@ -317,12 +321,12 @@ O desenvolvimento foi acompanhado por testes progressivos. A separação dos sub
 
 A sequência de testes reduziu o espaço de busca de falhas: se um subsistema simples não funcionasse, o problema poderia ser tratado antes da integração com o restante da aplicação.
 
-Os seis testes acima cobrem o escopo original do projeto. Sete testes adicionais (\texttt{tests/07} a \texttt{tests/13}) foram criados posteriormente, seguindo a mesma lógica progressiva, para os LEDs extras, os botões de velocidade, os LEDs indicadores, o segundo OLED e a TFT da extensão experimental mencionada na Seção~\ref{sec:requisitos}; não são detalhados aqui pelo mesmo motivo -- ver \texttt{tests/README.md} para a lista completa e as dependências entre eles.
+Os testes 1 a 6 acima cobrem o LED vermelho, o botão, o LED verde e o primeiro OLED. Sete testes adicionais (\texttt{tests/07} a \texttt{tests/13}), seguindo a mesma lógica progressiva, cobrem os cinco LEDs azuis restantes, os dois botões de velocidade, os dois LEDs indicadores, o segundo OLED e a TFT; não são detalhados aqui -- ver \texttt{tests/README.md} para a lista completa e as dependências entre eles.
 
 \section{Circuito simulado}
 \label{sec:circuito}
 
-A Figura~\ref{fig:circuito} apresenta o estado atual do circuito no Wokwi, já incluindo a extensão experimental mencionada na nota da Seção~\ref{sec:requisitos}. Com o número maior de componentes e sinais, as cores dos condutores deixaram de seguir uma convenção única por função; o mapeamento completo de pinos e sinais é mantido em \texttt{docs/EN/technical-specification.md} (Seção~19) e \texttt{docs/PT/technical-specification.md} (Seção~17), não reproduzido aqui.
+A Figura~\ref{fig:circuito} apresenta o estado atual do circuito no Wokwi. Com o número maior de componentes e sinais, as cores dos condutores deixaram de seguir uma convenção única por função; o mapeamento completo de pinos e sinais é mantido em \texttt{docs/EN/technical-specification.md} (Seção~19) e \texttt{docs/PT/technical-specification.md} (Seção~17), não reproduzido aqui.
 
 \begin{figure}[htbp]
   \centering
