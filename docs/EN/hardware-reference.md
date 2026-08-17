@@ -152,8 +152,33 @@ predefined project requirements, that reassignment is out of scope here.
 |---|---|---|
 | Reserved for SPI flash | `CLK`, `D0`, `D1`, `D2`, `D3`, `CMD` | Internal flash communication; using them as GPIO can prevent the firmware from booting |
 | Input-only | GPIO34–GPIO39 | Cannot drive outputs; no internal pull-up/pull-down |
-| Bootstrapping | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | Sampled at boot to select boot mode. GPIO0 also carries the flash-mode slide switch (§3.1); GPIO2 drives `scheduler_idle_led` and GPIO12 drives `red_led_2` (both §3.1) — every LED/resistor or switch-to-GND circuit on these pins only ever sinks current or connects to GND, never forces an external HIGH level, so none of them interfere with boot |
+| Bootstrapping | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | Sampled at boot to select boot mode — see below for what each one drives here and why it doesn't interfere |
 | Primary UART | GPIO1, GPIO3 | Used for programming/diagnostic output and the Wokwi serial monitor; not used by project peripherals |
+
+Per-pin bootstrapping notes for this project (none force an external level
+against the pin's normal boot-time state, but the reasoning differs per
+pin — this is not one blanket justification for all five):
+
+- **GPIO0** — the flash-mode slide switch (§3.1). Not read by any
+  `main.py` code; the switch itself is the boot-mode selection mechanism,
+  used deliberately during an actual flashing attempt, not during normal
+  operation.
+- **GPIO2** — `scheduler_idle_led` output. A plain LED-plus-resistor
+  circuit to GND: it only ever sinks current once the firmware configures
+  it as an output, never forces an external HIGH before that.
+- **GPIO5** — the TFT's chip-select (CS) output. Wired only to the
+  ILI9341 controller's high-impedance CS input, with no external
+  resistor contesting the pin's level — nothing in the circuit fights the
+  ESP32's own default boot-time pull on this pin.
+- **GPIO12** — `red_led_2` output. Same reasoning as GPIO2: a plain
+  LED-plus-resistor sink circuit.
+- **GPIO15** — the second OLED's I2C clock (SCL), a bidirectional signal.
+  An idle I2C bus sits HIGH (via pull-up resistors, internal or on the
+  OLED module itself), which tends to agree with, not fight, this pin's
+  default boot state — but that depends on the OLED module already being
+  powered at that exact moment. Treat this one as the least certain of
+  the five for a physical build; verify it directly if boot problems
+  appear after wiring the second OLED.
 
 Note on GPIO1/GPIO3: even though `diagram.json` wires no LED or button to
 them, they are not "free" or unused. `diagram.json` connects `esp32:TX` /
@@ -199,7 +224,15 @@ starting checklist, not a final one:
 - the second OLED's SCL/SDA (GPIO15/22) are wired to its own bus, not
   shared with the first OLED's GPIO32/16;
 - the TFT's RST line (GPIO19) is wired even though some Wokwi TFT parts
-  mark it non-functional in simulation -- a real panel needs it.
+  mark it non-functional in simulation -- a real panel needs it;
+- confirm which kind of ILI9341 module is on hand before wiring VCC: this
+  project's `diagram.json` powers the TFT from the ESP32's 5 V pin, which
+  is only safe for a module with its own onboard 3.3 V regulator and
+  level shifting (common on breakout boards); a bare ILI9341 panel
+  without that support circuitry must be powered at 3.3 V instead. The
+  five data/control lines (SCK, MOSI, CS, D/C, RST) stay at 3.3 V logic
+  either way, since they come straight from the ESP32's GPIOs, not from
+  the display's own VCC rail.
 
 ## 8. References
 

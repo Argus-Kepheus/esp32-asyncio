@@ -214,7 +214,7 @@ Em todos os casos, é necessário confirmar que os GPIOs~16 e 17 não estão res
 
 \begin{table}[htbp]
   \centering
-  \caption{Pinagem completa do projeto, agrupada por subsistema.}
+  \caption{Sinais GPIO do projeto, agrupados por subsistema (alimentação e terra na Tabela~\ref{tab:alimentacao}).}
   \label{tab:pinagem}
   \begin{tabularx}{\textwidth}{@{}Y C{1.5cm} C{2.2cm} Y@{}}
     \toprule
@@ -270,6 +270,50 @@ Em todos os casos, é necessário confirmar que os GPIOs~16 e 17 não estão res
 O primeiro LED piscante (GPIO~26) e o relógio I\textsuperscript{2}C do primeiro OLED (GPIO~32) foram realocados dos GPIO~2 e GPIO~25, originalmente fixados antes do início do desenvolvimento, a pedido explícito do usuário, por motivos de layout da placa à medida que mais periféricos foram adicionados (ver o registro de decisões em \texttt{docs/EN/technical-specification.md}, §16). O GPIO~2 liberado foi posteriormente reaproveitado pelo LED indicador amarelo do escalonador, e o GPIO~25 pelo quarto LED piscante -- a Tabela~\ref{tab:pinagem} reflete a fiação atual, não a atribuição original.
 
 A numeração utilizada corresponde aos números dos GPIOs do microcontrolador e não à posição sequencial dos terminais físicos da placa; a coluna ``Terminal físico'' indica exatamente essa posição sequencial, para referência ao montar o circuito fisicamente. Todos os LEDs possuem resistores limitadores de 220~[$\Omega$], e todos os componentes compartilham a mesma referência de terra.
+
+\paragraph{Lista de materiais.} Conferida diretamente contra \texttt{diagram.json}: 1 placa ESP32-DevKitC V4; 2 OLEDs SSD1306; 1 tela TFT ILI9341; 9 LEDs (6 piscantes, 1 verde, 2 indicadores de estado); 9 resistores limitadores de 220~[$\Omega$] (um por LED); 2 resistores de \textit{pull-down} de 10~[k$\Omega$] (um por botão de velocidade); 3 botões pulsadores (principal e os dois de velocidade); 1 chave deslizante (modo de gravação).
+
+\begin{table}[htbp]
+  \centering
+  \caption{Alimentação e terra de cada componente.}
+  \label{tab:alimentacao}
+  \begin{tabularx}{\textwidth}{@{}Y C{3.2cm} Y@{}}
+    \toprule
+    Componente & Alimentação (VCC) & Terra (GND) \\
+    \midrule
+    Primeiro OLED & 3,3~[V] (\texttt{esp32:3V3}) & Referência comum \\
+    Segundo OLED & 3,3~[V] (\texttt{esp32:3V3}) & Referência comum \\
+    Tela TFT & 5~[V] (\texttt{esp32:5V})$^{1}$ & Referência comum \\
+    Botão principal & 3,3~[V] (mesmo nó do primeiro OLED) & Lido diretamente pelo GPIO~17, sem resistor externo \\
+    Botões de velocidade (2) & 3,3~[V] (mesmo nó) & Resistor externo de 10~[k$\Omega$] para GND em cada um \\
+    LEDs piscantes, verde e indicadores (9) & -- (corrente fornecida pelo próprio GPIO) & Resistor de 220~[$\Omega$] para GND em cada um \\
+    Chave deslizante & -- (não energizada) & Um terminal ao GND, o outro ao GPIO~0 \\
+    \bottomrule
+  \end{tabularx}
+
+  \vspace{0.3em}
+  \raggedright\footnotesize
+  $^{1}$A TFT está ligada à saída de 5~[V] da placa, não aos 3,3~[V] usados pelos dois OLEDs. Isso é seguro para o componente simulado \texttt{wokwi-ili9341} e para muitos módulos ILI9341 físicos reais, que já trazem regulador de 3,3~[V] e conversão de nível embutidos na própria placa do módulo. Um painel ILI9341 ``nu'' -- sem esses circuitos de suporte -- não deve receber 5~[V] diretamente no VCC; antes de uma montagem física, é necessário confirmar qual dos dois tipos de módulo está sendo usado. As cinco linhas de dados e controle (SCK, MOSI, CS, D/C, RST) permanecem em lógica de 3,3~[V] em ambos os casos, pois partem diretamente dos GPIOs do ESP32, não da alimentação de 5~[V].
+\end{table}
+
+\paragraph{Pinos de \textit{bootstrapping}.} Cinco dos GPIOs usados neste projeto são amostrados pelo \textit{bootloader} ROM do ESP32 durante a inicialização, antes de qualquer código MicroPython rodar, para selecionar o modo de boot: GPIO~0, 2, 5, 12 e 15. A Tabela~\ref{tab:strapping} consolida o papel de cada um neste projeto e por que, apesar disso, nenhum interfere na inicialização normal.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Pinos de \textit{bootstrapping} usados neste projeto.}
+  \label{tab:strapping}
+  \begin{tabularx}{\textwidth}{@{}C{1.3cm} Y Y@{}}
+    \toprule
+    GPIO & Papel neste projeto & Por que não interfere no boot \\
+    \midrule
+    0 & Chave deslizante de modo de gravação & Não lido por nenhum código de \texttt{main.py}; a chave é o próprio mecanismo de seleção de modo, usado deliberadamente durante uma gravação real, não durante a operação normal. \\
+    2 & LED indicador amarelo (\texttt{scheduler\_idle\_led}), saída & Circuito puramente de LED-mais-resistor para GND: só drena corrente, nunca força um nível alto externo sobre o pino antes de o firmware configurá-lo como saída. \\
+    5 & Seleção de circuito (CS) da TFT, saída & Conectado apenas à entrada de alta impedância do controlador ILI9341 (nenhum resistor externo disputa o nível do pino); o \textit{pull} interno padrão do ESP32 nesse pino não é contrariado por nada no circuito. \\
+    12 & Segundo LED piscante (\texttt{red\_led\_2}), saída & Mesma razão do GPIO~2: circuito de LED-mais-resistor, só drena corrente. \\
+    15 & Relógio I\textsuperscript{2}C do segundo OLED (SCL), bidirecional & Em repouso, um barramento I\textsuperscript{2}C fica em nível alto (via resistores de \textit{pull-up}, internos ou no próprio módulo OLED); isso tende a favorecer, não contrariar, o comportamento padrão de boot deste pino, mas depende de o módulo OLED específico já estar energizado nesse instante -- ver \texttt{docs/EN/hardware-reference.md}, §5, para a advertência completa antes de uma montagem física. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
 \subsection{Entrada do botão e antirrepique}
 \label{sec:antirrepique}

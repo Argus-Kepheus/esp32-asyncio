@@ -179,8 +179,34 @@ atribuições predefinidas do projeto, esse remapeamento está fora do escopo.
 |---|---|---|
 | Reservados para a memória flash SPI | `CLK`, `D0`, `D1`, `D2`, `D3`, `CMD` | Comunicação interna com a memória flash; usá-los como GPIO pode impedir a inicialização do firmware |
 | Somente entrada | GPIO34 a GPIO39 | Não podem acionar saídas e não possuem resistores internos de elevação ou redução |
-| Configuração de inicialização | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | São amostrados durante a inicialização. O GPIO0 também carrega a chave deslizante de modo gravação (§3.1); o GPIO2 aciona o `scheduler_idle_led` e o GPIO12 aciona o `red_led_2` (ambos §3.1) — todo circuito de LED/resistor ou chave-para-GND nesses pinos só drena corrente ou conecta ao GND, nunca força um nível alto externo, então nenhum deles interfere na inicialização |
+| Configuração de inicialização | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | Amostrados durante a inicialização para selecionar o modo de boot -- ver abaixo o papel de cada um neste projeto e por que não interfere |
 | UART principal | GPIO1 e GPIO3 | Usados para programação, diagnóstico e monitor serial do Wokwi; não são usados pelos periféricos funcionais |
+
+Notas por pino, específicas deste projeto (nenhum força um nível externo
+contra o estado normal de boot do pino, mas o raciocínio difere por pino
+-- não é uma única justificativa genérica para os cinco):
+
+- **GPIO0** -- a chave deslizante de modo de gravação (§3.1). Não é lida
+  por nenhum código de `main.py`; a própria chave é o mecanismo de
+  seleção de modo de boot, usada deliberadamente durante uma gravação
+  real, não durante a operação normal.
+- **GPIO2** -- saída do `scheduler_idle_led`. Circuito simples de
+  LED-mais-resistor para GND: só drena corrente depois que o firmware o
+  configura como saída, nunca força um nível alto externo antes disso.
+- **GPIO5** -- saída de seleção de circuito (CS) da TFT. Ligado apenas à
+  entrada de alta impedância do controlador ILI9341, sem nenhum resistor
+  externo disputando o nível do pino -- nada no circuito contraria o
+  *pull* padrão do próprio ESP32 nesse pino durante o boot.
+- **GPIO12** -- saída do `red_led_2`. Mesmo raciocínio do GPIO2: circuito
+  simples de LED-mais-resistor, só drena corrente.
+- **GPIO15** -- relógio I2C do segundo OLED (SCL), sinal bidirecional. Um
+  barramento I2C em repouso fica em nível alto (via resistores de
+  *pull-up*, internos ou no próprio módulo OLED), o que tende a
+  concordar com, não contrariar, o estado padrão de boot deste pino --
+  mas isso depende de o módulo OLED específico já estar energizado
+  naquele instante exato. Trate este como o menos garantido dos cinco
+  para uma montagem física; verifique diretamente se houver problemas de
+  boot depois de ligar o segundo OLED.
 
 Nota sobre GPIO1/GPIO3: mesmo sem nenhum LED ou botão ligado a eles no
 `diagram.json`, esses pinos não estão "livres" ou ociosos. O `diagram.json`
@@ -228,7 +254,15 @@ ponto de partida, não uma lista final:
 - o SCL/SDA do segundo OLED (GPIO15/22) estão ligados ao próprio
   barramento, não compartilhado com o GPIO32/16 do primeiro OLED;
 - a linha RST da TFT (GPIO19) é fiada mesmo que algumas peças de TFT do
-  Wokwi a marquem como inerte na simulação — um painel real precisa dela.
+  Wokwi a marquem como inerte na simulação — um painel real precisa dela;
+- confirme qual tipo de módulo ILI9341 está em mãos antes de ligar o VCC:
+  o `diagram.json` deste projeto alimenta a TFT pelo pino de 5~V do ESP32,
+  seguro apenas para um módulo com regulador de 3,3~V e conversão de
+  nível embutidos (comum em placas de \textit{breakout}); um painel
+  ILI9341 "nu", sem esses circuitos de suporte, deve ser alimentado em
+  3,3~V. As cinco linhas de dados/controle (SCK, MOSI, CS, D/C, RST)
+  permanecem em lógica de 3,3~V em ambos os casos, pois partem
+  diretamente dos GPIOs do ESP32, não da própria alimentação da tela.
 
 ## 8. Referências
 
