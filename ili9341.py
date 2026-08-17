@@ -31,6 +31,8 @@ class ILI9341:
         self.width = width
         self.height = height
 
+        self._glyph_byte_tables = {}
+
         self.cs.value(1)
         self._hard_reset()
         self._init_sequence()
@@ -90,29 +92,60 @@ class ILI9341:
         self.spi.write(pixel_bytes)
         self.cs.value(1)
 
+    def _glyph_byte_table(self, color565, bg565):
+        """Return (building and caching on first use) a 256*16-byte table
+        where table[b*16 : b*16+16] is the 8-pixel RGB565 expansion of
+        MONO_HLSB byte value b, for this foreground/background pair.
+
+        text() used to call framebuf's glyphs.pixel(col, row) once per
+        pixel (e.g. 1920 calls for one 30-character line) plus a 2-byte
+        slice assignment each time -- the dominant cost of a console line.
+        Expanding one MONO_HLSB byte (8 pixels) at a time via this cached
+        table cuts the per-line work 8x and turns it into table lookups
+        instead of per-pixel branches, and the cache means that cost is
+        only ever paid once per distinct color pair -- this project reuses
+        a handful of fixed console colors, so in practice almost every
+        call after the first hits the cache.
+        """
+        key = (color565, bg565)
+        table = self._glyph_byte_tables.get(key)
+        if table is not None:
+            return table
+
+        fg = bytes((color565 >> 8, color565 & 0xFF))
+        bg = bytes((bg565 >> 8, bg565 & 0xFF))
+        table = bytearray(256 * 16)
+        for byte_value in range(256):
+            offset = byte_value * 16
+            for bit in range(8):
+                table[offset:offset + 2] = fg if byte_value & (0x80 >> bit) else bg
+                offset += 2
+        table = bytes(table)
+        self._glyph_byte_tables[key] = table
+        return table
+
     def text(self, string, x, y, color565, bg565=0x0000):
         """Draw one line of monospace 8x8-font text at (x, y).
 
         Renders into an off-screen 1-bit framebuf.FrameBuffer (reusing
-        MicroPython's built-in font, the same one ssd1306.py uses) and
-        expands it to RGB565 before sending a single blit -- avoids
-        shipping a custom font table just for this.
+        MicroPython's built-in font, the same one ssd1306.py uses), then
+        expands it to RGB565 one MONO_HLSB byte (8 pixels) at a time via
+        _glyph_byte_table() before sending a single blit.
         """
         width = len(string) * CHAR_WIDTH
         if width == 0:
             return
-        stride = (width + 7) // 8
+        stride = width // 8  # exact: CHAR_WIDTH is a multiple of 8
         mono = bytearray(stride * CHAR_HEIGHT)
         glyphs = framebuf.FrameBuffer(mono, width, CHAR_HEIGHT, framebuf.MONO_HLSB)
         glyphs.text(string, 0, 0, 1)
 
-        fg = bytes([color565 >> 8, color565 & 0xFF])
-        bg = bytes([bg565 >> 8, bg565 & 0xFF])
+        table = self._glyph_byte_table(color565, bg565)
         pixels = bytearray(width * CHAR_HEIGHT * 2)
-        i = 0
-        for row in range(CHAR_HEIGHT):
-            for col in range(width):
-                pixels[i:i + 2] = fg if glyphs.pixel(col, row) else bg
-                i += 2
+        out = 0
+        for byte_value in mono:
+            chunk_start = byte_value * 16
+            pixels[out:out + 16] = table[chunk_start:chunk_start + 16]
+            out += 16
 
         self.blit(x, y, width, CHAR_HEIGHT, pixels)
