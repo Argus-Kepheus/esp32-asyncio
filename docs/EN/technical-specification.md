@@ -387,8 +387,11 @@ provides two execution surfaces:
 1. **Wokwi Web** — the interactive online project used to produce the
    shareable platform/circuit URL (no local setup required).
 2. **Wokwi for VS Code** — local simulation using `diagram.json`,
-   `wokwi.toml`, a locally downloaded MicroPython firmware image, and
-   RFC2217 file transfer through `mpremote`.
+   `wokwi.toml`, a locally downloaded MicroPython firmware image
+   (`firmware.bin`, obtained separately per the download steps in
+   `wokwi.toml`'s own header comment, and never committed — see
+   `.gitignore`), and RFC2217 file transfer
+   through `mpremote`.
 
 Both links are required in the README because they serve different
 purposes: GitHub exposes source, documentation and history; Wokwi runs the

@@ -167,7 +167,7 @@ Este relatório descreve uma revisão específica e datada do projeto, identific
 
 \vspace{0.3em}
 \raggedright\footnotesize
-$^{1}$Nome de arquivo declarado no comentário de \texttt{wokwi.toml}, onde o binário é baixado manualmente e renomeado para \texttt{firmware.bin} antes do uso local. \texttt{SHA-256} do binário efetivamente presente neste repositório: \texttt{\FirmwareSHA{}} -- calculado localmente nesta revisão, não conferido de forma independente contra o servidor de download do MicroPython. Qualquer reprodução futura deve conferir esse hash antes de assumir que obteve exatamente o mesmo \textit{build}.
+$^{1}$Nome de arquivo declarado no comentário de \texttt{wokwi.toml}, onde o binário é baixado manualmente e renomeado para \texttt{firmware.bin} antes do uso local -- \texttt{firmware.bin} não é versionado neste repositório (\texttt{.gitignore}), como o próprio comentário de \texttt{wokwi.toml} já indicava. \texttt{SHA-256} do binário efetivamente usado nesta revisão, calculado localmente na cópia de trabalho: \texttt{\FirmwareSHA{}} -- não conferido de forma independente contra o servidor de download do MicroPython. Qualquer reprodução futura deve conferir esse hash antes de assumir que obteve exatamente o mesmo \textit{build}.
 \normalsize\raggedright
 
 \section{Requisitos e definições do projeto}

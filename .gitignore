@@ -2,6 +2,11 @@
 .vscode/
 .DS_Store
 
+# Downloaded MicroPython firmware for local Wokwi-for-VS-Code simulation
+# (see wokwi.toml) -- large binary, not source, obtained separately by
+# each developer; never committed.
+firmware.bin
+
 # CPython bytecode cache from local tooling (py_compile, linters, IDE) --
 # MicroPython on the ESP32 never reads these; irrelevant to the firmware.
 __pycache__/
