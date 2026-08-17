@@ -1,4 +1,4 @@
-"""Test 3/6 — Red LED, blinking via asyncio (GPIO 2).
+"""Test 3/13 — Red LED, blinking via asyncio (GPIO 26).
 
 Same circuit and toggle idiom as test 2, but now wrapped exactly the way
 main.py runs it: an `async def` coroutine scheduled with
@@ -21,7 +21,7 @@ loop.
 import asyncio
 from machine import Pin
 
-RED_LED_PIN = 2
+RED_LED_PIN = 26
 BLINK_INTERVAL_MS = 500
 
 red_led = Pin(RED_LED_PIN, Pin.OUT, value=0)

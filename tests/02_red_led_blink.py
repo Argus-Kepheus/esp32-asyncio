@@ -1,4 +1,4 @@
-"""Test 2/5 — Red LED, toggle-loop blink (GPIO 2).
+"""Test 2/13 — Red LED, toggle-loop blink (GPIO 26).
 
 Same circuit as test 1, but using the toggle idiom
 (`value(not value())`) that the real main.py uses for the red LED task —
@@ -16,7 +16,7 @@ Expected: the red LED toggles every 500 ms, continuously.
 from machine import Pin
 import time
 
-RED_LED_PIN = 2
+RED_LED_PIN = 26
 BLINK_INTERVAL_MS = 500
 
 red_led = Pin(RED_LED_PIN, Pin.OUT, value=0)

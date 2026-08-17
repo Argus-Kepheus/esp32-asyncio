@@ -1,8 +1,11 @@
-"""Test 5/6 — OLED basic check: I2C scan + one static message.
+"""Test 5/13 — First OLED basic check: I2C scan + one static message.
 
 The simplest possible OLED check: confirm the display answers on the I2C
 bus at the expected address and can render one line of static text. See
 tests/README.md for how to run this on wokwi.com.
+
+This is main.py's first OLED (I2C bus 0, oled_display) -- the second OLED
+(I2C bus 1, GPIO 15/22) has its own isolated check, test 11.
 
 Uses the same hardware machine.I2C peripheral as main.py (see
 docs/EN/technical-specification.md, section 16 -- an earlier revision used
@@ -17,7 +20,7 @@ and the OLED shows "Boa sorte!".
 from machine import I2C, Pin
 import ssd1306
 
-OLED_SCL_PIN = 25
+OLED_SCL_PIN = 32
 OLED_SDA_PIN = 16
 OLED_I2C_ADDRESS = 0x3C
 

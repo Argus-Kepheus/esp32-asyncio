@@ -2,6 +2,11 @@
 .vscode/
 .DS_Store
 
+# CPython bytecode cache from local tooling (py_compile, linters, IDE) --
+# MicroPython on the ESP32 never reads these; irrelevant to the firmware.
+__pycache__/
+*.pyc
+
 # LaTeX build artifacts (see report/build.ps1) -- relatorio.pdf is kept
 report/*.aux
 report/*.log

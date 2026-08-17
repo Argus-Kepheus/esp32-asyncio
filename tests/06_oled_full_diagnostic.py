@@ -1,9 +1,11 @@
-"""Test 6/6 — SSD1306 OLED full diagnostic suite.
+"""Test 6/13 — First OLED full diagnostic suite.
 
 The most complete check: exercises full-screen pixel activation, pixel
 addressing, drawing primitives, text, inversion, contrast, display power
 control, and framebuffer scrolling on the 128x64 SSD1306 OLED. See
 tests/README.md for how to run this on wokwi.com.
+
+This is main.py's first OLED (I2C bus 0, oled_display).
 
 Uses the same hardware machine.I2C peripheral as main.py (see
 docs/EN/technical-specification.md, section 16 -- an earlier revision used
@@ -16,7 +18,7 @@ specifically to support this test (the upstream driver forwards them to
 framebuf.FrameBuffer, which supports them natively).
 
 Expected connections:
-    GPIO 25 -> OLED SCL
+    GPIO 32 -> OLED SCL
     GPIO 16 -> OLED SDA
     3.3V    -> OLED VCC
     GND     -> OLED GND
@@ -31,7 +33,7 @@ import ssd1306
 # Hardware configuration
 # ---------------------------------------------------------------------------
 
-OLED_SCL_PIN = 25
+OLED_SCL_PIN = 32
 OLED_SDA_PIN = 16
 OLED_I2C_ADDRESS = 0x3C
 
@@ -327,7 +329,7 @@ def test_text():
 
     oled_display.text("SSD1306 TEST", 16, 0)
     oled_display.text("128 x 64 OLED", 8, 10)
-    oled_display.text("GPIO25 SCL", 16, 20)
+    oled_display.text("GPIO32 SCL", 16, 20)
     oled_display.text("GPIO16 SDA", 16, 30)
     oled_display.text("0123456789", 24, 40)
     oled_display.text("AaZz !? @#", 20, 50)
