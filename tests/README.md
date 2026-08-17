@@ -1,15 +1,16 @@
 # Hardware diagnostic tests
 
-Thirteen standalone scripts to validate each piece of the circuit — and
-the `asyncio` mechanism `main.py` is built on — in isolation, in
-increasing order of complexity, **before** trying the full `main.py`.
-None of these are part of the graded deliverable — they exist to make
-physical assembly and debugging tractable: build and test one piece of
-hardware at a time, confirm it works on its own, then move to the next.
-If a full-application symptom shows up later (e.g. "nothing works"), run
-the matching isolated test here first to narrow the fault down to a
-specific GPIO/component/mechanism instead of guessing across the whole
-circuit and task set at once.
+Fourteen standalone scripts: thirteen validate each piece of the circuit
+— and the `asyncio` mechanism `main.py` is built on — in isolation, in
+increasing order of complexity, **before** trying the full `main.py`;
+the fourteenth is a pure-logic check that needs no hardware at all (see
+its own row below). None of these are part of the graded deliverable —
+they exist to make physical assembly and debugging tractable: build and
+test one piece of hardware at a time, confirm it works on its own, then
+move to the next. If a full-application symptom shows up later (e.g.
+"nothing works"), run the matching isolated test here first to narrow
+the fault down to a specific GPIO/component/mechanism instead of
+guessing across the whole circuit and task set at once.
 
 ## Order
 
@@ -28,6 +29,7 @@ circuit and task set at once.
 | 11 | [`11_oled2_basic.py`](11_oled2_basic.py) | Second OLED's own I2C bus (`I2C(1)`, GPIO 15/22), independent of the first OLED's bus | Independent of 1–10 |
 | 12 | [`12_tft_basic.py`](12_tft_basic.py) | TFT's 4-wire SPI wiring (SCK 18, MOSI 23, CS 5, D/C 21) and reset line (RST 19): panel init + solid-color fills | Independent of 1–11 |
 | 13 | [`13_tft_text_diagnostic.py`](13_tft_text_diagnostic.py) | `ili9341.py`'s `text()` — the primitive `main.py`'s TFT log console is built on — across every console color, plus row-wrapping | Test 12 passing |
+| 14 | [`14_console_serial_fallback.py`](14_console_serial_fallback.py) | `console_log()`'s serial-mirroring logic: every line prints to serial regardless of whether `tft_display` is `None`, since a physically absent TFT on this write-only SPI link may never actually become `None` (see `create_tft_display()`'s docstring) | Independent of 1–13; no GPIO or peripheral touched, runs under plain CPython or MicroPython |
 
 If you only have time for a smoke test, running 3, 4, 5, 9, 11 and 12
 covers every GPIO the project uses plus the `asyncio` mechanism with the
@@ -87,3 +89,7 @@ cannot rule asyncio in or out, since they never import it.
   is read by the ESP32's ROM bootloader before any MicroPython script
   runs, so no script can exercise it. It is verified simply by using it
   during a real flashing attempt.
+- Test 14 is not a hardware test: it touches no `Pin`/`I2C`/`SPI` object
+  at all, so it can run (and was run, under plain desktop CPython) without
+  Wokwi or a board. It exists to check one specific logic claim about
+  `console_log()`, not wiring.

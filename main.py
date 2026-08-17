@@ -244,10 +244,20 @@ tft_spi = SPI(2, baudrate=20_000_000, sck=Pin(TFT_SCK_PIN), mosi=Pin(TFT_MOSI_PI
 
 
 def create_tft_display():
-    """Initialize the SPI TFT, or return None if it fails to respond.
+    """Initialize the SPI TFT, or return None if construction raises
+    OSError.
 
-    Same graceful-degradation shape as create_oled_display(): a wiring
-    mistake on the TFT must not take down the LEDs, button or OLED.
+    Unlike create_oled_display(), this cannot actually detect a missing
+    display: the SPI link here is write-only (no MISO, no panel-ID
+    readback -- see ili9341.py), so a physically disconnected but
+    otherwise electrically fine TFT will very likely NOT raise here at
+    all. This only catches driver/peripheral-level construction
+    failures (e.g. a bad pin/SPI configuration), not general "TFT
+    missing" detection. Same graceful-degradation shape as
+    create_oled_display() regardless: a wiring mistake on the TFT must
+    not take down the LEDs, button or OLEDs. Because that detection is
+    unreliable, console_log() always mirrors every line to the serial
+    console too, instead of only when tft_display is None.
     """
     try:
         return ILI9341(
@@ -288,7 +298,15 @@ CONSOLE_MAX_CHARS = tft_display.width // CHAR_WIDTH if tft_display else 0
 
 
 def console_log(message, color565):
-    """Print one line to the TFT console in the given color.
+    """Print one line to the TFT console in the given color, and always
+    to the serial console too.
+
+    create_tft_display()'s docstring explains why: this project's SPI
+    link cannot reliably tell a present TFT from an absent one, so a
+    physically missing display would otherwise silently lose every one
+    of these events instead of triggering any fallback. Printing here
+    unconditionally, rather than only when tft_display is None, is the
+    only fallback that actually covers that case.
 
     Only the trailing sliver past the message's own width needs an
     explicit clear -- text() already paints its background color for
@@ -298,6 +316,7 @@ def console_log(message, color565):
     width, so this materially cuts the bytes sent per line.
     """
     global console_row
+    print(message)
     if tft_display is None:
         return
 
@@ -348,12 +367,9 @@ def draw_usage_graph(display, history, value_percent, label):
 
 
 def apply_button_state(is_pressed):
-    """Update the green LED for a stable button state and log it to the
-    TFT console (green) -- the OLEDs are resource graphs now, and the
-    serial console prints a periodic status line instead (print_status()),
-    so the TFT console is this event's only remaining *dedicated* trace.
-    Falls back to printing over serial when there is no TFT to log to, so
-    a TFT wiring mistake can't silence button/debounce feedback entirely.
+    """Update the green LED for a stable button state and log it via
+    console_log() (green on the TFT, and always on serial too -- see
+    console_log()'s docstring for why this doesn't gate on tft_display).
 
     Called only at startup and after a debounced state transition.
     """
@@ -362,12 +378,7 @@ def apply_button_state(is_pressed):
         "pressed" if is_pressed else "released",
         "ON" if is_pressed else "OFF",
     )
-    if tft_display is None:
-        print(message)
-    console_log(
-        message,
-        CONSOLE_GREEN,
-    )
+    console_log(message, CONSOLE_GREEN)
 
 
 async def blink_led(entry):
