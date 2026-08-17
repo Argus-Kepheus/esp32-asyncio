@@ -2,12 +2,15 @@
 
 **Language / Idioma:** [English](../EN/README.md) | [Português](README.md)
 
-Avaliação prática com ESP32 (MicroPython) para as disciplinas de
-Instrumentação, Eletrônica e Lógica de Programação. Dois LEDs e um
-display OLED SSD1306 reagem a um botão pulsador, simulados no
-[Wokwi](https://wokwi.com).
+Projeto pessoal com ESP32 (MicroPython) explorando processamento
+assíncrono (`asyncio`), originalmente uma avaliação prática das
+disciplinas de Instrumentação, Eletrônica e Lógica de Programação. Seis
+LEDs piscando de forma independente, um botão pulsador acionando um LED
+verde, dois LEDs indicadores de atividade, dois OLEDs SSD1306 plotando
+gráficos de uso de CPU/RAM ao vivo, e um console de registro colorido em
+uma tela TFT ILI9341 -- tudo simulado no [Wokwi](https://wokwi.com).
 
-> **🚧 Status do projeto:** os requisitos e tabelas abaixo descrevem a
+> **Status do projeto:** os requisitos e tabelas abaixo descrevem a
 > avaliação obrigatória original. O comportamento do LED vermelho e do
 > botão/LED verde continua exatamente como descrito; os números de pino
 > abaixo são mantidos atualizados (ver nota em "Requisitos de
@@ -15,10 +18,9 @@ display OLED SSD1306 reagem a um botão pulsador, simulados no
 > **substituído**, não só estendido: os dois OLEDs agora mostram
 > gráficos de uso de recursos ao vivo, em vez de texto do botão. Desde
 > que o escopo original foi concluído, o hardware e o `main.py` também
-> foram estendidos experimentalmente (mais LEDs, um segundo OLED, um
-> display TFT, botões extras, entre outros) a pedido do usuário, e essa
-> extensão **ainda está mudando ativamente** — veja a seção
-> "Funcionalidades estendidas" em
+> foram estendidos, a pedido do usuário, com mais cinco LEDs, dois LEDs
+> indicadores de atividade, um segundo OLED, um console na TFT e dois
+> botões de velocidade — veja a seção "Funcionalidades estendidas" em
 > [`technical-specification.md`](technical-specification.md) para o
 > estado atual completo.
 

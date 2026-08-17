@@ -401,11 +401,13 @@ Benefícios:
 esp32-asyncio/
 ├── main.py
 ├── ssd1306.py
+├── ili9341.py
 ├── diagram.json
 ├── wokwi.toml
 ├── README.md
 ├── LICENSE
 ├── .gitignore
+├── firmware.bin        (baixado localmente por cada dev; não versionado)
 ├── docs/
 │   ├── EN/
 │   │   ├── README.md
@@ -417,8 +419,16 @@ esp32-asyncio/
 │       ├── component-specifications.md
 │       ├── hardware-reference.md
 │       └── technical-specification.md
-└── tests/
-    └── README.md
+├── tests/
+│   ├── README.md
+│   └── 01_red_led_basic.py ... 14_console_serial_fallback.py  (14 scripts)
+└── report/
+    ├── README.md
+    ├── build.ps1
+    ├── relatorio.tex
+    ├── relatorio.pdf
+    └── figures/
+        └── circuito-wokwi.png
 ```
 
 A licença é CC0 1.0 Universal.
@@ -620,9 +630,11 @@ Esta seção documenta funcionalidades adicionadas, a pedido explícito do
 usuário, depois que o entregável obrigatório original (§2–§14) já estava
 completo e validado. Ela não substitui nem invalida os requisitos
 funcionais das seções anteriores; a tabela do §16 traz a versão resumida
-de cada decisão abaixo. O LED verde e o propósito original do OLED ainda
-estão sendo revisados no momento desta escrita, então **não** foram
-redocumentados aqui ainda — só o que já está definido foi registrado.
+de cada decisão abaixo. O comportamento do LED verde e o propósito
+original do OLED já se estabilizaram desde então: o §17.2 documenta o que
+substituiu a mensagem de texto do OLED, e o comportamento atual do LED
+verde (agora encaminhado por `console_log()`, §17.4) permanece igual ao
+do RF-02 fora isso.
 
 ### 17.1 Segundo OLED, barramento I2C próprio
 

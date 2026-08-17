@@ -2,20 +2,23 @@
 
 **Language / Idioma:** [English](README.md) | [Português](../PT/README.md)
 
-ESP32 (MicroPython) practical assessment for the Instrumentation,
-Electronics and Programming Logic courses. Two LEDs and an SSD1306 OLED
-display react to a push-button, simulated in [Wokwi](https://wokwi.com).
+ESP32 (MicroPython) personal project exploring asynchronous (`asyncio`)
+processing, originally a practical assessment for the Instrumentation,
+Electronics and Programming Logic courses. Six independently-blinking
+LEDs, a push-button driving a green LED, two activity-indicator LEDs,
+two SSD1306 OLEDs plotting live CPU/RAM graphs, and an ILI9341 TFT log
+console — all simulated in [Wokwi](https://wokwi.com).
 
-> **🚧 Project status:** the requirements and tables below describe the
+> **Project status:** the requirements and tables below describe the
 > original mandatory assessment. The red LED and push-button/green-LED
 > behavior are still exactly as described; the pin numbers below are kept
 > current (see the note under "Hardware requirements"). The OLED message
 > behavior, however, has been **superseded**, not just extended: both
 > OLEDs now show live resource-usage graphs instead of button text. Since
 > the original scope was completed, the hardware and `main.py` have also
-> been extended experimentally (more LEDs, a second OLED, a TFT display,
-> extra buttons, and more) at the user's request, and that extension is
-> **still actively changing** — see
+> been extended, at the user's request, with five more LEDs, two
+> activity-indicator LEDs, a second OLED, a TFT console, and two speed
+> buttons — see
 > [`technical-specification.md`](technical-specification.md)'s "Extended
 > features" section for the full current state.
 

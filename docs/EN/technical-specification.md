@@ -403,15 +403,18 @@ submitted behavior interactively with no installation.
 |---|---|
 | `main.py` | Complete executable application |
 | `ssd1306.py` | SSD1306 I2C OLED driver |
+| `ili9341.py` | Custom ILI9341 TFT SPI driver (§19.4) |
 | `diagram.json` | Wokwi components and electrical connections |
 | `wokwi.toml` | Local VS Code simulator configuration (not used by wokwi.com) |
+| `firmware.bin` | MicroPython firmware image for local simulation; downloaded separately per developer, never committed (`.gitignore`) |
 | `README.md` | Setup, execution, GitHub and sharing guide |
 | `LICENSE` | CC0 1.0 Universal legal code |
 | `.gitignore` | Excludes downloaded firmware and generated files |
 | `docs/technical-specification.md` | This document |
 | `docs/component-specifications.md` | Per-component specification sheets (board, display, LEDs, resistors, push-button) |
 | `docs/hardware-reference.md` | Board/module identification, GPIO-to-header map, reserved pins, electrical characteristics, wiring checklist |
-| `tests/` | Standalone per-component diagnostic scripts (not part of the deliverable) — see `tests/README.md` |
+| `tests/` | Fourteen standalone diagnostic scripts, `01_red_led_basic.py` through `14_console_serial_fallback.py` (not part of the deliverable) — see `tests/README.md` |
+| `report/` | LaTeX source (`relatorio.tex`), compiled PDF, build script and circuit figure for the (Portuguese-language) technical report — see `report/README.md` |
 
 ## 15. Acceptance criteria
 
@@ -480,10 +483,11 @@ This section documents functionality added, at the user's explicit
 request, after the original mandatory deliverable (§2–§15) was already
 complete and validated. It does not replace or invalidate the functional
 requirements above; §16's decision log carries the short version of each
-decision below. The green LED and the OLED's original button-state
-purpose are both still being actively revised as of this writing, so they
-are deliberately **not** re-documented here yet — only what has already
-settled is recorded.
+decision below. The green LED's behavior and the OLEDs' original
+button-state purpose have both since settled: §19.2 documents what
+replaced the OLED text message, and the green LED's current behavior
+(now routed through `console_log()`, §19.4) is unchanged from FR-02
+otherwise.
 
 ### 19.1 Second OLED, own I2C bus
 

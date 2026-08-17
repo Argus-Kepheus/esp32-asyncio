@@ -48,7 +48,7 @@
   urlcolor=linkblue,
   citecolor=linkblue,
   pdfauthor={Sergio Cordero Calvimontes},
-  pdftitle={Relatório técnico do projeto ESP32, MicroPython e OLED SSD1306},
+  pdftitle={Relatório técnico do projeto ESP32, MicroPython, OLEDs SSD1306 e TFT ILI9341},
   pdfsubject={Projeto pessoal: processamento assíncrono no ESP32}
 }
 
@@ -95,7 +95,7 @@
 \lstset{style=pythonstyle}
 \renewcommand{\lstlistingname}{Listagem}
 
-\newcommand{\ProjectTitle}{Sistema de sinalização com ESP32, LEDs, botão e OLED SSD1306}
+\newcommand{\ProjectTitle}{Sistema com ESP32, LEDs, botão, dois OLEDs SSD1306 e TFT ILI9341}
 \newcommand{\AuthorWebsite}{https://argus-kepheus.github.io/sergio-cordero-calvimontes/\#home}
 \newcommand{\AuthorName}{\href{\AuthorWebsite}{Sergio Cordero Calvimontes}}
 \newcommand{\WokwiURL}{https://wokwi.com/projects/471528241540407297}
@@ -261,13 +261,13 @@ Em todos os casos, é necessário confirmar que os GPIOs~16 e 17 não estão res
 
   \vspace{0.3em}
   \raggedright\footnotesize
-  $^{1}$Identificação do conector (J2 ou J3) e da posição do terminal no cabeçalho físico de 38 pinos da ESP32-DevKitC V4, conforme \texttt{docs/EN/hardware-reference.md}.\\
+  $^{1}$Identificação do conector (J2 ou J3) e da posição do terminal no cabeçalho físico de 38 pinos da ESP32-DevKitC V4, conforme \texttt{docs/PT/hardware-reference.md}, §3.\\
   $^{2}$Os identificadores de código (\texttt{red\_led}, \texttt{yellow\_led}, \texttt{white\_led}, \texttt{orange\_led}, \texttt{red\_led\_2}) são nomes herdados de uma fase anterior do projeto, quando cada LED tinha uma cor física distinta planejada. No circuito atual todos os seis LEDs piscantes são fisicamente azuis; o nome de cada variável no código serve apenas para diferenciá-la das demais, não para descrever a cor real do componente.\\
   $^{3}$Lida apenas pelo \textit{bootloader} ROM do ESP32 antes de qualquer script MicroPython iniciar; nenhum código de \texttt{main.py} interage com ela.\\
   $^{4}$Aceso por padrão (barramento ocioso); apaga durante uma escrita bloqueante em qualquer um dos três mostradores (Seção~\ref{sec:idle-leds}). Lido ao contrário, apagado equivale a \enquote{barramento ocupado} -- por isso o nome evita esse rótulo por padrão.
 \end{table}
 
-O primeiro LED piscante (GPIO~26) e o relógio I\textsuperscript{2}C do primeiro OLED (GPIO~32) foram realocados dos GPIO~2 e GPIO~25, originalmente fixados antes do início do desenvolvimento, a pedido explícito do usuário, por motivos de layout da placa à medida que mais periféricos foram adicionados (ver o registro de decisões em \texttt{docs/EN/technical-specification.md}, §16). O GPIO~2 liberado foi posteriormente reaproveitado pelo LED indicador amarelo do escalonador, e o GPIO~25 pelo quarto LED piscante -- a Tabela~\ref{tab:pinagem} reflete a fiação atual, não a atribuição original.
+O primeiro LED piscante (GPIO~26) e o relógio I\textsuperscript{2}C do primeiro OLED (GPIO~32) foram realocados dos GPIO~2 e GPIO~25, originalmente fixados antes do início do desenvolvimento, a pedido explícito do usuário, por motivos de layout da placa à medida que mais periféricos foram adicionados (ver o registro de decisões em \texttt{docs/PT/technical-specification.md}, §16). O GPIO~2 liberado foi posteriormente reaproveitado pelo LED indicador amarelo do escalonador, e o GPIO~25 pelo quarto LED piscante -- a Tabela~\ref{tab:pinagem} reflete a fiação atual, não a atribuição original.
 
 A numeração utilizada corresponde aos números dos GPIOs do microcontrolador e não à posição sequencial dos terminais físicos da placa; a coluna ``Terminal físico'' indica exatamente essa posição sequencial, para referência ao montar o circuito fisicamente. Todos os LEDs possuem resistores limitadores de 220~[$\Omega$], e todos os componentes compartilham a mesma referência de terra.
 
@@ -310,7 +310,7 @@ A numeração utilizada corresponde aos números dos GPIOs do microcontrolador e
     2 & LED indicador amarelo (\texttt{scheduler\_idle\_led}), saída & Circuito puramente de LED-mais-resistor para GND: só drena corrente, nunca força um nível alto externo sobre o pino antes de o firmware configurá-lo como saída. \\
     5 & Seleção de circuito (CS) da TFT, saída & Conectado apenas à entrada de alta impedância do controlador ILI9341 (nenhum resistor externo disputa o nível do pino); o \textit{pull} interno padrão do ESP32 nesse pino não é contrariado por nada no circuito. \\
     12 & Segundo LED piscante (\texttt{red\_led\_2}), saída & Mesma razão do GPIO~2: circuito de LED-mais-resistor, só drena corrente. \\
-    15 & Relógio I\textsuperscript{2}C do segundo OLED (SCL), bidirecional & Em repouso, um barramento I\textsuperscript{2}C fica em nível alto (via resistores de \textit{pull-up}, internos ou no próprio módulo OLED); isso tende a favorecer, não contrariar, o comportamento padrão de boot deste pino, mas depende de o módulo OLED específico já estar energizado nesse instante -- ver \texttt{docs/EN/hardware-reference.md}, §5, para a advertência completa antes de uma montagem física. \\
+    15 & Relógio I\textsuperscript{2}C do segundo OLED (SCL), bidirecional & Em repouso, um barramento I\textsuperscript{2}C fica em nível alto (via resistores de \textit{pull-up}, internos ou no próprio módulo OLED); isso tende a favorecer, não contrariar, o comportamento padrão de boot deste pino, mas depende de o módulo OLED específico já estar energizado nesse instante -- ver \texttt{docs/PT/hardware-reference.md}, §5, para a advertência completa antes de uma montagem física. \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -540,7 +540,7 @@ Além dos catorze testes isolados, quatro procedimentos de validação integrada
   \vspace{0.3em}
   \raggedright\footnotesize
   $^{1}$Script presente no repositório e descrito nesta seção, mas sem nenhuma execução registrada nesta revisão -- não deve ser lido como aprovado até ser de fato executado (em Wokwi ou hardware real) e esta tabela ser atualizada com o resultado.\\
-  $^{2}$Execução documentada no registro de decisões de \texttt{docs/EN/technical-specification.md} (§16), anterior à realocação do SCL do primeiro OLED de GPIO~25 para GPIO~32 (Seção~\ref{sec:requisitos}). O resultado permanece válido para a lógica I\textsuperscript{2}C exercida, mas não confirma a pinagem atual sem uma nova execução.\\
+  $^{2}$Execução documentada no registro de decisões de \texttt{docs/PT/technical-specification.md} (§16), anterior à realocação do SCL do primeiro OLED de GPIO~25 para GPIO~32 (Seção~\ref{sec:requisitos}). O resultado permanece válido para a lógica I\textsuperscript{2}C exercida, mas não confirma a pinagem atual sem uma nova execução.\\
   $^{3}$Roda sob CPython de mesa, não MicroPython, Wokwi ou hardware real -- o script não usa nenhum módulo específico do MicroPython (Seção~\ref{sec:tft-console}).
 \end{table}
 
@@ -577,7 +577,12 @@ A entrega é complementada por dois meios de acesso: a simulação pública no W
   \item Guia da ESP32-DevKitC V4: \url{https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32/esp32-devkitc/user_guide.html}
   \item MicroPython para ESP32: \url{https://docs.micropython.org/en/latest/esp32/quickref.html}
   \item Documentação da \texttt{asyncio}: \url{https://docs.micropython.org/en/latest/library/asyncio.html}
+  \item Documentação de \texttt{machine.Pin}: \url{https://docs.micropython.org/en/latest/library/machine.Pin.html}
+  \item Documentação de \texttt{machine.I2C}: \url{https://docs.micropython.org/en/latest/library/machine.I2C.html}
+  \item Documentação de \texttt{machine.SPI}: \url{https://docs.micropython.org/en/latest/library/machine.SPI.html}
+  \item Documentação do módulo \texttt{gc} (estatísticas de heap usadas pelo gráfico de RAM): \url{https://docs.micropython.org/en/latest/library/gc.html}
   \item Componente SSD1306 do Wokwi: \url{https://docs.wokwi.com/parts/board-ssd1306}
+  \item Componente ILI9341 do Wokwi: \url{https://docs.wokwi.com/parts/wokwi-ili9341}
 \end{itemize}
 
 \end{document}
