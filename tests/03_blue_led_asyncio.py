@@ -20,19 +20,19 @@ from machine import Pin
 BLUE_LED_1_PIN = 26
 BLINK_INTERVAL_MS = 500
 
-blue_led = Pin(BLUE_LED_1_PIN, Pin.OUT, value=0)
+blue_led_1 = Pin(BLUE_LED_1_PIN, Pin.OUT, value=0)
 
 
-async def blink_blue_led():
+async def blink_blue_led_1():
     while True:
-        blue_led.value(not blue_led.value())
-        print("Blue LED:", "ON" if blue_led.value() else "OFF")
+        blue_led_1.value(not blue_led_1.value())
+        print("Blue LED:", "ON" if blue_led_1.value() else "OFF")
         await asyncio.sleep_ms(BLINK_INTERVAL_MS)
 
 
 async def main():
     print("Blue LED asyncio test starting on GPIO {}".format(BLUE_LED_1_PIN))
-    asyncio.create_task(blink_blue_led())
+    asyncio.create_task(blink_blue_led_1())
     while True:
         await asyncio.sleep(3600)
 
@@ -40,4 +40,4 @@ async def main():
 try:
     asyncio.run(main())
 finally:
-    blue_led.off()
+    blue_led_1.off()

@@ -17,13 +17,13 @@ uma tela TFT ILI9341 -- tudo simulado no [Wokwi](https://wokwi.com).
 | Componente | Identificador no Wokwi | Pino no ESP32 |
 |---|---|---:|
 | Placa — Espressif ESP32-DevKitC V4 | `board-esp32-devkit-c-v4` | — |
-| Seis LEDs piscantes (+ resistor de 220 Ω cada) | `red-led`, `blue-led`, `yellow-led`, `white-led`, `orange-led`, `red-led-2` | GPIO 26, 14, 27, 25, 33, 12 |
+| Seis LEDs piscantes (+ resistor de 220 Ω cada) | `blue-led-1` a `blue-led-6` | GPIO 26, 14, 27, 25, 33, 12 |
 | LED verde (+ resistor de 220 Ω) | `green-led` | GPIO 4 |
 | Botão pulsador principal, normalmente aberto | `push-button` | GPIO 17 |
 | Dois botões de velocidade (+ pull-down externo de 10 kΩ cada) | `decrease-speed-button`, `increase-speed-button` | GPIO 34, 35 |
 | Dois LEDs indicadores de estado (+ resistor de 220 Ω cada) | `bus-idle-led` (laranja), `scheduler-idle-led` (amarelo) | GPIO 13, 2 |
-| Primeiro OLED, SSD1306 128×64, I2C(0) | `oled-display` | SCL = GPIO 32, SDA = GPIO 16 |
-| Segundo OLED, SSD1306 128×64, I2C(1) | `oled-display-2` | SCL = GPIO 15, SDA = GPIO 22 |
+| OLED0 de CPU, SSD1306 128×64, I2C(0) | `oled0-display` | SCL = GPIO 32, SDA = GPIO 16 |
+| OLED1 de RAM, SSD1306 128×64, I2C(1) | `oled1-display` | SCL = GPIO 15, SDA = GPIO 22 |
 | TFT, ILI9341 240×320, SPI | `tft-display` | SCK 18, MOSI 23, CS 5, D/C 21, RST 19 |
 
 Os dois OLEDs e os três botões operam no barramento de 3,3 V da placa; a

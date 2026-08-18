@@ -42,8 +42,8 @@ linhas é uma amostra representativa, não uma duplicata daquela tabela.
 | `26` | GPIO 26 | LED piscante 1, por meio de resistor de 220 Ω |
 | `4` | GPIO 4 | LED verde, por meio de resistor de 220 Ω |
 | `17` | GPIO 17 | Botão pulsador principal |
-| `32` | GPIO 32 | SCL do primeiro OLED |
-| `16` | GPIO 16 | SDA do primeiro OLED |
+| `32` | GPIO 32 | SCL do OLED0 de CPU |
+| `16` | GPIO 16 | SDA do OLED0 de CPU |
 | `3V3` | — | Alimentação dos botões e dos OLEDs |
 | `5V` | — | Alimentação da TFT |
 | `GND.1` / `GND.2` | — | Cátodos dos LEDs, GND dos OLEDs e da TFT |
@@ -53,11 +53,11 @@ linhas é uma amostra representativa, não uma duplicata daquela tabela.
 
 ### 2.1 OLED SSD1306 (×2)
 
-| Campo | Primeiro OLED | Segundo OLED |
+| Campo | OLED0 de CPU | OLED1 de RAM |
 |---|---|---|
 | Nome do display | OLED monocromático SSD1306, 128 × 64 | OLED monocromático SSD1306, 128 × 64 |
 | Identificador no Wokwi | `board-ssd1306` | `board-ssd1306` |
-| Identificador em `diagram.json` | `oled-display` | `oled-display-2` |
+| Identificador em `diagram.json` | `oled0-display` | `oled1-display` |
 | Interface utilizada | I2C (existem variantes físicas com SPI, não usadas aqui — ver `technical-specification.md`, §6.3) | I2C |
 | Endereço I2C | `0x3C` | `0x3C` |
 | Objeto de barramento no MicroPython | `machine.I2C(0, ...)` | `machine.I2C(1, ...)`, barramento independente |
@@ -67,8 +67,8 @@ linhas é uma amostra representativa, não uma duplicata daquela tabela.
 | Terminais | SCL → GPIO 32, SDA → GPIO 16 | SCL → GPIO 15, SDA → GPIO 22 |
 
 Diagnósticos isolados atuais: `tests/05_cpu_oled_basic.py` /
-`tests/06_cpu_oled_full_diagnostic.py` (primeiro OLED),
-`tests/11_ram_oled_basic.py` (segundo OLED, testado isoladamente — não
+`tests/06_cpu_oled_full_diagnostic.py` (OLED0 de CPU),
+`tests/11_ram_oled_basic.py` (OLED1 de RAM, testado isoladamente — não
 prova operação simultânea dos dois barramentos).
 
 ### 2.2 TFT ILI9341
@@ -93,14 +93,13 @@ de texto, cores do console).
 ## 3. LEDs
 
 Nove LEDs no total. Os seis LEDs piscantes são todos fisicamente azuis
-(`#0000FF`) em `diagram.json`; seus identificadores em `diagram.json`/Python
-são rótulos históricos por LED, não descrições de cor (ver
-`technical-specification.md`, §16, para o motivo).
+(`#0000FF`) em `diagram.json` e usam identificadores correspondentes numerados
+de 1 a 6 no circuito e no código Python.
 
 | Campo | LEDs piscantes (×6) | LED verde | LED de barramento ocioso | LED de escalonador ocioso |
 |---|---|---|---|---|
 | Identificador no Wokwi | `wokwi-led` | `wokwi-led` | `wokwi-led` | `wokwi-led` |
-| Identificadores em `diagram.json` | `red-led`, `blue-led`, `yellow-led`, `white-led`, `orange-led`, `red-led-2` | `green-led` | `bus-idle-led` | `scheduler-idle-led` |
+| Identificadores em `diagram.json` | `blue-led-1` a `blue-led-6` | `green-led` | `bus-idle-led` | `scheduler-idle-led` |
 | Atributo de cor | `#0000FF` (todos os seis) | `green` | `orange` | `yellow` |
 | GPIO (ânodo via resistor) | 26, 14, 27, 25, 33, 12 | 4 | 13 | 2 |
 | Cátodo conectado a | GND do ESP32 | GND do ESP32 | GND do ESP32 | GND do ESP32 |
@@ -111,7 +110,7 @@ são rótulos históricos por LED, não descrições de cor (ver
 | Campo | Resistores dos LEDs | Pull-downs dos botões de velocidade |
 |---|---|---|
 | Identificador no Wokwi | `wokwi-resistor` | `wokwi-resistor` |
-| Identificadores em `diagram.json` | um por LED (9 no total): `red-led-resistor`, `blue-led-resistor`, `yellow-led-resistor`, `white-led-resistor`, `orange-led-resistor`, `red-led-2-resistor`, `green-led-resistor`, `bus-idle-led-resistor`, `scheduler-idle-led-resistor` | `decrease-speed-button-pulldown`, `increase-speed-button-pulldown` |
+| Identificadores em `diagram.json` | um por LED (9 no total): `blue-led-1-resistor` a `blue-led-6-resistor`, `green-led-resistor`, `bus-idle-led-resistor`, `scheduler-idle-led-resistor` | `decrease-speed-button-pulldown`, `increase-speed-button-pulldown` |
 | Resistência | 220 Ω | 10 kΩ |
 | Finalidade | Limitação da corrente de cada LED no nível lógico de 3,3 V | Pull-down externo para GPIO34/35, que não têm um interno |
 

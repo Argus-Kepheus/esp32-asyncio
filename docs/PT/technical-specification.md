@@ -91,15 +91,13 @@ GPIO17 podem estar reservados à PSRAM.
 
 ### RF-01 — Seis LEDs piscantes
 
-- Identificadores no Wokwi: `red-led`, `blue-led`, `yellow-led`,
-  `white-led`, `orange-led`, `red-led-2`;
-- variáveis em Python: `red_led`, `blue_led`, `yellow_led`, `white_led`,
-  `orange_led`, `red_led_2`;
-- constantes: `RED_LED_PIN` (GPIO 26), `BLUE_LED_PIN` (14),
-  `YELLOW_LED_PIN` (27), `WHITE_LED_PIN` (25), `ORANGE_LED_PIN` (33),
-  `RED_LED_2_PIN` (12);
-- todos fisicamente azuis (`#0000FF`) em `diagram.json`; os identificadores
-  Python são apenas rótulos individuais, não descrições de cor;
+- identificadores no Wokwi: `blue-led-1` a `blue-led-6`;
+- variáveis em Python: `blue_led_1` a `blue_led_6`;
+- constantes: `BLUE_LED_1_PIN` (GPIO 26), `BLUE_LED_2_PIN` (14),
+  `BLUE_LED_3_PIN` (27), `BLUE_LED_4_PIN` (25), `BLUE_LED_5_PIN` (33) e
+  `BLUE_LED_6_PIN` (12);
+- todos fisicamente azuis (`#0000FF`) em `diagram.json`, com a mesma numeração
+  de 1 a 6 usada de forma consistente no circuito e no código Python;
 - cada um em sua própria tarefa `asyncio` independente (`blink_led()`,
   a partir da lista `BLINKING_LEDS`);
 - alternância em um intervalo-base de 500 ms, compartilhado e ajustável
@@ -135,13 +133,13 @@ GPIO17 podem estar reservados à PSRAM.
 
 ### RF-04 — Dois gráficos de uso de recursos nos OLEDs
 
-- Identificadores no Wokwi: `oled-display`, `oled-display-2`;
-- variáveis em Python: `oled_display`, `oled_display_2`;
+- Identificadores no Wokwi: `oled0-display`, `oled1-display`;
+- variáveis em Python: `oled0_display`, `oled1_display`;
 - controlador: SSD1306 · resolução: 128 × 64 pixels · endereço `0x3C` em
   ambos;
-- primeiro OLED: `machine.I2C(0)`, SCL GPIO 32, SDA GPIO 16 -- plota o
+- OLED0 de CPU: `machine.I2C(0)`, SCL GPIO 32, SDA GPIO 16 -- plota o
   gráfico de "CPU" (§17.2);
-- segundo OLED: `machine.I2C(1)`, SCL GPIO 15, SDA GPIO 22 -- barramento
+- OLED1 de RAM: `machine.I2C(1)`, SCL GPIO 15, SDA GPIO 22 -- barramento
   I2C de hardware próprio, independente; plota o gráfico de "RAM";
 - ambos redesenhados a cada 250 ms no mínimo
   (`CPU_GRAPH_SAMPLE_INTERVAL_MS` / `RAM_GRAPH_SAMPLE_INTERVAL_MS`, um piso,
@@ -315,14 +313,14 @@ Os nomes dos terminais do botão em `diagram.json` devem respeitar exatamente:
 
 ### 6.3 Por que I2C nos dois OLEDs, e SPI na TFT
 
-O projeto determina, para o primeiro OLED:
+O projeto determina, para o OLED0 de CPU:
 
 ```text
 GPIO32 = SCL
 GPIO16 = SDA
 ```
 
-e, para o segundo OLED, em um barramento `machine.I2C(1)` independente:
+e, para o OLED1 de RAM, em um barramento `machine.I2C(1)` independente:
 
 ```text
 GPIO15 = SCL
@@ -337,10 +335,10 @@ A versão consolidada utiliza `machine.I2C` (barramento de hardware), que
 declara os sinais de forma explícita:
 
 ```python
-i2c = I2C(
+oled0_i2c = I2C(
     0,
-    scl=Pin(OLED_SCL_PIN),
-    sda=Pin(OLED_SDA_PIN),
+    scl=Pin(OLED0_SCL_PIN),
+    sda=Pin(OLED0_SDA_PIN),
     freq=400_000,
 )
 ```
@@ -396,29 +394,29 @@ Uma alteração funcional deve atualizar, no mínimo:
 ### 8.1 Identificadores no Wokwi
 
 ```text
-red-led
+blue-led-1
 green-led
 push-button
-oled-display
+oled0-display
 ```
 
 ### 8.2 Variáveis em Python
 
 ```python
-red_led
+blue_led_1
 green_led
 push_button
-oled_display
+oled0_display
 ```
 
 ### 8.3 Constantes em Python
 
 ```python
-RED_LED_PIN
+BLUE_LED_1_PIN
 GREEN_LED_PIN
 BUTTON_PIN
-OLED_SDA_PIN
-OLED_SCL_PIN
+OLED0_SDA_PIN
+OLED0_SCL_PIN
 ```
 
 Identificadores Python não podem conter hífen; por isso, usam sublinhado.
@@ -552,7 +550,7 @@ Atraso bloqueante pode ser usado somente neste teste temporário, pois o objetiv
 
 Critérios:
 
-- `i2c.scan()` detecta o endereço `0x3C` no barramento correspondente;
+- `oled0_i2c.scan()` ou `oled1_i2c.scan()` detecta o endereço `0x3C` no barramento correspondente;
 - todos os pixels acendem e apagam;
 - padrões quadriculados complementares são exibidos;
 - linhas horizontais e verticais percorrem toda a tela;
@@ -560,7 +558,7 @@ Critérios:
 - inversão, contraste e controle de energia respondem.
 
 Ver `tests/05_cpu_oled_basic.py` / `tests/06_cpu_oled_full_diagnostic.py`
-(primeiro OLED, `I2C(0)`) e `tests/11_ram_oled_basic.py` (segundo OLED,
+(OLED0 de CPU, `I2C(0)`) e `tests/11_ram_oled_basic.py` (OLED1 de RAM,
 `I2C(1)`, testado isoladamente -- não prova operação simultânea dos dois
 barramentos, ver 14.6).
 
@@ -677,12 +675,12 @@ Em uma montagem física devem ser considerados:
 | Temporizador de hardware | Não necessário |
 | Botão | GPIO17, ativo em HIGH, `Pin.PULL_DOWN` |
 | Antirrepique | Software, aproximadamente 30 ms; sem filtro RC |
-| LED vermelho | GPIO26 (realocado do GPIO2 originalmente fixo — ver linha abaixo), alternância a cada 500 ms |
+| LEDs azuis piscantes | GPIO26, 14, 27, 25, 33 e 12; identificadores numerados de 1 a 6; alternância-base a cada 500 ms |
 | LED verde | GPIO4, acompanha o estado estável do botão |
 | OLED | SSD1306 128 × 64, endereço `0x3C` |
 | Barramento do OLED | `machine.I2C` (hardware); diagnósticos atuais em `tests/05_cpu_oled_basic.py` e `tests/06_cpu_oled_full_diagnostic.py`, aprovados no Wokwi web em 18/08/2026 |
-| Mapeamento OLED | GPIO32 = SCL (realocado do GPIO25 originalmente fixo); GPIO16 = SDA |
-| `RED_LED_PIN` → GPIO26, `OLED_SCL_PIN` → GPIO32 | Realocados a pedido explícito do usuário, por layout da placa, à medida que o circuito cresceu. GPIO2 passou a acionar o `scheduler_idle_led`; GPIO25 passou a acionar o `white_led` (§17) |
+| Mapeamento OLED | GPIO32 = SCL; GPIO16 = SDA |
+| Identificadores dos seis LEDs azuis | `blue_led_1` a `blue_led_6` no Python, `BLUE_LED_1_PIN` a `BLUE_LED_6_PIN` nas constantes e `blue-led-1` a `blue-led-6` no Wokwi |
 | *(Substituída -- ver linha "Gráficos de uso de recursos" abaixo)* Atualização OLED | Decisão original: somente na inicialização e nas transições estáveis do botão. Não é mais como nenhum dos dois OLEDs se comporta (§9) |
 | Versão do firmware no `diagram.json` | Não fixar `attrs.env`; usar a versão padrão/atual do Wokwi |
 | Licença | CC0 1.0 Universal |
@@ -699,9 +697,9 @@ cada decisão abaixo.
 
 ### 17.1 Dois barramentos I2C independentes para os OLEDs
 
-O primeiro OLED (`oled-display` / `oled_display`) roda em
-`machine.I2C(0)`, GPIO32 (SCL) / GPIO16 (SDA). O segundo
-(`oled-display-2` / `oled_display_2`) roda em seu próprio barramento I2C
+O OLED0 de CPU (`oled0-display` / `oled0_display`) roda em
+`machine.I2C(0)`, GPIO32 (SCL) / GPIO16 (SDA). O OLED1 de RAM
+(`oled1-display` / `oled1_display`) roda em seu próprio barramento I2C
 de hardware, independente: `machine.I2C(1)`, GPIO15 (SCL) / GPIO22 (SDA)
 — não um segundo endereço no primeiro barramento. Os dois são endereçados
 ao mesmo tempo, sem disputa de barramento.
@@ -712,7 +710,7 @@ Os dois OLEDs são gráficos de barras rolantes, no estilo do Gerenciador de
 Tarefas do Windows, uma amostra por coluna de pixel horizontal (até 128
 amostras de histórico), redesenhados a cada janela de amostragem:
 
-- **Primeiro OLED — rotulado "CPU".** O MicroPython no ESP32 puro não expõe
+- **OLED0 — rotulado "CPU".** O MicroPython no ESP32 puro não expõe
   nenhuma métrica de carga de escalonador em nível de sistema operacional,
   então o valor plotado é um substituto parcial e aproximado, não uma
   métrica completa de utilização de CPU: a fração de cada janela de
@@ -731,7 +729,7 @@ amostras de histórico), redesenhados a cada janela de amostragem:
   consolidado na linha de status serial, no esquema de cores do console da
   TFT e nesta documentação, e por caber na tela pequena do OLED — ver a
   docstring de `update_cpu_graph()` em `main.py` para a ressalva completa.
-- **Segundo OLED — rotulado "RAM".** Um valor real e medido, não simulado,
+- **OLED1 — rotulado "RAM".** Um valor real e medido, não simulado,
   mas restrito às estatísticas de heap do coletor de lixo do MicroPython
   (`gc.mem_alloc()` / `gc.mem_free()`), amostradas a cada no mínimo 250 ms
   — não à RAM física total do ESP32. A pilha de execução, alocações

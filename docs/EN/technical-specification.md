@@ -76,13 +76,12 @@ checklist are kept in
 
 ### FR-01 — Six blinking LEDs
 
-- Component IDs: `red-led`, `blue-led`, `yellow-led`, `white-led`,
-  `orange-led`, `red-led-2` · Python variables: `red_led`, `blue_led`,
-  `yellow_led`, `white_led`, `orange_led`, `red_led_2` · Pin constants:
-  `RED_LED_PIN` (GPIO 26), `BLUE_LED_PIN` (14), `YELLOW_LED_PIN` (27),
-  `WHITE_LED_PIN` (25), `ORANGE_LED_PIN` (33), `RED_LED_2_PIN` (12)
-- All six are physically blue (`#0000FF`) in `diagram.json`; the Python
-  identifiers are per-LED labels only, not color descriptions
+- Component IDs: `blue-led-1` through `blue-led-6` · Python variables:
+  `blue_led_1` through `blue_led_6` · Pin constants: `BLUE_LED_1_PIN`
+  (GPIO 26), `BLUE_LED_2_PIN` (14), `BLUE_LED_3_PIN` (27),
+  `BLUE_LED_4_PIN` (25), `BLUE_LED_5_PIN` (33), `BLUE_LED_6_PIN` (12)
+- All six are physically blue (`#0000FF`) in `diagram.json`, and the same
+  1–6 numbering is used consistently in the circuit and Python source
 - Direction: digital output, each its own independent `asyncio` task
   (`blink_led()`, driven by the `BLINKING_LEDS` list)
 - Behavior: toggle on a shared 500 ms base interval, adjustable per FR-03
@@ -114,12 +113,12 @@ checklist are kept in
 
 ### FR-04 — Two OLED resource graphs
 
-- Component IDs: `oled-display`, `oled-display-2` · Python variables:
-  `oled_display`, `oled_display_2`
+- Component IDs: `oled0-display`, `oled1-display` · Python variables:
+  `oled0_display`, `oled1_display`
 - Controller: SSD1306 · Resolution: 128 × 64 · Address: `0x3C` on both
-- First OLED: `machine.I2C(0)`, SCL GPIO 32, SDA GPIO 16 — plots the "CPU"
+- CPU OLED0: `machine.I2C(0)`, SCL GPIO 32, SDA GPIO 16 — plots the "CPU"
   graph (§19.2)
-- Second OLED: `machine.I2C(1)`, SCL GPIO 15, SDA GPIO 22 — its own
+- RAM OLED1: `machine.I2C(1)`, SCL GPIO 15, SDA GPIO 22 — its own
   independent hardware I2C bus, plots the "RAM" graph
 - Both redrawn at least every 250 ms (`CPU_GRAPH_SAMPLE_INTERVAL_MS` /
   `RAM_GRAPH_SAMPLE_INTERVAL_MS`, a floor not an exact period — §9)
@@ -159,9 +158,9 @@ checklist are kept in
 
 | Context | Convention | Examples |
 |---|---|---|
-| Wokwi component IDs | kebab-case | `red-led`, `green-led`, `push-button`, `oled-display` |
-| Python variables | snake_case | `red_led`, `green_led`, `push_button`, `oled_display` |
-| Python pin constants | UPPER_SNAKE_CASE | `RED_LED_PIN`, `GREEN_LED_PIN`, `BUTTON_PIN`, `OLED_SCL_PIN`, `OLED_SDA_PIN` |
+| Wokwi component IDs | kebab-case | `blue-led-1`, `green-led`, `push-button`, `oled0-display` |
+| Python variables | snake_case | `blue_led_1`, `green_led`, `push_button`, `oled0_display` |
+| Python pin constants | UPPER_SNAKE_CASE | `BLUE_LED_1_PIN`, `GREEN_LED_PIN`, `BUTTON_PIN`, `OLED0_SCL_PIN`, `OLED0_SDA_PIN` |
 | Repository folder | kebab-case | `esp32-asyncio` |
 
 All source code, comments and documentation are written in English.
@@ -238,7 +237,7 @@ concurrent flows run under one scheduler:
   tasks — each becomes one more `asyncio.create_task()` call instead of
   another timestamp/condition block hand-rolled into a growing loop.
 - Explicit cooperative pauses through `await asyncio.sleep_ms()`, so the
-  red LED task never stalls waiting on the button task or an OLED refresh.
+  a blue LED task never stalls waiting on the button task or an OLED refresh.
 
 **Engineering note — what `asyncio` does *not* solve here:** the `ssd1306`
 driver performs a synchronous, blocking I2C write inside `show()` (no
@@ -324,7 +323,7 @@ At module-load time, before `main()` runs, the application:
 2. configures the button pins (`Pin.PULL_DOWN` on `BUTTON_PIN`; external
    pull-downs on the two speed-button pins, per `diagram.json`);
 3. creates both OLED I2C buses and scans each for address `0x3C`,
-   initializing `oled_display` / `oled_display_2` only where detected;
+   initializing `oled0_display` / `oled1_display` only where detected;
 4. creates the TFT SPI object and attempts `ILI9341(...)` construction,
    catching `OSError` into `tft_display = None` on failure.
 
@@ -520,7 +519,7 @@ a row, keep the reasoning short and explicit.
 
 | Decision | Rationale | Alternatives considered |
 |---|---|---|
-| `RED_LED_PIN` moved to GPIO 26, `OLED_SCL_PIN` moved to GPIO 32 | User's explicit request, for board layout as the circuit grew (both pins were originally fixed at GPIO 2 / GPIO 25 before development started). GPIO 2 was later reused for `scheduler_idle_led`, GPIO 25 for `white_led` (§19.3). | Keeping the original pins and fitting new hardware around them (rejected: made the diagram layout harder to read as more peripherals were added) |
+| Numbered blue-LED identifiers in source and circuit | `blue_led_1` through `blue_led_6`, `BLUE_LED_1_PIN` through `BLUE_LED_6_PIN`, and `blue-led-1` through `blue-led-6` state the physical color and preserve one unambiguous ordering across every artifact. | Color-based identifiers unrelated to the current hardware (rejected because they made six blue components appear to have different colors) |
 | Wokwi over Tinkercad | Wokwi natively produces both mandatory deliverables: an executable MicroPython `main.py` and a shareable project link. Tinkercad cannot execute MicroPython at all. | A C/C++ Tinkercad sketch alongside the MicroPython version; Tinkercad for the schematic only, no code execution |
 | `board-esp32-devkit-c-v4` as the target board | An official Espressif development board supported natively by Wokwi, providing all GPIO pins required by the specification and complete manufacturer documentation. Improves reproducibility and removes ambiguities associated with generic or unofficial ESP32 boards. | Other Wokwi ESP32 board parts (e.g. `board-esp32-devkit-v1`), which one of the original drafts used and which uses different pin-label conventions |
 | Cooperative `asyncio` tasks instead of a manual super loop | Scalability and separation of concerns as the project grows (see §7.2). Does **not** make the OLED I2C write non-blocking (§7.2 engineering note). | Manual super loop with `ticks_ms()`/`ticks_diff()` per task (simpler, functionally equivalent here, scales worse) |
@@ -566,9 +565,9 @@ rationale behind each choice described here.
 
 ### 19.1 Two independent OLED I2C buses
 
-The first SSD1306 OLED (`oled-display` / `oled_display`) runs on
-`machine.I2C(0)`, GPIO32 (SCL) / GPIO16 (SDA). The second
-(`oled-display-2` / `oled_display_2`) runs on its own independent hardware
+The CPU OLED0 (`oled0-display` / `oled0_display`) runs on
+`machine.I2C(0)`, GPIO32 (SCL) / GPIO16 (SDA). The RAM OLED1
+(`oled1-display` / `oled1_display`) runs on its own independent hardware
 I2C bus, `machine.I2C(1)`, GPIO15 (SCL) / GPIO22 (SDA) — not a second
 address on the first bus — so both are addressed concurrently without bus
 contention.
@@ -579,7 +578,7 @@ Both OLEDs are Task-Manager-style scrolling bar graphs, one sample per
 horizontal pixel column (up to 128 samples of history), redrawn every
 sampling window:
 
-- **First OLED — labeled "CPU."** MicroPython on bare ESP32 exposes no
+- **OLED0 — labeled "CPU."** MicroPython on bare ESP32 exposes no
   OS-level scheduler load metric, so the plotted value is a partial,
   approximate stand-in, not a full CPU utilization metric: the fraction
   of each ≥250 ms sampling window (a floor, not an exact period — see
@@ -597,7 +596,7 @@ sampling window:
   serial status line, the TFT console color scheme, and this
   documentation, and fits the OLED's small screen — see `main.py`'s
   `update_cpu_graph()` docstring for the full caveat.
-- **Second OLED — labeled "RAM."** A real measured value, not a
+- **OLED1 — labeled "RAM."** A real measured value, not a
   simulated one, but scoped to MicroPython's own garbage-collector heap
   statistics (`gc.mem_alloc()` / `gc.mem_free()`), sampled every ≥250 ms
   — not total physical RAM on the ESP32. The execution stack, native/C

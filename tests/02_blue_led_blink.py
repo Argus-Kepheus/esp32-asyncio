@@ -19,11 +19,11 @@ import time
 BLUE_LED_1_PIN = 26
 BLINK_INTERVAL_MS = 500
 
-blue_led = Pin(BLUE_LED_1_PIN, Pin.OUT, value=0)
+blue_led_1 = Pin(BLUE_LED_1_PIN, Pin.OUT, value=0)
 
 print("Blue LED blink test starting on GPIO {}".format(BLUE_LED_1_PIN))
 
 while True:
-    blue_led.value(not blue_led.value())
-    print("Blue LED:", "ON" if blue_led.value() else "OFF")
+    blue_led_1.value(not blue_led_1.value())
+    print("Blue LED:", "ON" if blue_led_1.value() else "OFF")
     time.sleep_ms(BLINK_INTERVAL_MS)

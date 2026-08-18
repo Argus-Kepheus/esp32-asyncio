@@ -14,16 +14,16 @@ from time import sleep_ms
 BLUE_LED_1_PIN = 26
 BLINK_INTERVAL_MS = 500
 
-blue_led = Pin(BLUE_LED_1_PIN, Pin.OUT)
-blue_led.off()
+blue_led_1 = Pin(BLUE_LED_1_PIN, Pin.OUT)
+blue_led_1.off()
 
 print("GPIO26 blue LED test started")
 
 while True:
-    blue_led.on()
-    print("GPIO26 =", blue_led.value(), "- blue LED ON")
+    blue_led_1.on()
+    print("GPIO26 =", blue_led_1.value(), "- blue LED ON")
     sleep_ms(BLINK_INTERVAL_MS)
 
-    blue_led.off()
-    print("GPIO26 =", blue_led.value(), "- blue LED OFF")
+    blue_led_1.off()
+    print("GPIO26 =", blue_led_1.value(), "- blue LED OFF")
     sleep_ms(BLINK_INTERVAL_MS)

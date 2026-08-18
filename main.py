@@ -31,25 +31,23 @@ from machine import Pin, I2C, SPI
 from ssd1306 import SSD1306_I2C
 from ili9341 import ILI9341, CHAR_WIDTH, CHAR_HEIGHT
 
-# --- Pin assignments (mandatory project requirements) -----------------------
-# NOTE: RED_LED_PIN and OLED_SCL_PIN were moved off their original fixed
-# pins (GPIO 2 and GPIO 25) at the user's explicit request, for board layout.
-RED_LED_PIN = 26
+# --- Pin assignments ---------------------------------------------------------
+BLUE_LED_1_PIN = 26
 GREEN_LED_PIN = 4
 BUTTON_PIN = 17
-OLED_SCL_PIN = 32
-OLED_SDA_PIN = 16
+OLED0_SCL_PIN = 32
+OLED0_SDA_PIN = 16
 
-# --- Pin assignments (extra blinking LEDs, different frequencies) -----------
+# --- Remaining blue blinking LEDs -------------------------------------------
 # GPIO 34/35 are input-only on the ESP32 (no output driver) and cannot be
-# used here. GPIO 12 (RED_LED_2_PIN) is a strapping pin (sets flash voltage
+# used here. GPIO 12 (BLUE_LED_6_PIN) is a strapping pin (sets flash voltage
 # at boot) -- safe here because this LED only ever sinks current to GND
 # through a resistor, it never pulls the pin toward 3V3 during boot.
-BLUE_LED_PIN = 14
-YELLOW_LED_PIN = 27
-WHITE_LED_PIN = 25
-ORANGE_LED_PIN = 33
-RED_LED_2_PIN = 12
+BLUE_LED_2_PIN = 14
+BLUE_LED_3_PIN = 27
+BLUE_LED_4_PIN = 25
+BLUE_LED_5_PIN = 33
+BLUE_LED_6_PIN = 12
 
 # --- Pin assignments (4-wire SPI TFT: SCK, MOSI, CS, D/C) -------------------
 TFT_SCK_PIN = 18
@@ -67,22 +65,22 @@ INCREASE_SPEED_BUTTON_PIN = 35
 BUS_IDLE_LED_PIN = 13
 SCHEDULER_IDLE_LED_PIN = 2
 
-# --- Pin assignments (second OLED, its own I2C bus) --------------------------
-# A separate machine.I2C(1) bus, independent of the first OLED's I2C(0), so
+# --- Pin assignments (RAM OLED1, its own I2C bus) ----------------------------
+# A separate machine.I2C(1) bus, independent of CPU OLED0's I2C(0), so
 # both can be addressed at the same time without bus contention.
-OLED2_SCL_PIN = 15
-OLED2_SDA_PIN = 22
+OLED1_SCL_PIN = 15
+OLED1_SDA_PIN = 22
 
 # --- Timing configuration ----------------------------------------------------
 # All six blinking LEDs share the same base interval -- each is still its
 # own independent asyncio task (see BLINKING_LEDS/blink_led()), just running
 # the same 500 ms period, as if they were separate, identical equipment.
-RED_LED_2_BLINK_INTERVAL_MS = 500
-BLUE_LED_BLINK_INTERVAL_MS = 500
-YELLOW_LED_BLINK_INTERVAL_MS = 500
-RED_LED_BLINK_INTERVAL_MS = 500
-WHITE_LED_BLINK_INTERVAL_MS = 500
-ORANGE_LED_BLINK_INTERVAL_MS = 500
+BLUE_LED_1_BLINK_INTERVAL_MS = 500
+BLUE_LED_2_BLINK_INTERVAL_MS = 500
+BLUE_LED_3_BLINK_INTERVAL_MS = 500
+BLUE_LED_4_BLINK_INTERVAL_MS = 500
+BLUE_LED_5_BLINK_INTERVAL_MS = 500
+BLUE_LED_6_BLINK_INTERVAL_MS = 500
 
 # Each speed-button press doubles or halves every blinking LED's interval at
 # once (relative to its own 500 ms base above), so all six always stay in
@@ -107,13 +105,13 @@ RAM_GRAPH_SAMPLE_INTERVAL_MS = 250
 PRINT_STATUS_INTERVAL_MS = 1000
 
 # --- Peripheral setup ----------------------------------------------------
-red_led = Pin(RED_LED_PIN, Pin.OUT, value=0)
+blue_led_1 = Pin(BLUE_LED_1_PIN, Pin.OUT, value=0)
 green_led = Pin(GREEN_LED_PIN, Pin.OUT, value=0)
-blue_led = Pin(BLUE_LED_PIN, Pin.OUT, value=0)
-yellow_led = Pin(YELLOW_LED_PIN, Pin.OUT, value=0)
-white_led = Pin(WHITE_LED_PIN, Pin.OUT, value=0)
-orange_led = Pin(ORANGE_LED_PIN, Pin.OUT, value=0)
-red_led_2 = Pin(RED_LED_2_PIN, Pin.OUT, value=0)
+blue_led_2 = Pin(BLUE_LED_2_PIN, Pin.OUT, value=0)
+blue_led_3 = Pin(BLUE_LED_3_PIN, Pin.OUT, value=0)
+blue_led_4 = Pin(BLUE_LED_4_PIN, Pin.OUT, value=0)
+blue_led_5 = Pin(BLUE_LED_5_PIN, Pin.OUT, value=0)
+blue_led_6 = Pin(BLUE_LED_6_PIN, Pin.OUT, value=0)
 
 # Every LED that blinks on a fixed interval, paired with its current
 # interval, so main() can launch one independent asyncio task per LED from a
@@ -121,12 +119,12 @@ red_led_2 = Pin(RED_LED_2_PIN, Pin.OUT, value=0)
 # mutable list (not a tuple) because the speed buttons rewrite the interval
 # in place while blink_led() is already running its loop on that same entry.
 BLINKING_LEDS = [
-    [red_led, RED_LED_BLINK_INTERVAL_MS],
-    [blue_led, BLUE_LED_BLINK_INTERVAL_MS],
-    [yellow_led, YELLOW_LED_BLINK_INTERVAL_MS],
-    [white_led, WHITE_LED_BLINK_INTERVAL_MS],
-    [orange_led, ORANGE_LED_BLINK_INTERVAL_MS],
-    [red_led_2, RED_LED_2_BLINK_INTERVAL_MS],
+    [blue_led_1, BLUE_LED_1_BLINK_INTERVAL_MS],
+    [blue_led_2, BLUE_LED_2_BLINK_INTERVAL_MS],
+    [blue_led_3, BLUE_LED_3_BLINK_INTERVAL_MS],
+    [blue_led_4, BLUE_LED_4_BLINK_INTERVAL_MS],
+    [blue_led_5, BLUE_LED_5_BLINK_INTERVAL_MS],
+    [blue_led_6, BLUE_LED_6_BLINK_INTERVAL_MS],
 ]
 # Snapshot of each LED's un-scaled interval, same order as BLINKING_LEDS --
 # the reference apply_blink_speed_step() always scales from, so repeated
@@ -195,10 +193,10 @@ scheduler_idle_led = Pin(SCHEDULER_IDLE_LED_PIN, Pin.OUT, value=0)
 # tests/06_cpu_oled_full_diagnostic.py (see tests/README.md). An earlier
 # revision used machine.SoftI2C as an unconfirmed defensive compatibility
 # choice; that is no longer needed.
-i2c = I2C(
+oled0_i2c = I2C(
     0,
-    scl=Pin(OLED_SCL_PIN),
-    sda=Pin(OLED_SDA_PIN),
+    scl=Pin(OLED0_SCL_PIN),
+    sda=Pin(OLED0_SDA_PIN),
     freq=OLED_I2C_FREQUENCY_HZ,
 )
 
@@ -226,17 +224,17 @@ def create_oled_display(i2c_bus, label):
     return SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, i2c_bus, addr=OLED_I2C_ADDRESS)
 
 
-oled_display = create_oled_display(i2c, "OLED")
+oled0_display = create_oled_display(oled0_i2c, "OLED0")
 
 # Second, independent hardware I2C bus (I2C(1)) driving a second SSD1306 --
-# runs alongside the first OLED's I2C(0) bus without contention.
-i2c_2 = I2C(
+# runs alongside CPU OLED0's I2C(0) bus without contention.
+oled1_i2c = I2C(
     1,
-    scl=Pin(OLED2_SCL_PIN),
-    sda=Pin(OLED2_SDA_PIN),
+    scl=Pin(OLED1_SCL_PIN),
+    sda=Pin(OLED1_SDA_PIN),
     freq=OLED_I2C_FREQUENCY_HZ,
 )
-oled_display_2 = create_oled_display(i2c_2, "OLED 2")
+oled1_display = create_oled_display(oled1_i2c, "OLED1")
 
 # 4-wire SPI TFT (SCK, MOSI, CS, D/C), independent of the I2C OLEDs above --
 # all three displays run at the same time, on separate buses/pins.
@@ -279,7 +277,7 @@ tft_display = create_tft_display()
 # top once the screen fills (no true scrolling -- see console_log()).
 # Each color is tied to one subsystem, matching that subsystem's physical
 # LED where it has one:
-CONSOLE_BLUE = 0x001F      # blinking LEDs (blue_led and friends)
+CONSOLE_BLUE = 0x001F      # six blinking blue LEDs
 CONSOLE_ORANGE = 0xFD20    # bus_idle_led -- I2C/SPI activity
 CONSOLE_YELLOW = 0xFFE0    # scheduler_idle_led -- scheduler activity
 CONSOLE_GREEN = 0x07E0     # push_button / green_led
@@ -477,7 +475,7 @@ def make_throttle(every):
 
 
 async def update_cpu_graph():
-    """First OLED: "CPU" graph -- not a value read from an OS scheduler,
+    """CPU OLED0: graph not based on a value read from an OS scheduler,
     since MicroPython on bare ESP32 exposes no such thing. The percentage
     is the fraction of each sampling window spent inside the three
     displays' instrumented synchronous calls (show()/fill_rect()/text()),
@@ -513,7 +511,7 @@ async def update_cpu_graph():
         bus_busy_time_us = 0
         window_started_at_us = now_us
         cpu_usage_percent = cpu_percent
-        draw_usage_graph(oled_display, cpu_usage_history, cpu_percent, "CPU")
+        draw_usage_graph(oled0_display, cpu_usage_history, cpu_percent, "CPU")
 
         if should_log():
             console_log("OLED1 (CPU graph) refreshed", CONSOLE_ORANGE)
@@ -523,7 +521,7 @@ async def update_cpu_graph():
 
 
 async def update_ram_graph():
-    """Second OLED: RAM usage graph, from MicroPython's real gc heap stats
+    """RAM OLED1: usage graph from MicroPython's real gc heap stats
     (gc.mem_alloc() / gc.mem_free()) -- an actual measured value, not a
     simulated one. This is occupancy of the gc-managed heap specifically,
     not total physical RAM on the ESP32: the execution stack, native/C
@@ -536,10 +534,10 @@ async def update_ram_graph():
         free = gc.mem_free()
         ram_percent = round(allocated / (allocated + free) * 100)
         ram_usage_percent = ram_percent
-        draw_usage_graph(oled_display_2, ram_usage_history, ram_percent, "RAM")
+        draw_usage_graph(oled1_display, ram_usage_history, ram_percent, "RAM")
 
         if should_log():
-            console_log("OLED2 (RAM graph) refreshed", CONSOLE_ORANGE)
+            console_log("OLED1 (RAM graph) refreshed", CONSOLE_ORANGE)
             console_log("RAM usage: {}%".format(ram_percent), CONSOLE_PURPLE)
 
         await asyncio.sleep_ms(RAM_GRAPH_SAMPLE_INTERVAL_MS)
@@ -594,11 +592,11 @@ try:
     asyncio.run(main())
 finally:
     # Leave outputs in a predictable safe state after an exception or stop.
-    red_led.off()
+    blue_led_1.off()
     green_led.off()
-    blue_led.off()
-    yellow_led.off()
-    white_led.off()
-    orange_led.off()
-    red_led_2.off()
+    blue_led_2.off()
+    blue_led_3.off()
+    blue_led_4.off()
+    blue_led_5.off()
+    blue_led_6.off()
     scheduler_idle_led.off()

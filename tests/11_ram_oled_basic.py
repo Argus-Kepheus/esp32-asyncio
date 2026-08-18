@@ -1,13 +1,13 @@
 """Test 11/13 — RAM OLED basic check: its own I2C bus and text.
 
-Isolates the current RAM OLED on its independent hardware I2C bus,
+Isolates the current RAM OLED1 on its independent hardware I2C bus,
 machine.I2C(1), on GPIO 15 (SCL) / GPIO 22 (SDA). This is deliberately a
-different bus instance from the CPU OLED's I2C(0) (test 5, GPIO 32/16), so
+different bus instance from CPU OLED0's I2C(0) (test 5, GPIO 32/16), so
 both can be wired and addressed at the same time without contention. See
 tests/README.md for how to run this on wokwi.com.
 
 Run this independently of test 5 -- a failure here says nothing about the
-first OLED, and vice versa, since they are on entirely separate buses.
+CPU OLED0, and vice versa, since they are on entirely separate buses.
 This script only initializes I2C(1) alone, though: it does not open
 I2C(0) at the same time, so passing this test does not confirm the two
 buses actually work concurrently, the way main.py runs them together --
@@ -20,14 +20,14 @@ bus 1, and this OLED shows "RAM OLED OK".
 from machine import I2C, Pin
 import ssd1306
 
-RAM_OLED_SCL_PIN = 15
-RAM_OLED_SDA_PIN = 22
+OLED1_SCL_PIN = 15
+OLED1_SDA_PIN = 22
 RAM_OLED_I2C_ADDRESS = 0x3C
 
 ram_i2c = I2C(
     1,
-    scl=Pin(RAM_OLED_SCL_PIN),
-    sda=Pin(RAM_OLED_SDA_PIN),
+    scl=Pin(OLED1_SCL_PIN),
+    sda=Pin(OLED1_SDA_PIN),
     freq=400_000,
 )
 

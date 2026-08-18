@@ -4,7 +4,7 @@ The simplest possible OLED check: confirm the display answers on the I2C
 bus at the expected address and can render one line of static text. See
 tests/README.md for how to run this on wokwi.com.
 
-This is main.py's CPU OLED (I2C bus 0) -- the RAM OLED
+This is main.py's CPU OLED0 (I2C bus 0) -- the RAM OLED1
 (I2C bus 1, GPIO 15/22) has its own isolated check, test 11.
 
 Uses the same hardware machine.I2C peripheral and current GPIO mapping as
@@ -17,14 +17,14 @@ and the OLED shows "CPU OLED OK".
 from machine import I2C, Pin
 import ssd1306
 
-CPU_OLED_SCL_PIN = 32
-CPU_OLED_SDA_PIN = 16
+OLED0_SCL_PIN = 32
+OLED0_SDA_PIN = 16
 CPU_OLED_I2C_ADDRESS = 0x3C
 
 cpu_i2c = I2C(
     0,
-    scl=Pin(CPU_OLED_SCL_PIN),
-    sda=Pin(CPU_OLED_SDA_PIN),
+    scl=Pin(OLED0_SCL_PIN),
+    sda=Pin(OLED0_SDA_PIN),
     freq=400_000,
 )
 

@@ -471,7 +471,7 @@ A implementação de texto (\texttt{ili9341.py}, método \texttt{text()}) foi ot
 
 O desenvolvimento foi acompanhado por testes progressivos. A separação dos subsistemas permitiu distinguir erros de ligação, inicialização e lógica de aplicação.
 
-Os treze itens a seguir descrevem \emph{scripts de diagnóstico do hardware atual} disponíveis no repositório (\texttt{tests/}) -- o que cada um verifica e como. A suíte cobre somente os seis LEDs azuis, o botão verde e seu LED, os dois botões azuis de intervalo, os LEDs laranja e amarelo e os três mostradores presentes em \texttt{diagram.json}. A Tabela~\ref{tab:matriz-testes}, ao final desta seção, registra a execução no Wokwi informada pelo autor; a mera existência de um script continuaria não sendo, por si só, evidência de aprovação.
+Os treze itens a seguir descrevem \emph{scripts de diagnóstico do hardware atual} disponíveis no repositório (\texttt{tests/}) -- o que cada um verifica e como. A suíte cobre somente os seis LEDs azuis, o botão verde e seu LED, os dois botões azuis de intervalo, os LEDs laranja e amarelo e os três mostradores presentes em \texttt{diagram.json}. O autor informou que os treze scripts foram executados com sucesso no Wokwi web em 18 de agosto de 2026, com o comportamento esperado observado em cada caso; a mera existência de um script continuaria não sendo, por si só, evidência de aprovação. O \texttt{diagram.json} não fixa \texttt{attrs.env}, portanto a identificação exata do firmware MicroPython padrão selecionado pelo simulador web não ficou registrada.
 
 \begin{enumerate}
   \item \textbf{Primeiro LED azul, acionamento básico:} Liga e desliga explicitamente o primeiro LED azul (GPIO~26), confirmando pino, resistor, polaridade e retorno ao terra.
@@ -505,35 +505,6 @@ Os treze itens a seguir descrevem \emph{scripts de diagnóstico do hardware atua
 A sequência de testes reduz o espaço de busca de falhas: se um subsistema simples não funcionar, o problema pode ser tratado antes da integração com o restante da aplicação. A tabela dos treze testes e a recomendação de subconjunto mínimo (\textit{smoke test}) estão em \texttt{tests/README.md}.
 
 Além dos treze testes isolados, quatro procedimentos de validação integrada -- limites dos botões de intervalo, operação simultânea dos três mostradores, caminho de falha da TFT e uma execução prolongada -- estão definidos como TC-08 a TC-11 em \texttt{docs/EN/technical-specification.md} (§12) e como itens 14.5 a 14.8 em \texttt{docs/PT/technical-specification.md} (§14). O autor informou que os quatro foram executados e aprovados no Wokwi web em 18 de agosto de 2026, com os comportamentos previstos observados: limites de 125~[ms] e 4~[s], atualização simultânea dos mostradores, preservação do registro serial sem a TFT e defasagem gradual dos LEDs acompanhada da latência de botão documentada.
-
-\begin{table}[htbp]
-  \centering
-  \caption{Matriz de execução dos treze testes do hardware atual.}
-  \label{tab:matriz-testes}
-  \begin{tabularx}{\textwidth}{@{}C{0.5cm} >{\raggedright\arraybackslash\hsize=1.35\hsize}X C{3.3cm} C{2.1cm} >{\raggedright\arraybackslash\hsize=0.65\hsize}X@{}}
-    \toprule
-    \# & Script & Execução registrada & Firmware & Resultado \\
-    \midrule
-    1 & \texttt{01\_blue\_led\_basic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
-    2 & \texttt{02\_blue\_led\_blink.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
-    3 & \texttt{03\_blue\_led\_asyncio.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
-    4 & \texttt{04\_green\_button\_led.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
-    5 & \texttt{05\_cpu\_oled\_basic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
-    6 & \texttt{06\_cpu\_oled\_full\_diagnostic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
-    7 & \texttt{07\_additional\_blue\_leds\_basic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
-    8 & \texttt{08\_blue\_leds\_asyncio.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
-    9 & \texttt{09\_blue\_interval\_buttons.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
-    10 & \texttt{10\_status\_leds\_basic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
-    11 & \texttt{11\_ram\_oled\_basic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
-    12 & \texttt{12\_tft\_basic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
-    13 & \texttt{13\_tft\_text\_diagnostic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
-    \bottomrule
-  \end{tabularx}
-
-  \vspace{0.3em}
-  {\justifying\footnotesize
-  $^{1}$O autor informou a execução bem-sucedida dos treze scripts no Wokwi web, com o comportamento esperado observado em cada caso. O \texttt{diagram.json} não fixa \texttt{attrs.env}; portanto, o simulador web selecionou seu firmware MicroPython padrão, cuja identificação exata não foi registrada durante a execução.\par}
-\end{table}
 
 \section{Circuito simulado}
 \label{sec:circuito}

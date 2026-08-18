@@ -5,7 +5,7 @@ addressing, drawing primitives, text, inversion, contrast, display power
 control, and framebuffer scrolling on the 128x64 SSD1306 OLED. See
 tests/README.md for how to run this on wokwi.com.
 
-This is main.py's CPU OLED (I2C bus 0, GPIO 32/16).
+This is main.py's CPU OLED0 (I2C bus 0, GPIO 32/16).
 
 Uses the same hardware machine.I2C peripheral and current CPU OLED pins as
 main.py. This rewritten diagnostic must be run again before its result is
@@ -31,8 +31,8 @@ import ssd1306
 # Hardware configuration
 # ---------------------------------------------------------------------------
 
-OLED_SCL_PIN = 32
-OLED_SDA_PIN = 16
+OLED0_SCL_PIN = 32
+OLED0_SDA_PIN = 16
 OLED_I2C_ADDRESS = 0x3C
 
 OLED_WIDTH = 128
@@ -51,8 +51,8 @@ PIXEL_SCAN_DELAY_MS = 20
 
 i2c = I2C(
     0,
-    scl=Pin(OLED_SCL_PIN),
-    sda=Pin(OLED_SDA_PIN),
+    scl=Pin(OLED0_SCL_PIN),
+    sda=Pin(OLED0_SDA_PIN),
     freq=I2C_FREQUENCY_HZ,
 )
 

@@ -54,22 +54,22 @@ signal named GPIO25, not the 25th physical pin.
 
 | Function | Wokwi ID | Python variable/constant | GPIO | Header pin |
 |---|---|---|---:|---|
-| Blinking LED 1 output | `red-led` | `red_led` / `RED_LED_PIN` | GPIO26 | J2-10 |
-| Blinking LED 2 output | `blue-led` | `blue_led` / `BLUE_LED_PIN` | GPIO14 | J2-12 |
-| Blinking LED 3 output | `yellow-led` | `yellow_led` / `YELLOW_LED_PIN` | GPIO27 | J2-11 |
-| Blinking LED 4 output | `white-led` | `white_led` / `WHITE_LED_PIN` | GPIO25 | J2-9 |
-| Blinking LED 5 output | `orange-led` | `orange_led` / `ORANGE_LED_PIN` | GPIO33 | J2-8 |
-| Blinking LED 6 output | `red-led-2` | `red_led_2` / `RED_LED_2_PIN` | GPIO12 | J2-13 |
+| Blinking LED 1 output | `blue-led-1` | `blue_led_1` / `BLUE_LED_1_PIN` | GPIO26 | J2-10 |
+| Blinking LED 2 output | `blue-led-2` | `blue_led_2` / `BLUE_LED_2_PIN` | GPIO14 | J2-12 |
+| Blinking LED 3 output | `blue-led-3` | `blue_led_3` / `BLUE_LED_3_PIN` | GPIO27 | J2-11 |
+| Blinking LED 4 output | `blue-led-4` | `blue_led_4` / `BLUE_LED_4_PIN` | GPIO25 | J2-9 |
+| Blinking LED 5 output | `blue-led-5` | `blue_led_5` / `BLUE_LED_5_PIN` | GPIO33 | J2-8 |
+| Blinking LED 6 output | `blue-led-6` | `blue_led_6` / `BLUE_LED_6_PIN` | GPIO12 | J2-13 |
 | Green LED output | `green-led` | `green_led` / `GREEN_LED_PIN` | GPIO4 | J3-13 |
 | Push-button input | `push-button` | `push_button` / `BUTTON_PIN` | GPIO17 | J3-11 |
 | Decrease-speed button | `decrease-speed-button` | `decrease_speed_button` / `DECREASE_SPEED_BUTTON_PIN` | GPIO34 | J2-5 |
 | Increase-speed button | `increase-speed-button` | `increase_speed_button` / `INCREASE_SPEED_BUTTON_PIN` | GPIO35 | J2-6 |
 | Bus-idle LED (orange) | `bus-idle-led` | `bus_idle_led` / `BUS_IDLE_LED_PIN` | GPIO13 | J2-15 |
 | Scheduler-idle LED (yellow) | `scheduler-idle-led` | `scheduler_idle_led` / `SCHEDULER_IDLE_LED_PIN` | GPIO2 | J3-15 |
-| First OLED, I²C clock | `oled-display` | `oled_display` / `OLED_SCL_PIN` | GPIO32 | J2-7 |
-| First OLED, I²C data | `oled-display` | `oled_display` / `OLED_SDA_PIN` | GPIO16 | J3-12 |
-| Second OLED, I²C clock | `oled-display-2` | `oled_display_2` / `OLED2_SCL_PIN` | GPIO15 | J3-16 |
-| Second OLED, I²C data | `oled-display-2` | `oled_display_2` / `OLED2_SDA_PIN` | GPIO22 | J3-3 |
+| CPU OLED0, I²C clock | `oled0-display` | `oled0_display` / `OLED0_SCL_PIN` | GPIO32 | J2-7 |
+| CPU OLED0, I²C data | `oled0-display` | `oled0_display` / `OLED0_SDA_PIN` | GPIO16 | J3-12 |
+| RAM OLED1, I²C clock | `oled1-display` | `oled1_display` / `OLED1_SCL_PIN` | GPIO15 | J3-16 |
+| RAM OLED1, I²C data | `oled1-display` | `oled1_display` / `OLED1_SDA_PIN` | GPIO22 | J3-3 |
 | TFT SPI clock | `tft-display` | `tft_display` / `TFT_SCK_PIN` | GPIO18 | J3-9 |
 | TFT SPI data out | `tft-display` | `tft_display` / `TFT_MOSI_PIN` | GPIO23 | J3-2 |
 | TFT chip select | `tft-display` | `tft_display` / `TFT_CS_PIN` | GPIO5 | J3-10 |
@@ -78,31 +78,28 @@ signal named GPIO25, not the 25th physical pin.
 | Flash-mode slide switch | `flash-mode-switch` | — (`diagram.json` only, no `main.py` code reads it) | GPIO0 | J3-14 |
 | OLED / push-button supply | — | — | 3V3 | J2-1 |
 
-The six blinking LEDs are all physically blue (`#0000FF`) in `diagram.json`
-despite their per-LED Python identifiers (`red_led`, `blue_led`,
-`yellow_led`, `white_led`, `orange_led`, `red_led_2`) — those names are
-historical per-LED labels, not color descriptions; see
-`technical-specification.md` §16 for why `red_led` and the first OLED's
-SCL ended up on GPIO26/GPIO32 rather than the board-layout-driven pins
-they started on.
+The six blinking LEDs are all physically blue (`#0000FF`) in `diagram.json`.
+They use the same 1–6 numbering in Wokwi IDs, Python variables and pin
+constants, so every identifier states both the component color and its position
+in the row.
 
 ```python
-RED_LED_PIN = 26
-BLUE_LED_PIN = 14
-YELLOW_LED_PIN = 27
-WHITE_LED_PIN = 25
-ORANGE_LED_PIN = 33
-RED_LED_2_PIN = 12
+BLUE_LED_1_PIN = 26
+BLUE_LED_2_PIN = 14
+BLUE_LED_3_PIN = 27
+BLUE_LED_4_PIN = 25
+BLUE_LED_5_PIN = 33
+BLUE_LED_6_PIN = 12
 GREEN_LED_PIN = 4
 BUTTON_PIN = 17
 DECREASE_SPEED_BUTTON_PIN = 34
 INCREASE_SPEED_BUTTON_PIN = 35
 BUS_IDLE_LED_PIN = 13
 SCHEDULER_IDLE_LED_PIN = 2
-OLED_SCL_PIN = 32
-OLED_SDA_PIN = 16
-OLED2_SCL_PIN = 15
-OLED2_SDA_PIN = 22
+OLED0_SCL_PIN = 32
+OLED0_SDA_PIN = 16
+OLED1_SCL_PIN = 15
+OLED1_SDA_PIN = 22
 TFT_SCK_PIN = 18
 TFT_MOSI_PIN = 23
 TFT_CS_PIN = 5
@@ -121,7 +118,7 @@ GPIO2  ── 220 Ω resistor ── scheduler-idle LED anode (yellow) · cathod
 3V3    ── push-button ── GPIO17                       (active HIGH)
 3V3    ── decrease/increase-speed button ── GPIO34/35 (active HIGH, external 10 kΩ pull-down)
 GPIO32 = OLED1 SCL   GPIO16 = OLED1 SDA   (machine.I2C(0), address 0x3C)
-GPIO15 = OLED2 SCL   GPIO22 = OLED2 SDA   (machine.I2C(1), address 0x3C)
+GPIO15 = OLED1 SCL   GPIO22 = OLED1 SDA   (machine.I2C(1), address 0x3C)
 GPIO18/23/5/21/19 = TFT SCK/MOSI/CS/D-C/RST (SPI(2))
 ```
 
@@ -133,9 +130,9 @@ for the caveat that implies for a physical build.
   pull resistors, unlike `BUTTON_PIN`'s `Pin.PULL_DOWN` — each needs its
   own external 10 kΩ pull-down resistor to GND (already in
   `diagram.json`; see `tests/09_blue_interval_buttons.py`).
-- The second OLED uses a second, independent hardware I²C bus
+- RAM OLED1 uses a second, independent hardware I²C bus
   (`machine.I2C(1)`), not a second address on the first bus, so it runs
-  concurrently with the first OLED without contention.
+  concurrently with CPU OLED0 without contention.
 - GPIO0 (the flash-mode switch) is read by the ROM bootloader before any
   MicroPython script runs; no `main.py` code interacts with it. See §7.
 
@@ -177,15 +174,15 @@ pin — this is not one blanket justification for all five):
   ILI9341 controller's high-impedance CS input, with no external
   resistor contesting the pin's level — nothing in the circuit fights the
   ESP32's own default boot-time pull on this pin.
-- **GPIO12** — `red_led_2` output. Same reasoning as GPIO2: a plain
+- **GPIO12** — `blue_led_6` output. Same reasoning as GPIO2: a plain
   LED-plus-resistor sink circuit.
-- **GPIO15** — the second OLED's I2C clock (SCL), a bidirectional signal.
+- **GPIO15** — RAM OLED1's I2C clock (SCL), a bidirectional signal.
   An idle I2C bus sits HIGH (via pull-up resistors, internal or on the
   OLED module itself), which tends to agree with, not fight, this pin's
   default boot state — but that depends on the OLED module already being
   powered at that exact moment. Treat this one as the least certain of
   the five for a physical build; verify it directly if boot problems
-  appear after wiring the second OLED.
+  appear after wiring OLED1.
 
 Note on GPIO1/GPIO3: even though `diagram.json` wires no LED or button to
 them, they are not "free" or unused. `diagram.json` connects `esp32:TX` /
@@ -203,8 +200,8 @@ printed to.
   undefined.
 - **LED current limiting:** each of the nine LEDs uses a 220 Ω series
   resistor; do not omit it in a physical build.
-- **OLED interface:** I²C only, on GPIO32/GPIO16 (first OLED) and
-  GPIO15/GPIO22 (second OLED) — a predefined project requirement, not an
+- **OLED interface:** I²C only, on GPIO32/GPIO16 (CPU OLED0) and
+  GPIO15/GPIO22 (RAM OLED1) — a predefined project requirement, not an
   optimization; see `technical-specification.md` §6.3 for why I²C was
   chosen for the OLEDs and SPI for the TFT, and
   `component-specifications.md` §2 for the driver/bus details (hardware
@@ -229,7 +226,7 @@ simulation only):
 - the main push-button sits between GPIO17 and 3V3, no external pull-up;
 - the two speed buttons each have their own external 10 kΩ pull-down
   resistor to GND (no internal one available on GPIO34/35);
-- first OLED: SDA → GPIO16, SCL → GPIO32; second OLED: SDA → GPIO22,
+- CPU OLED0: SDA → GPIO16, SCL → GPIO32; RAM OLED1: SDA → GPIO22,
   SCL → GPIO15, wired to its own bus, not shared with the first;
 - the TFT's RST line (GPIO19) is wired even though some Wokwi TFT parts
   mark it non-functional in simulation -- a real panel needs it;

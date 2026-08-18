@@ -41,8 +41,8 @@ representative sample, not a duplicate of that table.
 | `26` | GPIO 26 | Blinking LED 1 (through 220 Ω resistor) |
 | `4` | GPIO 4 | Green LED (through 220 Ω resistor) |
 | `17` | GPIO 17 | Main push-button |
-| `32` | GPIO 32 | First OLED SCL |
-| `16` | GPIO 16 | First OLED SDA |
+| `32` | GPIO 32 | CPU OLED0 SCL |
+| `16` | GPIO 16 | CPU OLED0 SDA |
 | `3V3` | — | Push-button and OLED supply |
 | `5V` | — | TFT supply |
 | `GND.1` / `GND.2` | — | LED cathodes, OLED GND, TFT GND |
@@ -52,11 +52,11 @@ representative sample, not a duplicate of that table.
 
 ### 2.1 SSD1306 OLED (×2)
 
-| Field | First OLED | Second OLED |
+| Field | CPU OLED0 | RAM OLED1 |
 |---|---|---|
 | Display name | SSD1306 monochrome OLED, 128 × 64 | SSD1306 monochrome OLED, 128 × 64 |
 | Wokwi part identifier | `board-ssd1306` | `board-ssd1306` |
-| `diagram.json` part id | `oled-display` | `oled-display-2` |
+| `diagram.json` part id | `oled0-display` | `oled1-display` |
 | Interface used | I2C (the part also exists in SPI hardware variants, not used here — see `technical-specification.md`, §6.3) | I2C |
 | I2C address | `0x3C` | `0x3C` |
 | MicroPython bus object | `machine.I2C(0, ...)` | `machine.I2C(1, ...)`, independent bus |
@@ -66,8 +66,8 @@ representative sample, not a duplicate of that table.
 | Pins | SCL → GPIO 32, SDA → GPIO 16 | SCL → GPIO 15, SDA → GPIO 22 |
 
 Current isolated diagnostics: `tests/05_cpu_oled_basic.py` /
-`tests/06_cpu_oled_full_diagnostic.py` (first OLED),
-`tests/11_ram_oled_basic.py` (second OLED, tested alone — does not prove
+`tests/06_cpu_oled_full_diagnostic.py` (CPU OLED0),
+`tests/11_ram_oled_basic.py` (RAM OLED1, tested alone — does not prove
 concurrent operation of both buses).
 
 ### 2.2 ILI9341 TFT
@@ -92,14 +92,13 @@ colors).
 ## 3. LEDs
 
 Nine LEDs total. The six blinking LEDs are all physically blue
-(`#0000FF`) in `diagram.json`; their `diagram.json`/Python identifiers
-are historical per-LED labels, not color descriptions (see
-`technical-specification.md`, §16, for why).
+(`#0000FF`) in `diagram.json` and use matching identifiers numbered 1–6 in
+the circuit and Python source.
 
 | Field | Blinking LEDs (×6) | Green LED | Bus-idle LED | Scheduler-idle LED |
 |---|---|---|---|---|
 | Wokwi part identifier | `wokwi-led` | `wokwi-led` | `wokwi-led` | `wokwi-led` |
-| `diagram.json` part ids | `red-led`, `blue-led`, `yellow-led`, `white-led`, `orange-led`, `red-led-2` | `green-led` | `bus-idle-led` | `scheduler-idle-led` |
+| `diagram.json` part ids | `blue-led-1` through `blue-led-6` | `green-led` | `bus-idle-led` | `scheduler-idle-led` |
 | Color attr | `#0000FF` (all six) | `green` | `orange` | `yellow` |
 | GPIO (anode via resistor) | 26, 14, 27, 25, 33, 12 | 4 | 13 | 2 |
 | Cathode connected to | ESP32 GND | ESP32 GND | ESP32 GND | ESP32 GND |
@@ -110,7 +109,7 @@ are historical per-LED labels, not color descriptions (see
 | Field | LED resistors | Speed-button pull-downs |
 |---|---|---|
 | Wokwi part identifier | `wokwi-resistor` | `wokwi-resistor` |
-| `diagram.json` part ids | one per LED (9 total): `red-led-resistor`, `blue-led-resistor`, `yellow-led-resistor`, `white-led-resistor`, `orange-led-resistor`, `red-led-2-resistor`, `green-led-resistor`, `bus-idle-led-resistor`, `scheduler-idle-led-resistor` | `decrease-speed-button-pulldown`, `increase-speed-button-pulldown` |
+| `diagram.json` part ids | one per LED (9 total): `blue-led-1-resistor` through `blue-led-6-resistor`, `green-led-resistor`, `bus-idle-led-resistor`, `scheduler-idle-led-resistor` | `decrease-speed-button-pulldown`, `increase-speed-button-pulldown` |
 | Value | 220 Ω | 10 kΩ |
 | Purpose | Current-limiting for each LED at 3.3 V logic level | External pull-down for GPIO34/35, which have no internal one |
 
