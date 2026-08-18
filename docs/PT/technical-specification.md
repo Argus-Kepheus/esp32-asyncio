@@ -346,11 +346,10 @@ i2c = I2C(
 ```
 
 Uma revisão anterior utilizava `machine.SoftI2C` de forma defensiva, sem
-confirmação de que fosse necessário. Execuções históricas de diagnósticos
-antecessores no Wokwi confirmaram o barramento I2C de hardware, mas não validam
-a pinagem nem os testes atuais. Os diagnósticos vigentes são
-`tests/05_cpu_oled_basic.py` e `tests/06_cpu_oled_full_diagnostic.py`, em
-GPIO32 (SCL) e GPIO16 (SDA), e ainda devem ser reexecutados; consulte a §16.
+confirmação de que fosse necessário. Os diagnósticos vigentes,
+`tests/05_cpu_oled_basic.py` e `tests/06_cpu_oled_full_diagnostic.py`, usam
+GPIO32 (SCL) e GPIO16 (SDA) e foram aprovados no Wokwi web em 18/08/2026;
+consulte a §16.
 
 Os dois displays também necessitam de VCC e GND. Esses terminais são conexões
 de alimentação, e não sinais de comunicação.
@@ -599,7 +598,9 @@ Critérios:
 - a linha serial de `print_status()` confirma o valor travado em ambos os
   extremos.
 
-**Ainda não executado** -- ver a matriz de verificação em `report/relatorio.tex`.
+**Executado e aprovado em 18/08/2026 no Wokwi web.** O autor do projeto
+confirmou os dois limites de intervalo e os valores correspondentes no
+console serial, conforme os critérios acima.
 
 ### 14.6 Operação simultânea dos três mostradores
 
@@ -613,7 +614,8 @@ Critérios:
 - nenhum dos três mostradores para de atualizar silenciosamente enquanto
   os outros continuam.
 
-**Ainda não executado** -- ver a matriz de verificação em `report/relatorio.tex`.
+**Executado e aprovado em 18/08/2026 no Wokwi web.** O autor do projeto
+confirmou que os três mostradores permaneceram operando conforme o esperado.
 
 ### 14.7 Caminho de falha da TFT
 
@@ -627,7 +629,9 @@ Critérios:
   impressa no console serial, então nenhum evento é perdido mesmo que a
   própria TFT nunca mostre nada.
 
-**Ainda não executado** -- ver a matriz de verificação em `report/relatorio.tex`.
+**Executado e aprovado em 18/08/2026 no Wokwi web.** O autor do projeto
+confirmou o comportamento esperado do SPI somente de escrita e a preservação
+de todas as mensagens no console serial.
 
 ### 14.8 Dessincronização de longa duração e latência do botão
 
@@ -641,7 +645,9 @@ Critérios:
   mais tempo que o nominal para ser registrada, sobretudo durante
   períodos de escrita intensa nos mostradores.
 
-**Ainda não executado** -- ver a matriz de verificação em `report/relatorio.tex`.
+**Executado e aprovado em 18/08/2026 no Wokwi web.** O autor do projeto
+confirmou a defasagem gradual dos LEDs e a latência do botão previstas nos
+critérios acima.
 
 ## 15. Limitações e implementação física
 
@@ -674,7 +680,7 @@ Em uma montagem física devem ser considerados:
 | LED vermelho | GPIO26 (realocado do GPIO2 originalmente fixo — ver linha abaixo), alternância a cada 500 ms |
 | LED verde | GPIO4, acompanha o estado estável do botão |
 | OLED | SSD1306 128 × 64, endereço `0x3C` |
-| Barramento do OLED | `machine.I2C` (hardware); diagnósticos atuais em `tests/05_cpu_oled_basic.py` e `tests/06_cpu_oled_full_diagnostic.py`, ainda pendentes de reexecução após a reformulação da suíte |
+| Barramento do OLED | `machine.I2C` (hardware); diagnósticos atuais em `tests/05_cpu_oled_basic.py` e `tests/06_cpu_oled_full_diagnostic.py`, aprovados no Wokwi web em 18/08/2026 |
 | Mapeamento OLED | GPIO32 = SCL (realocado do GPIO25 originalmente fixo); GPIO16 = SDA |
 | `RED_LED_PIN` → GPIO26, `OLED_SCL_PIN` → GPIO32 | Realocados a pedido explícito do usuário, por layout da placa, à medida que o circuito cresceu. GPIO2 passou a acionar o `scheduler_idle_led`; GPIO25 passou a acionar o `white_led` (§17) |
 | *(Substituída -- ver linha "Gráficos de uso de recursos" abaixo)* Atualização OLED | Decisão original: somente na inicialização e nas transições estáveis do botão. Não é mais como nenhum dos dois OLEDs se comporta (§9) |

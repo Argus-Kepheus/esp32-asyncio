@@ -10,6 +10,18 @@ These scripts are manual hardware diagnostics for Wokwi or a physical ESP32.
 They are not automated proof that `main.py` passes: record the observed result
 after actually running each relevant script.
 
+## Recorded execution
+
+All thirteen scripts were run successfully on Wokwi web on 2026-08-18. The
+expected behavior described by each script was observed. Because
+`diagram.json` does not pin `attrs.env`, the web simulator used its default
+MicroPython firmware; its exact build identifier was not recorded.
+
+The full-application procedures TC-08 through TC-11 were also run successfully
+on Wokwi web on 2026-08-18. They cover interval clamping, simultaneous use of
+all three displays, the TFT failure path and a 10–15 minute run; their detailed
+results are recorded in `docs/EN/technical-specification.md`, section 12.
+
 ## Current order
 
 | # | File | Current hardware checked | Pins / bus |

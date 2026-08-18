@@ -100,8 +100,8 @@
 \newcommand{\AuthorName}{\href{\AuthorWebsite}{Sergio Cordero Calvimontes}}
 \newcommand{\WokwiURL}{https://wokwi.com/projects/471528241540407297}
 \newcommand{\GitHubURL}{https://github.com/Argus-Kepheus/esp32-asyncio}
-\newcommand{\RevisionDate}{17 de agosto de 2026}
-\newcommand{\RevisionCommit}{cb46485}
+\newcommand{\RevisionDate}{18 de agosto de 2026}
+\newcommand{\RevisionCommit}{4a00a5f}
 \newcommand{\FirmwareFile}{ESP32\_GENERIC-20260406-v1.28.0.bin}
 \newcommand{\FirmwareSHA}{cd7820d02c35d34dd403b44263129c6a511b350aea8446c229890753fe240784}
 
@@ -151,7 +151,7 @@ O Wokwi foi adotado como plataforma principal por oferecer suporte nativo ao ESP
 \subsection{Controle documental desta revisão}
 \label{sec:controle-documental}
 
-Este relatório descreve uma revisão específica e datada do projeto, identificada pelos itens abaixo -- não um estado "final": o projeto continua sujeito a evolução, e mudanças futuras no código, no circuito ou nos testes podem tornar trechos deste texto desatualizados até a próxima revisão do relatório. "Validação", nesta revisão, significa consistência verificada entre código-fonte, circuito e texto -- não a reexecução de toda a simulação Wokwi ou de todos os testes de \texttt{tests/} nesta data (ver Seção~\ref{sec:testes} para o que foi de fato executado e quando).
+Este relatório descreve uma revisão específica e datada do projeto, identificada pelos itens abaixo -- não um estado "final": o projeto continua sujeito a evolução, e mudanças futuras no código, no circuito ou nos testes podem tornar trechos deste texto desatualizados até a próxima revisão do relatório. "Validação", nesta revisão, compreende a consistência verificada entre código-fonte, circuito e texto, a execução dos treze diagnósticos isolados de \texttt{tests/} e os quatro procedimentos integrados TC-08 a TC-11 no Wokwi, informadas pelo autor do projeto em 18 de agosto de 2026 (ver Seção~\ref{sec:testes}).
 
 \begin{center}
 \begin{tabular}{rl}
@@ -476,7 +476,7 @@ A implementação de texto (\texttt{ili9341.py}, método \texttt{text()}) foi ot
 
 O desenvolvimento foi acompanhado por testes progressivos. A separação dos subsistemas permitiu distinguir erros de ligação, inicialização e lógica de aplicação.
 
-Os treze itens a seguir descrevem \emph{scripts de diagnóstico do hardware atual} disponíveis no repositório (\texttt{tests/}) -- o que cada um se propõe a verificar e como --, não uma alegação de que cada um foi executado e aprovado nesta revisão. A suíte cobre somente os seis LEDs azuis, o botão verde e seu LED, os dois botões azuis de intervalo, os LEDs laranja e amarelo e os três mostradores presentes em \texttt{diagram.json}. A Tabela~\ref{tab:matriz-testes}, ao final desta seção, é a fonte da verdade sobre quais scripts têm um resultado de execução registrado; um script existir no repositório não é, por si só, evidência de aprovação.
+Os treze itens a seguir descrevem \emph{scripts de diagnóstico do hardware atual} disponíveis no repositório (\texttt{tests/}) -- o que cada um verifica e como. A suíte cobre somente os seis LEDs azuis, o botão verde e seu LED, os dois botões azuis de intervalo, os LEDs laranja e amarelo e os três mostradores presentes em \texttt{diagram.json}. A Tabela~\ref{tab:matriz-testes}, ao final desta seção, registra a execução no Wokwi informada pelo autor; a mera existência de um script continuaria não sendo, por si só, evidência de aprovação.
 
 \begin{enumerate}
   \item \textbf{Primeiro LED azul, acionamento básico:} Liga e desliga explicitamente o primeiro LED azul (GPIO~26), confirmando pino, resistor, polaridade e retorno ao terra.
@@ -509,7 +509,7 @@ Os treze itens a seguir descrevem \emph{scripts de diagnóstico do hardware atua
 
 A sequência de testes reduz o espaço de busca de falhas: se um subsistema simples não funcionar, o problema pode ser tratado antes da integração com o restante da aplicação. A tabela dos treze testes e a recomendação de subconjunto mínimo (\textit{smoke test}) estão em \texttt{tests/README.md}.
 
-Além dos treze testes isolados, quatro procedimentos de validação integrada -- limites dos botões de intervalo, operação simultânea dos três mostradores, caminho de falha da TFT e uma execução prolongada -- estão definidos como TC-08 a TC-11 em \texttt{docs/EN/technical-specification.md} (§12) e como itens 14.5 a 14.8 em \texttt{docs/PT/technical-specification.md} (§14). Nenhum dos quatro foi executado nesta revisão.
+Além dos treze testes isolados, quatro procedimentos de validação integrada -- limites dos botões de intervalo, operação simultânea dos três mostradores, caminho de falha da TFT e uma execução prolongada -- estão definidos como TC-08 a TC-11 em \texttt{docs/EN/technical-specification.md} (§12) e como itens 14.5 a 14.8 em \texttt{docs/PT/technical-specification.md} (§14). O autor informou que os quatro foram executados e aprovados no Wokwi web em 18 de agosto de 2026, com os comportamentos previstos observados: limites de 125~[ms] e 4~[s], atualização simultânea dos mostradores, preservação do registro serial sem a TFT e defasagem gradual dos LEDs acompanhada da latência de botão documentada.
 
 \begin{table}[htbp]
   \centering
@@ -519,25 +519,25 @@ Além dos treze testes isolados, quatro procedimentos de validação integrada -
     \toprule
     \# & Script & Execução registrada & Firmware & Resultado \\
     \midrule
-    1 & \texttt{01\_blue\_led\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    2 & \texttt{02\_blue\_led\_blink.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    3 & \texttt{03\_blue\_led\_asyncio.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    4 & \texttt{04\_green\_button\_led.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    5 & \texttt{05\_cpu\_oled\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    6 & \texttt{06\_cpu\_oled\_full\_diagnostic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    7 & \texttt{07\_additional\_blue\_leds\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    8 & \texttt{08\_blue\_leds\_asyncio.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    9 & \texttt{09\_blue\_interval\_buttons.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    10 & \texttt{10\_status\_leds\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    11 & \texttt{11\_ram\_oled\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    12 & \texttt{12\_tft\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    13 & \texttt{13\_tft\_text\_diagnostic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
+    1 & \texttt{01\_blue\_led\_basic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
+    2 & \texttt{02\_blue\_led\_blink.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
+    3 & \texttt{03\_blue\_led\_asyncio.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
+    4 & \texttt{04\_green\_button\_led.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
+    5 & \texttt{05\_cpu\_oled\_basic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
+    6 & \texttt{06\_cpu\_oled\_full\_diagnostic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
+    7 & \texttt{07\_additional\_blue\_leds\_basic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
+    8 & \texttt{08\_blue\_leds\_asyncio.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
+    9 & \texttt{09\_blue\_interval\_buttons.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
+    10 & \texttt{10\_status\_leds\_basic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
+    11 & \texttt{11\_ram\_oled\_basic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
+    12 & \texttt{12\_tft\_basic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
+    13 & \texttt{13\_tft\_text\_diagnostic.py} & 18/08/2026, Wokwi web & Padrão web$^{1}$ & Aprovado \\
     \bottomrule
   \end{tabularx}
 
   \vspace{0.3em}
   \raggedright\footnotesize
-  $^{1}$Script presente e coerente com a pinagem atual, mas sem execução registrada depois desta reformulação -- não deve ser tratado como aprovado até ser executado em Wokwi ou hardware real.
+  $^{1}$O autor informou a execução bem-sucedida dos treze scripts no Wokwi web, com o comportamento esperado observado em cada caso. O \texttt{diagram.json} não fixa \texttt{attrs.env}; portanto, o simulador web selecionou seu firmware MicroPython padrão, cuja identificação exata não foi registrada durante a execução.
 \end{table}
 
 \section{Circuito simulado}
@@ -560,7 +560,7 @@ A Figura~\ref{fig:circuito} apresenta o estado atual do circuito no Wokwi. Com o
 
 O projeto atende aos requisitos definidos por meio de uma implementação modular e reproduzível. A escolha da ESP32-DevKitC V4 reduz ambiguidades de pinagem, enquanto o uso explícito de cada GPIO (Tabela~\ref{tab:pinagem}) preserva a correspondência entre código, documentação e circuito. As duas interfaces de comunicação adotadas -- I\textsuperscript{2}C para os dois OLEDs e SPI de 4 fios para a TFT -- atendem adequadamente à natureza distinta do tráfego de cada mostrador, conforme discutido na Seção~\ref{sec:mostrador-interface}.
 
-A arquitetura assíncrona permite a concorrência de treze fluxos independentes (Seção~\ref{sec:estrutura-geral}) sob um único escalonador cooperativo. O antirrepique compartilhado elimina a necessidade de filtro externo nesta aplicação e em suas três variantes de botão, e as otimizações aplicadas ao console de registro da TFT -- tabela de conversão de cor pré-calculada, limpeza apenas do trecho residual de cada linha -- mantêm o tempo de escrita bloqueante baixo o suficiente para não dominar o próprio gráfico de uso de CPU que ele ajuda a alimentar. Por fim, os treze testes isolados da Seção~\ref{sec:testes} cobrem os componentes do hardware vigente; sua execução no circuito atualizado permanece pendente e deve ser registrada na matriz de evidências.
+A arquitetura assíncrona permite a concorrência de treze fluxos independentes (Seção~\ref{sec:estrutura-geral}) sob um único escalonador cooperativo. O antirrepique compartilhado elimina a necessidade de filtro externo nesta aplicação e em suas três variantes de botão, e as otimizações aplicadas ao console de registro da TFT -- tabela de conversão de cor pré-calculada, limpeza apenas do trecho residual de cada linha -- mantêm o tempo de escrita bloqueante baixo o suficiente para não dominar o próprio gráfico de uso de CPU que ele ajuda a alimentar. Por fim, os treze testes isolados e os quatro procedimentos integrados da Seção~\ref{sec:testes} foram executados com sucesso no Wokwi em 18 de agosto de 2026.
 
 A entrega é complementada por dois meios de acesso: a simulação pública no Wokwi e o repositório versionado no GitHub. Em conjunto, eles possibilitam executar, inspecionar, reproduzir e evoluir o projeto.
 

@@ -415,7 +415,9 @@ direction.
 (fastest, `BLINK_SPEED_STEP_MIN`) or 4 s (slowest,
 `BLINK_SPEED_STEP_MAX`) — further presses in the same direction have no
 additional effect, confirmed by `print_status()`'s serial line.
-**Not yet executed** — see the verification matrix in `report/relatorio.tex`.
+**Executed and passed on 2026-08-18 in Wokwi web.** The project author
+confirmed that both interval limits and the corresponding serial values
+matched the expected result above.
 
 ### TC-09 — Simultaneous three-display operation
 
@@ -426,7 +428,8 @@ buses, and the TFT console keeps logging, without one display's write
 visibly stalling the others for longer than a single instrumented
 draw/transfer call (§19.2); no display silently stops updating while the
 others continue.
-**Not yet executed** — see the verification matrix in `report/relatorio.tex`.
+**Executed and passed on 2026-08-18 in Wokwi web.** The project author
+confirmed that all three displays continued operating as expected.
 
 ### TC-10 — TFT failure path
 
@@ -437,7 +440,9 @@ failure — `tft_display` may remain a live object even with no panel
 responding, since the SPI link is write-only. What is guaranteed: every
 `console_log()` line is still printed to serial regardless, so no event
 is silently lost even if the TFT itself never shows anything.
-**Not yet executed** — see the verification matrix in `report/relatorio.tex`.
+**Executed and passed on 2026-08-18 in Wokwi web.** The project author
+confirmed the expected write-only-SPI behavior and preservation of all log
+messages on the serial console.
 
 ### TC-11 — Long-run LED desynchronization and button-hold latency
 
@@ -449,7 +454,8 @@ drift out of phase with each other over that window (§2.1 desync
 explanation in the report); occasionally a button press needs to be held
 longer than the nominal debounce window to register, especially during
 display-heavy periods.
-**Not yet executed** — see the verification matrix in `report/relatorio.tex`.
+**Executed and passed on 2026-08-18 in Wokwi web.** The project author
+confirmed the expected long-run LED phase drift and button latency behavior.
 
 ## 13. Wokwi, VS Code and GitHub workflow
 
@@ -523,7 +529,7 @@ a row, keep the reasoning short and explicit.
 | Software debounce kept despite the simulated button not bouncing | Correct behavior for a future real, physical button (§6.2, §8); zero cost in simulation. | No debounce at all (would need to be added later for real hardware) |
 | *(Superseded — see the OLED-graph row below)* OLED redrawn only on button state change | Original rationale: avoided visible flicker and redundant I2C writes for a static button-state message. No longer how either OLED behaves (§9). | Unconditional redraw every loop iteration (this is what both OLEDs do now, deliberately, since they graph a continuously-changing value) |
 | Button sampled every 5 ms, accepted after 30 ms stable | Fast enough to feel instantaneous; the 30 ms window is the actual debounce guard, sampling itself is not the filter. | Coarser polling (e.g. 50 ms) with no separate acceptance window — simpler but couples sampling rate to debounce time |
-| `machine.I2C` (hardware), not `machine.SoftI2C` | Historical Wokwi runs of predecessor OLED diagnostics confirmed hardware I2C; those scripts predated the current pin map and do not validate the present suite. The current CPU OLED diagnostics are `tests/05_cpu_oled_basic.py` and `tests/06_cpu_oled_full_diagnostic.py`, using GPIO32 (SCL) and GPIO16 (SDA), and must be rerun before recording current-hardware evidence. | `machine.SoftI2C` (previously adopted defensively, now confirmed unnecessary; kept only as a documented fallback if a future hardware-I2C regression appears) |
+| `machine.I2C` (hardware), not `machine.SoftI2C` | The current CPU OLED diagnostics, `tests/05_cpu_oled_basic.py` and `tests/06_cpu_oled_full_diagnostic.py`, use GPIO32 (SCL) and GPIO16 (SDA) and passed on Wokwi web on 2026-08-18. | `machine.SoftI2C` (previously adopted defensively, now confirmed unnecessary; kept only as a documented fallback if a future hardware-I2C regression appears) |
 | `push-button` wired with pin names `1.l` / `2.l` | These are the actual pin names exposed by the Wokwi `wokwi-pushbutton` part. One of the three original drafts used `1.R` / `2.R` (wrong case, wrong side), which Wokwi cannot resolve — the connection silently fails and the button never registers a press in that simulation. | `1.R` / `2.R` naming (rejected: invalid pin reference) |
 | `esp32` board part uses `"attrs": {}` (no pinned firmware `env`) | **Confirmed root cause of a live wokwi.com failure**: pinning `"env": "micropython-20240602-v1.23.0"` (carried over from the `p/` draft) caused an infinite boot loop — the console showed repeated `POWERON_RESET` / `SW_RESET` cycles and MicroPython never started, so *nothing* ran, not even a trivial one-GPIO test script (see TC-07). Removing the pin and letting Wokwi select its default/current MicroPython build resolved it. This also retroactively confirms this exact line was very likely the original issue reported against the `p/` draft before consolidation. | Pinning a specific firmware `env` string for reproducibility (rejected: the specific string used was invalid/unsupported and silently broke boot, with no error surfaced other than the reset loop) |
 | Both OLEDs plot live resource-usage graphs, not button-state text (§19.2) | User-requested change, after the button-state OLED message (the project's earlier behavior) was already validated. The "CPU" value is real measured time inside the displays' instrumented draw/transfer calls (drawing plus I2C/SPI transfer, not bus transfer alone), a partial approximation kept because bare-metal MicroPython on the ESP32 exposes no OS-level scheduler load metric to read instead — see §19.2 for what it does and doesn't cover. | A synthetic/simulated waveform for "CPU usage" (rejected: would not reflect anything real about the running program); reusing the earlier text message alongside a graph (rejected: no space on a 128×64 monochrome panel without shrinking the graph) |
