@@ -22,6 +22,7 @@
 }
 
 \usepackage{microtype}
+\usepackage{ragged2e}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{tabularx}
@@ -101,7 +102,7 @@
 \newcommand{\WokwiURL}{https://wokwi.com/projects/471528241540407297}
 \newcommand{\GitHubURL}{https://github.com/Argus-Kepheus/esp32-asyncio}
 \newcommand{\RevisionDate}{18 de agosto de 2026}
-\newcommand{\RevisionCommit}{4a00a5f}
+\newcommand{\RevisionCommit}{194daaf}
 \newcommand{\FirmwareFile}{ESP32\_GENERIC-20260406-v1.28.0.bin}
 \newcommand{\FirmwareSHA}{cd7820d02c35d34dd403b44263129c6a511b350aea8446c229890753fe240784}
 
@@ -151,7 +152,7 @@ O Wokwi foi adotado como plataforma principal por oferecer suporte nativo ao ESP
 \subsection{Controle documental desta revisão}
 \label{sec:controle-documental}
 
-Este relatório descreve uma revisão específica e datada do projeto, identificada pelos itens abaixo -- não um estado "final": o projeto continua sujeito a evolução, e mudanças futuras no código, no circuito ou nos testes podem tornar trechos deste texto desatualizados até a próxima revisão do relatório. "Validação", nesta revisão, compreende a consistência verificada entre código-fonte, circuito e texto, a execução dos treze diagnósticos isolados de \texttt{tests/} e os quatro procedimentos integrados TC-08 a TC-11 no Wokwi, informadas pelo autor do projeto em 18 de agosto de 2026 (ver Seção~\ref{sec:testes}).
+Este relatório descreve uma revisão específica e datada do projeto, identificada pelos itens abaixo -- não um estado \enquote{final}: o projeto continua sujeito a evolução, e mudanças futuras no código, no circuito ou nos testes podem tornar trechos deste texto desatualizados até a próxima revisão do relatório. \enquote{Validação}, nesta revisão, compreende a consistência verificada entre código-fonte, circuito e texto, a execução dos treze diagnósticos isolados de \texttt{tests/} e os quatro procedimentos integrados TC-08 a TC-11 no Wokwi, informadas pelo autor do projeto em 18 de agosto de 2026 (ver Seção~\ref{sec:testes}).
 
 \begin{center}
 \begin{tabular}{rl}
@@ -166,9 +167,8 @@ Este relatório descreve uma revisão específica e datada do projeto, identific
 \end{center}
 
 \vspace{0.3em}
-\raggedright\footnotesize
-$^{1}$Nome de arquivo declarado no comentário de \texttt{wokwi.toml}, onde o binário é baixado manualmente e renomeado para \texttt{firmware.bin} antes do uso local -- \texttt{firmware.bin} não é versionado neste repositório (\texttt{.gitignore}), como o próprio comentário de \texttt{wokwi.toml} já indicava. \texttt{SHA-256} do binário efetivamente usado nesta revisão, calculado localmente na cópia de trabalho: \texttt{\FirmwareSHA{}} -- não conferido de forma independente contra o servidor de download do MicroPython. Qualquer reprodução futura deve conferir esse hash antes de assumir que obteve exatamente o mesmo \textit{build}.
-\normalsize\raggedright
+{\justifying\footnotesize
+$^{1}$Nome de arquivo declarado no comentário de \texttt{wokwi.toml}, onde o binário é baixado manualmente e renomeado para \texttt{firmware.bin} antes do uso local -- \texttt{firmware.bin} não é versionado neste repositório (\texttt{.gitignore}), como o próprio comentário de \texttt{wokwi.toml} já indicava. \texttt{SHA-256} do binário efetivamente usado nesta revisão, calculado localmente na cópia de trabalho: \texttt{\FirmwareSHA{}} -- não conferido de forma independente contra o servidor de download do MicroPython. Qualquer reprodução futura deve conferir esse hash antes de assumir que obteve exatamente o mesmo \textit{build}.\par}
 
 \section{Requisitos e definições do projeto}
 \label{sec:requisitos}
@@ -197,17 +197,17 @@ A atualização periódica dos três mostradores não serve apenas para exibir i
 
 \subsection{Definições de hardware}
 
-A placa selecionada foi a \textbf{Espressif ESP32-DevKitC V4}, representada no Wokwi pelo componente \texttt{board-esp32-devkit-c-v4}. A especificação original exige apenas \enquote{MicroPython para ESP32}; portanto, a escolha da placa não decorre de uma necessidade exclusiva de desempenho. Ela foi assumida por ser uma placa oficial da Espressif, documentada, identificada de forma inequívoca no simulador e capaz de disponibilizar todos os GPIOs requeridos. A Tabela \ref{tab:pinagem} apresenta a pinagem específica adotada para este projeto.
+A placa selecionada foi a \textbf{Espressif ESP32-DevKitC V4}, representada no Wokwi pelo componente \texttt{board-esp32-devkit-c-v4}. O projeto executa MicroPython para ESP32 e utiliza uma placa oficial da Espressif, documentada, identificada de forma inequívoca no simulador e capaz de disponibilizar todos os GPIOs requeridos. A Tabela~\ref{tab:pinagem} apresenta a pinagem específica adotada.
 
 Para eventual montagem física, recomenda-se uma ESP32-DevKitC V4 equipada com módulo ESP32-WROOM, preferencialmente ESP32-WROOM-32E. Versões com módulo WROVER devem ser evitadas sem revisão do projeto, pois GPIO~16 e GPIO~17 podem ser reservados para a memória PSRAM.
 
 Além da placa selecionada, outras placas de desenvolvimento poderiam ser utilizadas sem problemas de compatibilidade de pinos, desde que baseadas no chip ESP32 (arquitetura Xtensa LX6) com módulo WROOM -- e não WROVER, S2, S3, C3 ou C6, cujos mapeamentos de GPIO, reservas de memória e conjunto de periféricos diferem do exigido por este projeto. Entre as alternativas compatíveis estão:
 
 \begin{itemize}
-  \item Espressif ESP32-DevKitC V2, a revisão anterior da placa adotada, com o mesmo módulo ESP32-WROOM-32 e cabeçalho (\textit{header}) de 38 pinos;
+  \item Espressif ESP32-DevKitC V2, com módulo ESP32-WROOM-32 e cabeçalho (\textit{header}) de 38 pinos compatível;
   \item placas genéricas \enquote{NodeMCU-32S} (ESP-WROOM-32), amplamente disponíveis de diversos fabricantes, com layout de 38 pinos equivalente;
   \item \enquote{DOIT ESP32 DevKit V1}, com módulo ESP32-WROOM-32 em cabeçalho de 30 pinos, desde que os GPIOs~26, 4, 16, 17 e 32 estejam expostos;
-  \item Clones com módulo WROOM-32 de fabricantes como AZ-Delivery ou HiLetgo, que replicam o mesmo mapeamento de GPIOs do módulo original.
+  \item Clones com módulo WROOM-32 de fabricantes como AZ-Delivery ou HiLetgo, que replicam o mapeamento de GPIOs do ESP32-WROOM-32.
 \end{itemize}
 
 Em todos os casos, é necessário confirmar que os GPIOs~16 e 17 não estão reservados para PSRAM ou outra função interna do módulo específico antes de reutilizar o mapeamento de pinos deste projeto.
@@ -221,12 +221,12 @@ Em todos os casos, é necessário confirmar que os GPIOs~16 e 17 não estão res
     Função & GPIO & Terminal físico$^{1}$ & Identificador no código \\
     \midrule
     \multicolumn{4}{@{}l}{\textit{LEDs piscantes -- seis tarefas independentes, todos azuis (\texttt{\#0000FF}) no circuito atual$^{2}$}} \\
-    LED piscante 1 & 26 & J2-10 & \texttt{red\_led} / \texttt{RED\_LED\_PIN} \\
-    LED piscante 2 & 14 & J2-12 & \texttt{blue\_led} / \texttt{BLUE\_LED\_PIN} \\
-    LED piscante 3 & 27 & J2-11 & \texttt{yellow\_led} / \texttt{YELLOW\_LED\_PIN} \\
-    LED piscante 4 & 25 & J2-9 & \texttt{white\_led} / \texttt{WHITE\_LED\_PIN} \\
-    LED piscante 5 & 33 & J2-8 & \texttt{orange\_led} / \texttt{ORANGE\_LED\_PIN} \\
-    LED piscante 6 & 12 & J2-13 & \texttt{red\_led\_2} / \texttt{RED\_LED\_2\_PIN} \\
+    LED piscante 1 & 26 & J2-10 & \texttt{blue\_led\_1} / \texttt{BLUE\_LED\_1\_PIN} \\
+    LED piscante 2 & 14 & J2-12 & \texttt{blue\_led\_2} / \texttt{BLUE\_LED\_2\_PIN} \\
+    LED piscante 3 & 27 & J2-11 & \texttt{blue\_led\_3} / \texttt{BLUE\_LED\_3\_PIN} \\
+    LED piscante 4 & 25 & J2-9 & \texttt{blue\_led\_4} / \texttt{BLUE\_LED\_4\_PIN} \\
+    LED piscante 5 & 33 & J2-8 & \texttt{blue\_led\_5} / \texttt{BLUE\_LED\_5\_PIN} \\
+    LED piscante 6 & 12 & J2-13 & \texttt{blue\_led\_6} / \texttt{BLUE\_LED\_6\_PIN} \\
     \midrule
     \multicolumn{4}{@{}l}{\textit{Botão principal e LED verde}} \\
     Botão pulsador principal & 17 & J3-11 & \texttt{push\_button} / \texttt{BUTTON\_PIN} \\
@@ -260,16 +260,16 @@ Em todos os casos, é necessário confirmar que os GPIOs~16 e 17 não estão res
   \end{tabularx}
 
   \vspace{0.3em}
-  \raggedright\footnotesize
+  {\justifying\footnotesize
   $^{1}$Identificação do conector (J2 ou J3) e da posição do terminal no cabeçalho físico de 38 pinos da ESP32-DevKitC V4, conforme \texttt{docs/PT/hardware-reference.md}, §3.\\
-  $^{2}$Os identificadores de código (\texttt{red\_led}, \texttt{yellow\_led}, \texttt{white\_led}, \texttt{orange\_led}, \texttt{red\_led\_2}) são nomes herdados de uma fase anterior do projeto, quando cada LED tinha uma cor física distinta planejada. No circuito atual todos os seis LEDs piscantes são fisicamente azuis; o nome de cada variável no código serve apenas para diferenciá-la das demais, não para descrever a cor real do componente.\\
+  $^{2}$Os seis LEDs piscantes usam uma numeração única e coerente em todos os artefatos: \texttt{blue\_led\_1} a \texttt{blue\_led\_6} no código, \texttt{BLUE\_LED\_1\_PIN} a \texttt{BLUE\_LED\_6\_PIN} nas constantes e \texttt{blue-led-1} a \texttt{blue-led-6} no circuito. Todos são fisicamente azuis (\texttt{\#0000FF}).\\
   $^{3}$Lida apenas pelo \textit{bootloader} ROM do ESP32 antes de qualquer script MicroPython iniciar; nenhum código de \texttt{main.py} interage com ela.\\
-  $^{4}$Aceso por padrão (barramento ocioso); apaga durante uma escrita bloqueante em qualquer um dos três mostradores (Seção~\ref{sec:idle-leds}). Lido ao contrário, apagado equivale a \enquote{barramento ocupado} -- por isso o nome evita esse rótulo por padrão.
+  $^{4}$Aceso por padrão (barramento ocioso); apaga durante uma escrita bloqueante em qualquer um dos três mostradores (Seção~\ref{sec:idle-leds}). Lido ao contrário, apagado equivale a \enquote{barramento ocupado} -- por isso o nome evita esse rótulo por padrão.\par}
 \end{table}
 
-O primeiro LED piscante (GPIO~26) e o relógio I\textsuperscript{2}C do primeiro OLED (GPIO~32) foram realocados dos GPIO~2 e GPIO~25, originalmente fixados antes do início do desenvolvimento, a pedido explícito do usuário, por motivos de layout da placa à medida que mais periféricos foram adicionados (ver o registro de decisões em \texttt{docs/PT/technical-specification.md}, §16). O GPIO~2 liberado foi posteriormente reaproveitado pelo LED indicador amarelo do escalonador, e o GPIO~25 pelo quarto LED piscante -- a Tabela~\ref{tab:pinagem} reflete a fiação atual, não a atribuição original.
+No mapeamento vigente, o GPIO~26 aciona o primeiro LED azul piscante, o GPIO~32 fornece o relógio I\textsuperscript{2}C do OLED de CPU, o GPIO~2 aciona o LED amarelo de atividade do escalonador e o GPIO~25 aciona o quarto LED azul piscante. Essas funções correspondem diretamente às conexões de \texttt{diagram.json} e às constantes usadas por \texttt{main.py}.
 
-A numeração utilizada corresponde aos números dos GPIOs do microcontrolador e não à posição sequencial dos terminais físicos da placa; a coluna ``Terminal físico'' indica exatamente essa posição sequencial, para referência ao montar o circuito fisicamente. Todos os LEDs possuem resistores limitadores de 220~[$\Omega$], e todos os componentes compartilham a mesma referência de terra.
+A numeração utilizada corresponde aos números dos GPIOs do microcontrolador e não à posição sequencial dos terminais físicos da placa; a coluna \enquote{Terminal físico} indica exatamente essa posição sequencial, para referência ao montar o circuito fisicamente. Todos os LEDs possuem resistores limitadores de 220~[$\Omega$], e todos os componentes compartilham a mesma referência de terra.
 
 \paragraph{Lista de materiais.} Conferida diretamente contra \texttt{diagram.json}: 1 placa ESP32-DevKitC V4; 2 OLEDs SSD1306; 1 tela TFT ILI9341; 9 LEDs (6 piscantes, 1 verde, 2 indicadores de estado); 9 resistores limitadores de 220~[$\Omega$] (um por LED); 2 resistores de \textit{pull-down} de 10~[k$\Omega$] (um por botão de velocidade); 3 botões pulsadores (principal e os dois de velocidade); 1 chave deslizante (modo de gravação).
 
@@ -292,8 +292,8 @@ A numeração utilizada corresponde aos números dos GPIOs do microcontrolador e
   \end{tabularx}
 
   \vspace{0.3em}
-  \raggedright\footnotesize
-  $^{1}$A TFT está ligada à saída de 5~[V] da placa, não aos 3,3~[V] usados pelos dois OLEDs. Isso é seguro para o componente simulado \texttt{wokwi-ili9341} e para muitos módulos ILI9341 físicos reais, que já trazem regulador de 3,3~[V] e conversão de nível embutidos na própria placa do módulo. Um painel ILI9341 ``nu'' -- sem esses circuitos de suporte -- não deve receber 5~[V] diretamente no VCC; antes de uma montagem física, é necessário confirmar qual dos dois tipos de módulo está sendo usado. As cinco linhas de dados e controle (SCK, MOSI, CS, D/C, RST) permanecem em lógica de 3,3~[V] em ambos os casos, pois partem diretamente dos GPIOs do ESP32, não da alimentação de 5~[V].
+  {\justifying\footnotesize
+  $^{1}$A TFT está ligada à saída de 5~[V] da placa, não aos 3,3~[V] usados pelos dois OLEDs. Isso é seguro para o componente simulado \texttt{wokwi-ili9341} e para muitos módulos ILI9341 físicos reais, que já trazem regulador de 3,3~[V] e conversão de nível embutidos na própria placa do módulo. Um painel ILI9341 ``nu'' -- sem esses circuitos de suporte -- não deve receber 5~[V] diretamente no VCC; antes de uma montagem física, é necessário confirmar qual dos dois tipos de módulo está sendo usado. As cinco linhas de dados e controle (SCK, MOSI, CS, D/C, RST) permanecem em lógica de 3,3~[V] em ambos os casos, pois partem diretamente dos GPIOs do ESP32, não da alimentação de 5~[V].\par}
 \end{table}
 
 \paragraph{Pinos de \textit{bootstrapping}.} Cinco dos GPIOs usados neste projeto são amostrados pelo \textit{bootloader} ROM do ESP32 durante a inicialização, antes de qualquer código MicroPython rodar, para selecionar o modo de boot: GPIO~0, 2, 5, 12 e 15. A Tabela~\ref{tab:strapping} consolida o papel de cada um neste projeto e por que, apesar disso, nenhum interfere na inicialização normal.
@@ -348,12 +348,12 @@ Uma organização representativa da aplicação é mostrada a seguir:
 
 \begin{lstlisting}[caption={Estrutura lógica resumida do programa.},label={lst:estrutura}]
 BLINKING_LEDS = [
-    [red_led, RED_LED_BLINK_INTERVAL_MS],
-    [blue_led, BLUE_LED_BLINK_INTERVAL_MS],
-    [yellow_led, YELLOW_LED_BLINK_INTERVAL_MS],
-    [white_led, WHITE_LED_BLINK_INTERVAL_MS],
-    [orange_led, ORANGE_LED_BLINK_INTERVAL_MS],
-    [red_led_2, RED_LED_2_BLINK_INTERVAL_MS],
+    [blue_led_1, BLUE_LED_1_BLINK_INTERVAL_MS],
+    [blue_led_2, BLUE_LED_2_BLINK_INTERVAL_MS],
+    [blue_led_3, BLUE_LED_3_BLINK_INTERVAL_MS],
+    [blue_led_4, BLUE_LED_4_BLINK_INTERVAL_MS],
+    [blue_led_5, BLUE_LED_5_BLINK_INTERVAL_MS],
+    [blue_led_6, BLUE_LED_6_BLINK_INTERVAL_MS],
 ]
 
 async def blink_led(entry):
@@ -405,7 +405,7 @@ Essa decisão foi tomada pelos seguintes motivos:
 \subsection{O que o escalonamento cooperativo garante -- e o que não garante}
 \label{sec:limites-cooperativos}
 
-O \texttt{asyncio} do MicroPython roda em um único núcleo, sem preempção e sem paralelismo real: a qualquer instante, no máximo uma corrotina está de fato executando; todas as demais estão suspensas, aguardando sua vez. "Independente" e "concorrente", nas seções deste relatório, significam independência \emph{lógica} -- nenhuma tarefa chama ou espera diretamente por outra -- não isolamento de tempo de execução. Especificamente:
+O \texttt{asyncio} do MicroPython roda em um único núcleo, sem preempção e sem paralelismo real: a qualquer instante, no máximo uma corrotina está de fato executando; todas as demais estão suspensas, aguardando sua vez. \enquote{Independente} e \enquote{concorrente}, nas seções deste relatório, significam independência \emph{lógica} -- nenhuma tarefa chama ou espera diretamente por outra -- não isolamento de tempo de execução. Especificamente:
 
 \begin{itemize}
   \item \textbf{Escritas nos mostradores bloqueiam o escalonador inteiro.} \texttt{show()}, \texttt{fill\_rect()} e \texttt{text()} (SSD1306 e ILI9341) são chamadas síncronas, sem nenhum ponto \texttt{await} interno: enquanto uma delas está em andamento, nenhuma outra tarefa -- LED piscante, botão ou outro mostrador -- pode ser retomada, por mais tempo que essa escrita leve. O \texttt{asyncio} evita que um \texttt{time.sleep()} explícito trave o programa indefinidamente, mas não transforma essas transferências I\textsuperscript{2}C/SPI em operações não bloqueantes.
@@ -448,9 +448,8 @@ O primeiro OLED plota um rótulo chamado \enquote{CPU}$^{4}$, mas o valor efetiv
 O segundo OLED plota a fração ocupada do heap gerenciado pelo coletor de lixo do MicroPython (\texttt{gc.mem\_alloc()} / \texttt{gc.mem\_free()}), em seu próprio barramento I\textsuperscript{2}C independente (Seção~\ref{sec:mostrador-interface}). Esse valor não é a RAM física total do ESP32: exclui, entre outros, a pilha (\textit{stack}) de execução, alocações nativas/C internas ao firmware e qualquer memória reservada fora do heap gerenciado pelo coletor de lixo -- é uma medida real, porém parcial, de pressão de memória sobre esse heap especificamente.
 
 \vspace{0.3em}
-\raggedright\footnotesize
-$^{4}$O rótulo \texttt{CPU} foi mantido, tanto no código quanto neste relatório, por já estar consolidado no console serial (\texttt{print\_status()}) e no esquema de cores do console da TFT (Seção~\ref{sec:tft-console}), e por caber no espaço reduzido de um mostrador de 128 por 64~[pixels] monocromático; a alternativa seria substituí-lo por um nome tecnicamente mais preciso, como \texttt{DISPLAY} ou \texttt{SYNC}, em troca de exigir uma mudança coordenada em \texttt{main.py}, no console da TFT e em toda a documentação. Optou-se por manter o rótulo curto e qualificar seu significado explicitamente neste parágrafo, em vez de renomeá-lo.
-\normalsize\raggedright
+{\justifying\footnotesize
+$^{4}$O rótulo \texttt{CPU} foi mantido, tanto no código quanto neste relatório, por já estar consolidado no console serial (\texttt{print\_status()}) e no esquema de cores do console da TFT (Seção~\ref{sec:tft-console}), e por caber no espaço reduzido de um mostrador de 128 por 64~[pixels] monocromático; a alternativa seria substituí-lo por um nome tecnicamente mais preciso, como \texttt{DISPLAY} ou \texttt{SYNC}, em troca de exigir uma mudança coordenada em \texttt{main.py}, no console da TFT e em toda a documentação. Optou-se por manter o rótulo curto e qualificar seu significado explicitamente neste parágrafo, em vez de renomeá-lo.\par}
 
 \subsection{Console de registro colorido (TFT)}
 \label{sec:tft-console}
@@ -536,8 +535,8 @@ Além dos treze testes isolados, quatro procedimentos de validação integrada -
   \end{tabularx}
 
   \vspace{0.3em}
-  \raggedright\footnotesize
-  $^{1}$O autor informou a execução bem-sucedida dos treze scripts no Wokwi web, com o comportamento esperado observado em cada caso. O \texttt{diagram.json} não fixa \texttt{attrs.env}; portanto, o simulador web selecionou seu firmware MicroPython padrão, cuja identificação exata não foi registrada durante a execução.
+  {\justifying\footnotesize
+  $^{1}$O autor informou a execução bem-sucedida dos treze scripts no Wokwi web, com o comportamento esperado observado em cada caso. O \texttt{diagram.json} não fixa \texttt{attrs.env}; portanto, o simulador web selecionou seu firmware MicroPython padrão, cuja identificação exata não foi registrada durante a execução.\par}
 \end{table}
 
 \section{Circuito simulado}
