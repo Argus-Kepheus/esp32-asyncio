@@ -186,9 +186,9 @@ O sistema satisfaz seus requisitos funcionais por meio de treze fluxos concorren
 
   \item[LED amarelo -- atividade do escalonador:] Alterna a cada iteração de uma tarefa dedicada que cede o controle imediatamente (\texttt{await asyncio.sleep\_ms(0)}). Não é um indicador de que nenhuma outra tarefa tem trabalho pendente, nem uma tarefa de prioridade mínima real -- o \texttt{asyncio} do MicroPython não tem níveis de prioridade --, mas sim uma visualização grosseira de com que frequência essa tarefa consegue retomar a execução (Seção~\ref{sec:idle-leds}).
 
-  \item[Mostrador de uso de CPU (primeiro OLED):] Atualizado a cada 250~[ms] no mínimo (Seção~\ref{sec:limites-cooperativos}) com a fração da janela de amostragem ocupada pelas chamadas síncronas instrumentadas de desenho e transferência dos três mostradores -- um substituto parcial e aproximado para \enquote{uso de CPU}, detalhado na Seção~\ref{sec:oled-graphs}, já que o MicroPython no ESP32 não expõe essa métrica diretamente.
+  \item[Mostrador de uso de CPU (OLED0):] Atualizado a cada 250~[ms] no mínimo (Seção~\ref{sec:limites-cooperativos}) com a fração da janela de amostragem ocupada pelas chamadas síncronas instrumentadas de desenho e transferência dos três mostradores -- um substituto parcial e aproximado para \enquote{uso de CPU}, detalhado na Seção~\ref{sec:oled-graphs}, já que o MicroPython no ESP32 não expõe essa métrica diretamente.
 
-  \item[Mostrador de uso de RAM (segundo OLED):] Atualizado a cada 250~[ms] no mínimo com a fração ocupada do heap gerenciado pelo coletor de lixo do MicroPython (\texttt{gc.mem\_alloc()} / \texttt{gc.mem\_free()}), não da RAM física total do ESP32 (Seção~\ref{sec:oled-graphs}), em um barramento I\textsuperscript{2}C independente do primeiro OLED.
+  \item[Mostrador de uso de RAM (OLED1):] Atualizado a cada 250~[ms] no mínimo com a fração ocupada do heap gerenciado pelo coletor de lixo do MicroPython (\texttt{gc.mem\_alloc()} / \texttt{gc.mem\_free()}), não da RAM física total do ESP32 (Seção~\ref{sec:oled-graphs}), em um barramento I\textsuperscript{2}C independente do OLED0.
 
   \item[Console de registro (tela TFT):] Recebe, de forma assíncrona e a partir de várias tarefas diferentes, linhas de texto coloridas sobre os eventos do sistema -- uma cor por subsistema -- rolando pela tela como um registro (\textit{log}) de atividade.
 \end{description}
@@ -240,13 +240,13 @@ Em todos os casos, é necessário confirmar que os GPIOs~16 e 17 não estão res
     LED laranja -- barramento ocioso$^{4}$ & 13 & J2-15 & \texttt{bus\_idle\_led} \\
     LED amarelo -- escalonador ocioso & 2 & J3-15 & \texttt{scheduler\_idle\_led} \\
     \midrule
-    \multicolumn{4}{@{}l}{\textit{Primeiro OLED -- mostrador de uso de CPU, barramento I\textsuperscript{2}C(0)}} \\
-    Relógio I\textsuperscript{2}C (SCL) & 32 & J2-7 & \texttt{OLED\_SCL\_PIN} \\
-    Dados I\textsuperscript{2}C (SDA) & 16 & J3-12 & \texttt{OLED\_SDA\_PIN} \\
+    \multicolumn{4}{@{}l}{\textit{OLED0 -- mostrador de uso de CPU, barramento I\textsuperscript{2}C(0)}} \\
+    Relógio I\textsuperscript{2}C (SCL) & 32 & J2-7 & \texttt{OLED0\_SCL\_PIN} \\
+    Dados I\textsuperscript{2}C (SDA) & 16 & J3-12 & \texttt{OLED0\_SDA\_PIN} \\
     \midrule
-    \multicolumn{4}{@{}l}{\textit{Segundo OLED -- mostrador de uso de RAM, barramento I\textsuperscript{2}C(1) independente}} \\
-    Relógio I\textsuperscript{2}C (SCL) & 15 & J3-16 & \texttt{OLED2\_SCL\_PIN} \\
-    Dados I\textsuperscript{2}C (SDA) & 22 & J3-3 & \texttt{OLED2\_SDA\_PIN} \\
+    \multicolumn{4}{@{}l}{\textit{OLED1 -- mostrador de uso de RAM, barramento I\textsuperscript{2}C(1) independente}} \\
+    Relógio I\textsuperscript{2}C (SCL) & 15 & J3-16 & \texttt{OLED1\_SCL\_PIN} \\
+    Dados I\textsuperscript{2}C (SDA) & 22 & J3-3 & \texttt{OLED1\_SDA\_PIN} \\
     \midrule
     \multicolumn{4}{@{}l}{\textit{Tela TFT -- console de registro, SPI genuíno de 4 fios}} \\
     Relógio SPI (SCK) & 18 & J3-9 & \texttt{TFT\_SCK\_PIN} \\
@@ -281,10 +281,10 @@ A numeração utilizada corresponde aos números dos GPIOs do microcontrolador e
     \toprule
     Componente & Alimentação (VCC) & Terra (GND) \\
     \midrule
-    Primeiro OLED & 3,3~[V] (\texttt{esp32:3V3}) & Referência comum \\
-    Segundo OLED & 3,3~[V] (\texttt{esp32:3V3}) & Referência comum \\
+    OLED0 de CPU & 3,3~[V] (\texttt{esp32:3V3}) & Referência comum \\
+    OLED1 de RAM & 3,3~[V] (\texttt{esp32:3V3}) & Referência comum \\
     Tela TFT & 5~[V] (\texttt{esp32:5V})$^{1}$ & Referência comum \\
-    Botão principal & 3,3~[V] (mesmo nó do primeiro OLED) & Lido diretamente pelo GPIO~17, sem resistor externo \\
+    Botão principal & 3,3~[V] (mesmo nó do OLED0) & Lido diretamente pelo GPIO~17, sem resistor externo \\
     Botões de velocidade (2) & 3,3~[V] (mesmo nó) & Resistor externo de 10~[k$\Omega$] para GND em cada um \\
     LEDs piscantes, verde e indicadores (9) & -- (corrente fornecida pelo próprio GPIO) & Resistor de 220~[$\Omega$] para GND em cada um \\
     Chave deslizante & -- (não energizada) & Um terminal ao GND, o outro ao GPIO~0 \\
@@ -309,8 +309,8 @@ A numeração utilizada corresponde aos números dos GPIOs do microcontrolador e
     0 & Chave deslizante de modo de gravação & Não lido por nenhum código de \texttt{main.py}; a chave é o próprio mecanismo de seleção de modo, usado deliberadamente durante uma gravação real, não durante a operação normal. \\
     2 & LED indicador amarelo (\texttt{scheduler\_idle\_led}), saída & Circuito puramente de LED-mais-resistor para GND: só drena corrente, nunca força um nível alto externo sobre o pino antes de o firmware configurá-lo como saída. \\
     5 & Seleção de circuito (CS) da TFT, saída & Conectado apenas à entrada de alta impedância do controlador ILI9341 (nenhum resistor externo disputa o nível do pino); o \textit{pull} interno padrão do ESP32 nesse pino não é contrariado por nada no circuito. \\
-    12 & Segundo LED piscante (\texttt{red\_led\_2}), saída & Mesma razão do GPIO~2: circuito de LED-mais-resistor, só drena corrente. \\
-    15 & Relógio I\textsuperscript{2}C do segundo OLED (SCL), bidirecional & Em repouso, um barramento I\textsuperscript{2}C fica em nível alto (via resistores de \textit{pull-up}, internos ou no próprio módulo OLED); isso tende a favorecer, não contrariar, o comportamento padrão de boot deste pino, mas depende de o módulo OLED específico já estar energizado nesse instante -- ver \texttt{docs/PT/hardware-reference.md}, §5, para a advertência completa antes de uma montagem física. \\
+    12 & Sexto LED piscante (\texttt{blue\_led\_6}), saída & Mesma razão do GPIO~2: circuito de LED-mais-resistor, só drena corrente. \\
+    15 & Relógio I\textsuperscript{2}C do OLED1 (SCL), bidirecional & Em repouso, um barramento I\textsuperscript{2}C fica em nível alto (via resistores de \textit{pull-up}, internos ou no próprio módulo OLED); isso tende a favorecer, não contrariar, o comportamento padrão de boot deste pino, mas depende de o módulo OLED específico já estar energizado nesse instante -- ver \texttt{docs/PT/hardware-reference.md}, §5, para a advertência completa antes de uma montagem física. \\
     \bottomrule
   \end{tabularx}
 \end{table}
