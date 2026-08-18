@@ -130,7 +130,7 @@
       "id": "bus-idle-led",
       "top": 255.6,
       "left": -53.8,
-      "attrs": { "color": "orange", "label": "GPIO 13 - I2C/SPI idle (off = busy)" }
+      "attrs": { "color": "orange" }
     },
     {
       "type": "wokwi-resistor",
