@@ -1,4 +1,4 @@
-"""Test 12/14 — TFT basic check: SPI init + solid-color fills.
+"""Test 12/13 — TFT basic check: SPI init + solid-color fills.
 
 Isolates the ILI9341 TFT: hardware SPI on SCK=GPIO18, MOSI=GPIO23,
 CS=GPIO5, D/C=GPIO21, RST=GPIO19 -- the 4-wire SPI command interface (SCK,

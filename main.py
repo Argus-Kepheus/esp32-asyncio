@@ -190,11 +190,11 @@ def _bus_busy_end(started_at_us):
 # often this task gets scheduled, not a literal RTOS idle task.
 scheduler_idle_led = Pin(SCHEDULER_IDLE_LED_PIN, Pin.OUT, value=0)
 
-# Hardware I2C bus 0, on the mandatory OLED pins. Confirmed working on
-# Wokwi's simulated ESP32 by tests/05_oled_basic.py and
-# tests/06_oled_full_diagnostic.py (see docs/EN/technical-specification.md,
-# section 16) -- an earlier revision used machine.SoftI2C as an
-# unconfirmed defensive compatibility choice; that is no longer needed.
+# Hardware I2C bus 0, on the mandatory OLED pins. The current isolated
+# diagnostics are tests/05_cpu_oled_basic.py and
+# tests/06_cpu_oled_full_diagnostic.py (see tests/README.md). An earlier
+# revision used machine.SoftI2C as an unconfirmed defensive compatibility
+# choice; that is no longer needed.
 i2c = I2C(
     0,
     scl=Pin(OLED_SCL_PIN),

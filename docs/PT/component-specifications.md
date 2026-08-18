@@ -33,75 +33,111 @@ elétricas e a lista de verificação da montagem física, consulte
 
 ### Terminais usados neste projeto
 
+O mapeamento completo e atual de GPIOs está em
+[`hardware-reference.md`](hardware-reference.md), §3; este conjunto de
+linhas é uma amostra representativa, não uma duplicata daquela tabela.
+
 | Terminal da placa | GPIO | Conectado a |
 |---|---:|---|
-| `26` | GPIO 26 | LED vermelho, por meio de resistor de 220 Ω |
+| `26` | GPIO 26 | LED piscante 1, por meio de resistor de 220 Ω |
 | `4` | GPIO 4 | LED verde, por meio de resistor de 220 Ω |
-| `17` | GPIO 17 | Botão pulsador |
-| `32` | GPIO 32 | SCL do OLED |
-| `16` | GPIO 16 | SDA do OLED |
-| `3V3` | — | Alimentação do botão e VCC do OLED |
-| `GND.2` | — | Cátodos dos LEDs e GND do OLED |
+| `17` | GPIO 17 | Botão pulsador principal |
+| `32` | GPIO 32 | SCL do primeiro OLED |
+| `16` | GPIO 16 | SDA do primeiro OLED |
+| `3V3` | — | Alimentação dos botões e dos OLEDs |
+| `5V` | — | Alimentação da TFT |
+| `GND.1` / `GND.2` | — | Cátodos dos LEDs, GND dos OLEDs e da TFT |
 | `TX` / `RX` | — | `$serialMonitor`, somente para diagnóstico; não faz parte dos requisitos funcionais |
 
-## 2. Display — OLED SSD1306
+## 2. Mostradores — OLEDs SSD1306 e TFT ILI9341
+
+### 2.1 OLED SSD1306 (×2)
+
+| Campo | Primeiro OLED | Segundo OLED |
+|---|---|---|
+| Nome do display | OLED monocromático SSD1306, 128 × 64 | OLED monocromático SSD1306, 128 × 64 |
+| Identificador no Wokwi | `board-ssd1306` | `board-ssd1306` |
+| Identificador em `diagram.json` | `oled-display` | `oled-display-2` |
+| Interface utilizada | I2C (existem variantes físicas com SPI, não usadas aqui — ver `technical-specification.md`, §6.3) | I2C |
+| Endereço I2C | `0x3C` | `0x3C` |
+| Objeto de barramento no MicroPython | `machine.I2C(0, ...)` | `machine.I2C(1, ...)`, barramento independente |
+| Alimentação | 3,3 V e GND | 3,3 V e GND |
+| Controlador de software | `ssd1306.py`, classe `SSD1306_I2C`, compartilhada pelos dois | (idem) |
+| Papel em `main.py` | Gráfico de uso de "CPU" (`update_cpu_graph()`) | Gráfico de uso de "RAM" (`update_ram_graph()`) |
+| Terminais | SCL → GPIO 32, SDA → GPIO 16 | SCL → GPIO 15, SDA → GPIO 22 |
+
+Diagnósticos isolados atuais: `tests/05_cpu_oled_basic.py` /
+`tests/06_cpu_oled_full_diagnostic.py` (primeiro OLED),
+`tests/11_ram_oled_basic.py` (segundo OLED, testado isoladamente — não
+prova operação simultânea dos dois barramentos).
+
+### 2.2 TFT ILI9341
 
 | Campo | Valor |
 |---|---|
-| Nome do display | OLED monocromático SSD1306, 128 × 64 |
-| Identificador do componente no Wokwi | `board-ssd1306` |
-| Identificador da peça em `diagram.json` | `oled-display` |
-| Circuito integrado controlador | SSD1306 |
-| Resolução | 128 × 64 pixels, monocromático |
-| Interface utilizada | I2C. Existem variantes físicas com SPI, que não são usadas neste projeto; consulte `technical-specification.md`, §6.3 |
-| Endereço I2C | `0x3C`, definido pelo atributo `i2cAddress` em `diagram.json` |
-| Alimentação | 3,3 V e GND |
-| Controlador de software | `ssd1306.py`, classe `SSD1306_I2C` |
-| Objeto de barramento no MicroPython | `machine.I2C(0, ...)` (hardware) — confirmado em funcionamento no wokwi.com por `tests/05_oled_basic.py` e `tests/06_oled_full_diagnostic.py`; consulte o registro de decisões em `technical-specification.md`, §16 |
+| Nome do display | TFT colorida ILI9341, 240 × 320 |
+| Identificador no Wokwi | `wokwi-ili9341` |
+| Identificador em `diagram.json` | `tft-display` |
+| Interface utilizada | SPI genuíno de 4 fios (SCK, MOSI, CS, D/C) mais uma linha de reset em hardware |
+| Profundidade de cor | RGB565, 16 bits |
+| Alimentação | 5 V e GND (ver `hardware-reference.md`, §6, para a ressalva que isso implica numa montagem física) |
+| Controlador de software | `ili9341.py` (classe `ILI9341` própria deste projeto) |
+| Objeto de barramento no MicroPython | `machine.SPI(2, ...)` |
+| Papel em `main.py` | Console de registro de atividade colorido e rolante (`console_log()`) |
+| Terminais | SCK → GPIO 18, MOSI → GPIO 23, CS → GPIO 5, D/C → GPIO 21, RST → GPIO 19 |
 
-### Terminais usados neste projeto
-
-| Terminal do display | Conectado a |
-|---|---|
-| `VCC` | `3V3` do ESP32 |
-| `GND` | `GND.2` do ESP32 |
-| `SCL` | GPIO 32 do ESP32 |
-| `SDA` | GPIO 16 do ESP32 |
+Diagnósticos isolados atuais: `tests/12_tft_basic.py` (inicialização SPI,
+preenchimentos sólidos), `tests/13_tft_text_diagnostic.py` (renderização
+de texto, cores do console).
 
 ## 3. LEDs
 
-| Campo | LED vermelho | LED verde |
-|---|---|---|
-| Identificador do componente no Wokwi | `wokwi-led` | `wokwi-led` |
-| Identificador da peça em `diagram.json` | `red-led` | `green-led` |
-| Atributo de cor | `#0000FF` (azul — ver "Funcionalidades estendidas" em `technical-specification.md`; era `red`) | `green` |
-| Ânodo (`A`) conectado a | Resistor de 220 Ω `red-led-resistor`, ligado ao GPIO 26 | Resistor de 220 Ω `green-led-resistor`, ligado ao GPIO 4 |
-| Cátodo (`C`) conectado a | `GND.2` do ESP32 | `GND.2` do ESP32 |
-| Comportamento | Alterna de estado a cada 500 ms, continuamente | Reproduz o estado estável e tratado do botão |
+Nove LEDs no total. Os seis LEDs piscantes são todos fisicamente azuis
+(`#0000FF`) em `diagram.json`; seus identificadores em `diagram.json`/Python
+são rótulos históricos por LED, não descrições de cor (ver
+`technical-specification.md`, §16, para o motivo).
+
+| Campo | LEDs piscantes (×6) | LED verde | LED de barramento ocioso | LED de escalonador ocioso |
+|---|---|---|---|---|
+| Identificador no Wokwi | `wokwi-led` | `wokwi-led` | `wokwi-led` | `wokwi-led` |
+| Identificadores em `diagram.json` | `red-led`, `blue-led`, `yellow-led`, `white-led`, `orange-led`, `red-led-2` | `green-led` | `bus-idle-led` | `scheduler-idle-led` |
+| Atributo de cor | `#0000FF` (todos os seis) | `green` | `orange` | `yellow` |
+| GPIO (ânodo via resistor) | 26, 14, 27, 25, 33, 12 | 4 | 13 | 2 |
+| Cátodo conectado a | GND do ESP32 | GND do ESP32 | GND do ESP32 | GND do ESP32 |
+| Comportamento | Cada um alterna de forma independente no intervalo compartilhado (RF-01) | Reproduz o estado estável do botão (RF-02) | Aceso por padrão, apaga durante uma escrita instrumentada (RF-06) | Alterna a cada iteração de `scheduler_idle_task()` (RF-06) |
 
 ## 4. Resistores em série
 
-| Campo | Valor |
-|---|---|
-| Identificador do componente no Wokwi | `wokwi-resistor` |
-| Identificadores em `diagram.json` | `red-led-resistor`, `green-led-resistor` |
-| Resistência | 220 Ω |
-| Finalidade | Limitação da corrente de cada LED no nível lógico de 3,3 V |
+| Campo | Resistores dos LEDs | Pull-downs dos botões de velocidade |
+|---|---|---|
+| Identificador no Wokwi | `wokwi-resistor` | `wokwi-resistor` |
+| Identificadores em `diagram.json` | um por LED (9 no total): `red-led-resistor`, `blue-led-resistor`, `yellow-led-resistor`, `white-led-resistor`, `orange-led-resistor`, `red-led-2-resistor`, `green-led-resistor`, `bus-idle-led-resistor`, `scheduler-idle-led-resistor` | `decrease-speed-button-pulldown`, `increase-speed-button-pulldown` |
+| Resistência | 220 Ω | 10 kΩ |
+| Finalidade | Limitação da corrente de cada LED no nível lógico de 3,3 V | Pull-down externo para GPIO34/35, que não têm um interno |
 
-## 5. Botão pulsador
+## 5. Botões pulsadores
 
-| Campo | Valor |
-|---|---|
-| Identificador do componente no Wokwi | `wokwi-pushbutton` |
-| Identificador da peça em `diagram.json` | `push-button` |
-| Tipo | Normalmente aberto, momentâneo, com quatro terminais organizados em dois pares eletricamente comuns |
-| Nomes válidos dos terminais em `diagram.json` | `1.l`, `1.r` para um nó; `2.l`, `2.r` para o outro nó |
-| Terminais usados neste projeto | `1.l` → `3V3` do ESP32; `2.l` → GPIO 17 do ESP32 |
-| Tecla de acionamento na simulação | `" "`, atributo `key`; corresponde literalmente ao valor `KeyboardEvent.key` da barra de espaço |
-| Função elétrica | Entrada ativa em nível alto, com `Pin.PULL_DOWN` interno no GPIO 17; consulte `technical-specification.md`, §6.2 |
+| Campo | Botão principal | Botões de velocidade (×2) |
+|---|---|---|
+| Identificador no Wokwi | `wokwi-pushbutton` | `wokwi-pushbutton` |
+| Identificador em `diagram.json` | `push-button` | `decrease-speed-button`, `increase-speed-button` |
+| Tipo | Normalmente aberto, momentâneo, quatro terminais em dois pares eletricamente comuns | Igual |
+| Nomes válidos dos terminais em `diagram.json` | `1.l`, `1.r` (um nó), `2.l`, `2.r` (outro nó) | Igual |
+| Terminais usados neste projeto | `1.l` → `3V3`; `2.l` → GPIO 17 | `1.l` → `3V3`; `2.l` → GPIO 34 / GPIO 35, cada um por seu próprio pull-down externo de 10 kΩ |
+| Tecla de acionamento na simulação | `" "` (barra de espaço) | `"a"` (diminuir), `"s"` (aumentar) |
+| Função elétrica | Entrada ativa em nível alto, `Pin.PULL_DOWN` interno no GPIO 17 — ver `technical-specification.md`, §6.2 | Entrada ativa em nível alto, sem resistor interno de redução (pinos somente de entrada) — exige pull-down externo |
 
 > **Observação:** uma versão preliminar do projeto utilizava `1.R` e `2.R`
 > para identificar os terminais do botão. Essas formas possuem letras
 > maiúsculas e lado incorreto, portanto o Wokwi não consegue resolvê-las. A
 > ligação pode falhar silenciosamente e o botão nunca registrar o acionamento.
 > Use sempre exatamente os nomes de terminais indicados acima.
+
+## 6. Chave deslizante de modo de gravação
+
+| Campo | Valor |
+|---|---|
+| Identificador no Wokwi | `wokwi-slide-switch` |
+| Identificador em `diagram.json` | `flash-mode-switch` |
+| Terminais usados neste projeto | um terminal → GPIO 0 do ESP32, o outro → GND |
+| Papel | Seleção de modo de boot do bootloader ROM; nenhum código de `main.py` a lê — ver `hardware-reference.md`, §5 |

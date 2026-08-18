@@ -23,15 +23,21 @@ described here are preserved. See §7 for the process.
 
 Develop and simulate an ESP32 MicroPython application that concurrently:
 
-1. blinks a red LED at a fixed interval;
-2. reads a normally-open, active-high push-button;
-3. controls a green LED according to the button state; and
-4. dynamically changes an SSD1306 OLED message according to that same
-   state.
+1. blinks six LEDs, each its own independent `asyncio` task, all sharing one
+   adjustable interval;
+2. reads a normally-open, active-high push-button and drives a green LED
+   from its state;
+3. reads two further push-buttons that speed up or slow down all six
+   blinking LEDs at once;
+4. plots live CPU- and RAM-usage graphs on two independent SSD1306 OLEDs;
+5. logs colored, per-subsystem activity lines to an ILI9341 TFT console,
+   mirrored to the serial console; and
+6. lights two status-indicator LEDs reflecting display-bus and scheduler
+   activity.
 
-The mandatory deliverables are a complete executable `main.py`, this
-repository published on GitHub, and a shareable Wokwi platform link showing
-the simulated circuit.
+The deliverables are a complete executable `main.py` (with its `ssd1306.py`
+and `ili9341.py` drivers), this repository published on GitHub, and a
+shareable Wokwi platform link showing the simulated circuit.
 
 ## 3. Simulation platform decision
 
@@ -68,55 +74,81 @@ checklist are kept in
 
 ## 4. Functional requirements
 
-### FR-01 — Independent red LED
+### FR-01 — Six blinking LEDs
 
-- Component ID: `red-led` · Python variable: `red_led` · Pin constant: `RED_LED_PIN`
-- GPIO: 26 (moved from the originally-fixed GPIO 2 at the user's explicit
-  request, for board layout — see §16 decision log) · Direction: digital
-  output
-- Behavior: toggle continuously every 500 ms (≈1 s full cycle)
-- Constraint: must never block, and must never be blocked by, the button,
-  green LED, or OLED logic
+- Component IDs: `red-led`, `blue-led`, `yellow-led`, `white-led`,
+  `orange-led`, `red-led-2` · Python variables: `red_led`, `blue_led`,
+  `yellow_led`, `white_led`, `orange_led`, `red_led_2` · Pin constants:
+  `RED_LED_PIN` (GPIO 26), `BLUE_LED_PIN` (14), `YELLOW_LED_PIN` (27),
+  `WHITE_LED_PIN` (25), `ORANGE_LED_PIN` (33), `RED_LED_2_PIN` (12)
+- All six are physically blue (`#0000FF`) in `diagram.json`; the Python
+  identifiers are per-LED labels only, not color descriptions
+- Direction: digital output, each its own independent `asyncio` task
+  (`blink_led()`, driven by the `BLINKING_LEDS` list)
+- Behavior: toggle on a shared 500 ms base interval, adjustable per FR-03
+- Constraint: logically independent of every other task — none calls or
+  waits on another — though all still share the single cooperative
+  scheduler (§7.2 engineering note)
 
-### FR-02 — Green LED
+### FR-02 — Push-button and green LED
 
-- Component ID: `green-led` · Python variable: `green_led` · Pin constant: `GREEN_LED_PIN`
-- GPIO: 4 · Direction: digital output
-- Button released → OFF · Button pressed → ON
+- Component IDs: `push-button`, `green-led` · Python variables:
+  `push_button`, `green_led` · Pin constants: `BUTTON_PIN` (GPIO 17),
+  `GREEN_LED_PIN` (GPIO 4)
+- Button: normally-open momentary, `Pin.IN` with internal `Pin.PULL_DOWN`;
+  released electrical state LOW, pressed HIGH
+- Green LED: digital output; button released → OFF, button pressed → ON
+- Every debounced transition is logged through `console_log()` in green
+  (FR-05)
 
-### FR-03 — Push-button
+### FR-03 — Speed buttons
 
-- Component ID: `push-button` · Python variable: `push_button` · Pin constant: `BUTTON_PIN`
-- GPIO: 17 · Type: normally-open momentary push-button
-- Released electrical state: LOW · Pressed electrical state: HIGH
-- Input mode: `Pin.IN` with internal `Pin.PULL_DOWN`
+- Component IDs: `decrease-speed-button`, `increase-speed-button` · Python
+  variables: `decrease_speed_button`, `increase_speed_button` · Pin
+  constants: `DECREASE_SPEED_BUTTON_PIN` (GPIO 34),
+  `INCREASE_SPEED_BUTTON_PIN` (GPIO 35)
+- Input-only pins with no internal pull resistor — each needs its own
+  external 10 kΩ pull-down to GND (already in `diagram.json`)
+- Each press scales every blinking LED's interval by the same power-of-two
+  factor at once, clamped to [125 ms, 4 s] (`BLINK_SPEED_STEP_MIN`/`_MAX`)
 
-### FR-04 — OLED communication
+### FR-04 — Two OLED resource graphs
 
-- Component ID: `oled-display` · Python variable: `oled_display`
-- Controller: SSD1306 · Resolution: 128 × 64 · Interface: I2C · Address: `0x3C`
-- SCL: GPIO 32 (moved from the originally-fixed GPIO 25 at the user's
-  explicit request, for board layout — see §16 decision log) · SDA: GPIO 16
-  · Supply: 3.3 V and GND
+- Component IDs: `oled-display`, `oled-display-2` · Python variables:
+  `oled_display`, `oled_display_2`
+- Controller: SSD1306 · Resolution: 128 × 64 · Address: `0x3C` on both
+- First OLED: `machine.I2C(0)`, SCL GPIO 32, SDA GPIO 16 — plots the "CPU"
+  graph (§19.2)
+- Second OLED: `machine.I2C(1)`, SCL GPIO 15, SDA GPIO 22 — its own
+  independent hardware I2C bus, plots the "RAM" graph
+- Both redrawn at least every 250 ms (`CPU_GRAPH_SAMPLE_INTERVAL_MS` /
+  `RAM_GRAPH_SAMPLE_INTERVAL_MS`, a floor not an exact period — §9)
 
-The original assignment only requires the OLED to show the messages
-according to the button state — it does not specify a communication
-interface or pins. The I2C interface and the GPIO 25 (SCL) / GPIO 16 (SDA)
-mapping were fixed by the candidate before development started, not chosen
-through an optimization study, and then treated as a fixed predefined
-assignment for the rest of the project (see §6.3); SCL was later moved to
-GPIO 32, see above.
+### FR-05 — TFT log console
 
-### FR-05 — OLED content
+- Component ID: `tft-display` · Python variable: `tft_display`
+- Controller: ILI9341 · genuine 4-wire SPI: SCK GPIO 18, MOSI GPIO 23, CS
+  GPIO 5, D/C GPIO 21, RST GPIO 19
+- `console_log()` writes one colored line per system event (one color per
+  subsystem), wrapping back to the top of the screen once full, and always
+  mirrors every line to the serial console too, regardless of whether the
+  TFT is present (§19.4)
 
-- Stable button released → display exactly `Boa sorte!`
-- Stable button pressed → display exactly `Consegui`
-- Content updates dynamically on every state change.
-- The initial display must match the physical button state at startup.
+### FR-06 — Status-indicator LEDs
 
-### FR-06 — Deliverables
+- Component IDs: `bus-idle-led`, `scheduler-idle-led` · Python variables:
+  `bus_idle_led`, `scheduler_idle_led` · Pin constants: `BUS_IDLE_LED_PIN`
+  (GPIO 13), `SCHEDULER_IDLE_LED_PIN` (GPIO 2)
+- Orange (`bus_idle_led`): ON by default, OFF only while an instrumented
+  display write is in flight — an inverted "bus busy" reading
+- Yellow (`scheduler_idle_led`): toggled every `scheduler_idle_task()`
+  iteration — a coarse scheduler-throughput visualization, not a literal
+  idle/priority signal (§19)
 
-- Complete executable `main.py` and the `ssd1306.py` driver it depends on
+### FR-07 — Deliverables
+
+- Complete executable `main.py` and the `ssd1306.py` / `ili9341.py`
+  drivers it depends on
 - Wokwi circuit definition in `diagram.json`
 - Wokwi VS Code configuration in `wokwi.toml`
 - This `README.md` and this technical specification
@@ -132,9 +164,7 @@ GPIO 32, see above.
 | Python pin constants | UPPER_SNAKE_CASE | `RED_LED_PIN`, `GREEN_LED_PIN`, `BUTTON_PIN`, `OLED_SCL_PIN`, `OLED_SDA_PIN` |
 | Repository folder | kebab-case | `esp32-asyncio` |
 
-All source code, comments and documentation are written in English. The two
-OLED display strings (`Boa sorte!` / `Consegui`) are a deliberate
-exception, kept in Portuguese per the assignment's explicit requirement.
+All source code, comments and documentation are written in English.
 
 ## 6. Electrical design
 
@@ -161,27 +191,45 @@ bounce. A physical implementation would also need to account for wiring
 quality, cable length and electromagnetic interference that the simulation
 does not reproduce.
 
-### 6.3 OLED interface limitation
+### 6.3 Why I2C for the OLEDs, and SPI for the TFT
 
-An SSD1306 can exist in I2C or SPI module variants. SPI needs more signals
-(SCK, MOSI, CS, D/C, optionally RESET) and offers higher transfer
-throughput, but that option is unavailable here because:
+An SSD1306 can exist in I2C or SPI module variants. I2C was fixed for both
+OLEDs (SCL GPIO 32 / SDA GPIO 16 on the first, SCL GPIO 15 / SDA GPIO 22 on
+the second — one independent hardware bus per OLED, FR-04) because:
 
-1. the project explicitly assigns only two communication pins;
-2. GPIO 25 is predefined as SCL and GPIO 16 as SDA; and
-3. the Wokwi `board-ssd1306` part used here is the I2C 128 × 64 variant.
+1. it uses only two signals per bus, keeping the pin budget low across two
+   displays;
+2. the Wokwi `board-ssd1306` part used here is the I2C 128 × 64 variant; and
+3. their content — two periodically-redrawn bar graphs — does not need SPI's
+   higher throughput to stay responsive at a 250 ms refresh floor.
 
-For two short, static messages, I2C bandwidth is adequate.
+The TFT console (FR-05) is a separate case: it uses genuine 4-wire SPI (SCK,
+MOSI, CS, D/C, plus RST), because the ILI9341 controller used here is an SPI
+part and because the console's larger 240×320 color frame benefits from
+SPI's higher transfer rate. The two interface choices are independent
+decisions for two different displays, not a single project-wide constraint.
 
 ## 7. Software architecture
 
 ### 7.1 Cooperative asynchronous tasks
 
-The application uses `asyncio` exclusively for task scheduling:
+The application uses `asyncio` exclusively for task scheduling. Thirteen
+concurrent flows run under one scheduler:
 
-- `blink_red_led()` — periodic, unconditional red LED toggling;
-- `monitor_button()` — button sampling, state-change detection, and
-  synchronizing the green LED and OLED.
+- `blink_led(entry)` — six independent tasks, one per `BLINKING_LEDS` entry,
+  each toggling its own LED on the shared interval (FR-01);
+- `scheduler_idle_task()` — one task, toggling the yellow status LED every
+  loop iteration (FR-06);
+- `update_cpu_graph()` / `update_ram_graph()` — one task per OLED, redrawing
+  its resource graph (FR-04);
+- `print_status()` — one task, printing the periodic serial status line;
+- `monitor_step_button()` — two tasks, one per speed button (FR-03), each
+  created with `asyncio.create_task()`;
+- `monitor_button()` — the main button's monitor (FR-02), the only one of
+  the thirteen that `main()` `await`s directly instead of dispatching with
+  `create_task()`; since it never returns, `main()` never completes on its
+  own, but this does not distinguish it from the other twelve in scheduling
+  behavior.
 
 ### 7.2 Why `asyncio` was selected
 
@@ -233,89 +281,113 @@ This avoids a blocking debounce delay and prevents false LED/OLED
 transitions, while the 30 ms acceptance window stays imperceptible during
 normal manual operation.
 
-## 9. Dynamic OLED update strategy
+## 9. OLED graph update strategy
 
-The OLED frame buffer is transferred only:
+Both OLEDs redraw on a fixed sampling window — `CPU_GRAPH_SAMPLE_INTERVAL_MS`
+/ `RAM_GRAPH_SAMPLE_INTERVAL_MS`, currently 250 ms each — not on a
+button-state or other event edge:
 
-- once during initialization (matching the physical button state at
-  startup); and
-- after a debounced button-state transition.
+- `update_cpu_graph()` and `update_ram_graph()` each run their own
+  `while True` loop, redrawing every iteration and then
+  `await asyncio.sleep_ms(250)`;
+- `asyncio.sleep_ms()` guarantees only a minimum delay, so the sampling
+  window is measured with `time.ticks_us()` rather than assumed exact — a
+  slower iteration (e.g. a concurrent `console_log()` write) pushes the real
+  gap past 250 ms, and `update_cpu_graph()` accounts for that explicitly
+  when computing its percentage (§19.2);
+- every redraw does a full `fill()` and re-plots the whole scrolling
+  history, not just the newest column, since `framebuf` has no primitive
+  for shifting existing pixel data left.
 
-The display is never cleared and redrawn on every poll cycle while the
-state is unchanged. This event-driven approach reduces I2C traffic,
-processor usage and cooperative-task latency, and avoids visible flicker
-from repeated clear/draw cycles.
+This is unconditional periodic redraw, not event-driven update: the two
+OLEDs are themselves part of what keeps the processor busy (§19.2's "CPU"
+measurement), so redrawing continuously is intentional here, not something
+to minimize.
 
 ## 10. State model
 
-| Stable state | GPIO 17 | Green LED | OLED message |
+| Stable state | GPIO 17 | Green LED | Console log line |
 |---|---:|---|---|
-| Released | LOW | OFF | `Boa sorte!` |
-| Pressed | HIGH | ON | `Consegui` |
+| Released | LOW | OFF | `Button released -> Green LED OFF` (green) |
+| Pressed | HIGH | ON | `Button pressed -> Green LED ON` (green) |
 
-The red LED task is orthogonal to this state model and keeps toggling every
-500 ms in both states.
+The six blinking-LED tasks, the two OLED graph tasks and the TFT console are
+all orthogonal to this state model: none of them pause, restart or change
+behavior when the button transitions.
 
 ## 11. Startup and failure behavior
 
-At startup, the application:
+At module-load time, before `main()` runs, the application:
 
-1. configures both LEDs as outputs and turns them off;
-2. configures GPIO 17 with `Pin.PULL_DOWN`;
-3. creates the I2C bus on the mandatory OLED pins and scans for address
-   `0x3C`;
-4. initializes the display if the address is detected;
-5. applies the current physical button state to the LED/OLED outputs; and
-6. starts the red LED task and the button-monitoring task.
+1. configures the six blinking LEDs, the green LED, and the two
+   status-indicator LEDs as outputs, all off;
+2. configures the button pins (`Pin.PULL_DOWN` on `BUTTON_PIN`; external
+   pull-downs on the two speed-button pins, per `diagram.json`);
+3. creates both OLED I2C buses and scans each for address `0x3C`,
+   initializing `oled_display` / `oled_display_2` only where detected;
+4. creates the TFT SPI object and attempts `ILI9341(...)` construction,
+   catching `OSError` into `tft_display = None` on failure.
 
-If the OLED is not detected at the expected address, the program prints a
-diagnostic (expected vs. detected addresses) and keeps the LED and button
-logic running normally. This graceful degradation is a debugging aid; it
-does not replace the requirement for a correctly wired OLED in the
-submitted simulation.
+Then `main()` logs a startup line, applies the initial button state, resets
+the bus-busy accumulator (so `update_cpu_graph()`'s first window isn't
+charged with startup-time I/O), and creates all twelve `asyncio.create_task()`
+flows before `await`-ing the main button monitor directly (§7.1).
+
+If an OLED is not detected at its expected address, `create_oled_display()`
+prints a diagnostic (expected vs. detected addresses) and returns `None`;
+`draw_usage_graph()` and `console_log()` both check for `None` and skip
+their display write while continuing everything else normally. The TFT's
+`None` case is different: because its SPI link is write-only, a missing
+panel does not reliably produce an `OSError` at all (§19.4), so this
+graceful-degradation path is confirmed to trigger only for driver/wiring
+faults that do raise, not for a simply-disconnected TFT.
 
 ## 12. Verification plan
 
 ### TC-01 — Startup with button released
 
 **Precondition:** button not pressed when the simulation starts.
-**Expected:** red LED begins toggling; green LED stays off; OLED shows
-`Boa sorte!`.
+**Expected:** all six blinking LEDs begin toggling; green LED stays off;
+both OLED graphs begin plotting; the TFT console (if present) and the
+serial console both show a startup line.
 
 ### TC-02 — Press button
 
 **Action:** press and hold the push-button.
-**Expected after debounce:** green LED turns on; OLED changes once to
-`Consegui`; red LED keeps toggling without freezing or a visible timing
-glitch.
+**Expected after debounce:** green LED turns on; a green
+`Button pressed -> Green LED ON` line appears on the TFT console and on
+serial; all six blinking LEDs keep toggling without freezing or a visible
+timing glitch.
 
 ### TC-03 — Release button
 
 **Action:** release the push-button.
-**Expected after debounce:** green LED turns off; OLED changes once back to
-`Boa sorte!`; red LED keeps toggling.
+**Expected after debounce:** green LED turns off; a green
+`Button released -> Green LED OFF` line appears on both consoles; the
+blinking LEDs keep toggling.
 
 ### TC-04 — Rapid repeated presses
 
 **Action:** press and release the button several times in quick
 succession.
-**Expected:** no visible rapid green LED oscillation, and no redundant OLED
-refreshes beyond one per genuine state change.
+**Expected:** no visible rapid green LED oscillation, and no redundant
+console lines beyond one per genuine debounced state change.
 
 ### TC-05 — Timing independence
 
-**Action:** press and release the button at different points in the red
-LED's on/off cycle.
-**Expected:** the button/display response remains prompt, and the red LED
-keeps its ≈500 ms toggle interval regardless of when the OLED redraws.
+**Action:** press and release the button at different points in the
+blinking LEDs' on/off cycle.
+**Expected:** the button response remains prompt, and the blinking LEDs
+keep their shared toggle interval regardless of when the OLEDs or TFT
+redraw (subject to the blocking-write latency documented in §19.2).
 
 ### TC-06 — OLED disconnected
 
-**Action:** temporarily remove an OLED I2C wire in `diagram.json`, run the
-simulation, then restore it.
-**Expected:** a serial diagnostic identifies the missing address; LED and
-button logic keep working. Restore the correct circuit before final
-submission.
+**Action:** temporarily remove one OLED's I2C wire in `diagram.json`, run
+the simulation, then restore it.
+**Expected:** a serial diagnostic identifies the missing address for that
+OLED; the other OLED, the TFT, the LEDs and the button all keep working
+normally. Restore the correct circuit before further work.
 
 ### TC-07 — Boot sanity check (no application code involved)
 
@@ -413,7 +485,7 @@ submitted behavior interactively with no installation.
 | `docs/technical-specification.md` | This document |
 | `docs/component-specifications.md` | Per-component specification sheets (board, display, LEDs, resistors, push-button) |
 | `docs/hardware-reference.md` | Board/module identification, GPIO-to-header map, reserved pins, electrical characteristics, wiring checklist |
-| `tests/` | Fourteen standalone diagnostic scripts, `01_red_led_basic.py` through `14_console_serial_fallback.py` (not part of the deliverable) — see `tests/README.md` |
+| `tests/` | Thirteen current-hardware diagnostic scripts, `01_blue_led_basic.py` through `13_tft_text_diagnostic.py` (not part of the deliverable) — see `tests/README.md` |
 | `report/` | LaTeX source (`relatorio.tex`), compiled PDF, build script and circuit figure for the (Portuguese-language) technical report — see `report/README.md` |
 
 ## 15. Acceptance criteria
@@ -422,11 +494,14 @@ The project is accepted when:
 
 - all pin assignments match §4/§6;
 - `main.py` starts without errors on the Wokwi MicroPython firmware;
-- the red LED toggles every 500 ms without blocking or being blocked by
-  other behaviors;
-- the green LED and OLED match the button state per §10;
-- no `time.sleep()` blocking delay is used anywhere;
-- the OLED is updated only on initialization or on a state change, per §9;
+- all six blinking LEDs toggle on their shared interval without blocking or
+  being blocked by other tasks beyond the display-write latency documented
+  in §19.2;
+- the green LED matches the button state per §10;
+- the two speed buttons scale the blinking interval within its clamped
+  range (FR-03);
+- both OLED graphs and the TFT console update per §9 and FR-05;
+- no `time.sleep()` blocking delay is used anywhere in `main.py`;
 - the Wokwi simulation is saved and shareable by URL; and
 - the repository is published on GitHub with both project links in the
   README.
@@ -439,20 +514,20 @@ a row, keep the reasoning short and explicit.
 
 | Decision | Rationale | Alternatives considered |
 |---|---|---|
-| `RED_LED_PIN` moved to GPIO 26, `OLED_SCL_PIN` moved to GPIO 32 | User's explicit request, for board layout as the circuit grew (FR-01/FR-04 originally fixed these at GPIO 2 / GPIO 25 before development started, §6.3). GPIO 2 was later reused for `scheduler_idle_led`, GPIO 25 for `white_led` (§19). | Keeping the original pins and fitting new hardware around them (rejected: made the diagram layout harder to read as more peripherals were added) |
+| `RED_LED_PIN` moved to GPIO 26, `OLED_SCL_PIN` moved to GPIO 32 | User's explicit request, for board layout as the circuit grew (both pins were originally fixed at GPIO 2 / GPIO 25 before development started). GPIO 2 was later reused for `scheduler_idle_led`, GPIO 25 for `white_led` (§19.3). | Keeping the original pins and fitting new hardware around them (rejected: made the diagram layout harder to read as more peripherals were added) |
 | Wokwi over Tinkercad | Wokwi natively produces both mandatory deliverables: an executable MicroPython `main.py` and a shareable project link. Tinkercad cannot execute MicroPython at all. | A C/C++ Tinkercad sketch alongside the MicroPython version; Tinkercad for the schematic only, no code execution |
 | `board-esp32-devkit-c-v4` as the target board | An official Espressif development board supported natively by Wokwi, providing all GPIO pins required by the specification and complete manufacturer documentation. Improves reproducibility and removes ambiguities associated with generic or unofficial ESP32 boards. | Other Wokwi ESP32 board parts (e.g. `board-esp32-devkit-v1`), which one of the original drafts used and which uses different pin-label conventions |
 | Cooperative `asyncio` tasks instead of a manual super loop | Scalability and separation of concerns as the project grows (see §7.2). Does **not** make the OLED I2C write non-blocking (§7.2 engineering note). | Manual super loop with `ticks_ms()`/`ticks_diff()` per task (simpler, functionally equivalent here, scales worse) |
-| I2C (2 wires: SCL = GPIO 25, SDA = GPIO 16) for the OLED | Imposed by the project's own pin specification, not chosen for technical superiority (§6.3). | SPI (4–5 lines), faster refresh but unavailable under the 2-pin constraint |
+| I2C for both OLEDs, SPI for the TFT | Two signals per OLED bus keeps the pin budget low across two displays; the TFT uses genuine SPI instead because its controller is an SPI part with a larger, faster-refreshed frame (§6.3). | SPI for the OLEDs too (rejected: no throughput benefit for two periodically-redrawn bar graphs, at the cost of more pins) |
 | Internal pull-down on the button (`Pin.PULL_DOWN`) | Satisfies "HIGH when pressed" without an external resistor. | External 10 kΩ pull-down drawn explicitly in the schematic |
 | Software debounce kept despite the simulated button not bouncing | Correct behavior for a future real, physical button (§6.2, §8); zero cost in simulation. | No debounce at all (would need to be added later for real hardware) |
-| OLED redrawn only on button state change, not every poll cycle | Avoids visible flicker and redundant I2C writes (§9). | Unconditional redraw every loop iteration |
+| *(Superseded — see the OLED-graph row below)* OLED redrawn only on button state change | Original rationale: avoided visible flicker and redundant I2C writes for a static button-state message. No longer how either OLED behaves (§9). | Unconditional redraw every loop iteration (this is what both OLEDs do now, deliberately, since they graph a continuously-changing value) |
 | Button sampled every 5 ms, accepted after 30 ms stable | Fast enough to feel instantaneous; the 30 ms window is the actual debounce guard, sampling itself is not the filter. | Coarser polling (e.g. 50 ms) with no separate acceptance window — simpler but couples sampling rate to debounce time |
-| `machine.I2C` (hardware), not `machine.SoftI2C` | **Confirmed on a live wokwi.com run**: `tests/05_oled_basic.py` and `tests/06_oled_full_diagnostic.py`, both using hardware `I2C(0, scl=Pin(25), sda=Pin(16), freq=400_000)`, passed — including every `ssd1306.py` drawing primitive. This retroactively shows hardware I2C was never actually the cause of the original wokwi.com issues (the real cause was the `attrs.env` boot loop, see the row below); `SoftI2C` had been adopted earlier as an unconfirmed, purely defensive substitute and is no longer needed. `main.py` was reverted to hardware `I2C` accordingly. | `machine.SoftI2C` (previously adopted defensively, now confirmed unnecessary; kept only as a documented fallback if a future hardware-I2C regression appears) |
+| `machine.I2C` (hardware), not `machine.SoftI2C` | Historical Wokwi runs of predecessor OLED diagnostics confirmed hardware I2C; those scripts predated the current pin map and do not validate the present suite. The current CPU OLED diagnostics are `tests/05_cpu_oled_basic.py` and `tests/06_cpu_oled_full_diagnostic.py`, using GPIO32 (SCL) and GPIO16 (SDA), and must be rerun before recording current-hardware evidence. | `machine.SoftI2C` (previously adopted defensively, now confirmed unnecessary; kept only as a documented fallback if a future hardware-I2C regression appears) |
 | `push-button` wired with pin names `1.l` / `2.l` | These are the actual pin names exposed by the Wokwi `wokwi-pushbutton` part. One of the three original drafts used `1.R` / `2.R` (wrong case, wrong side), which Wokwi cannot resolve — the connection silently fails and the button never registers a press in that simulation. | `1.R` / `2.R` naming (rejected: invalid pin reference) |
 | `esp32` board part uses `"attrs": {}` (no pinned firmware `env`) | **Confirmed root cause of a live wokwi.com failure**: pinning `"env": "micropython-20240602-v1.23.0"` (carried over from the `p/` draft) caused an infinite boot loop — the console showed repeated `POWERON_RESET` / `SW_RESET` cycles and MicroPython never started, so *nothing* ran, not even a trivial one-GPIO test script (see TC-07). Removing the pin and letting Wokwi select its default/current MicroPython build resolved it. This also retroactively confirms this exact line was very likely the original issue reported against the `p/` draft before consolidation. | Pinning a specific firmware `env` string for reproducibility (rejected: the specific string used was invalid/unsupported and silently broke boot, with no error surfaced other than the reset loop) |
-| Both OLEDs repurposed as live resource-usage graphs (§19.2) | User-requested extension, after the mandatory FR-05 behavior was already validated. The "CPU" value is real measured time inside the displays' instrumented draw/transfer calls (drawing plus I2C/SPI transfer, not bus transfer alone), a partial approximation kept because bare-metal MicroPython on the ESP32 exposes no OS-level scheduler load metric to read instead — see §19.2 for what it does and doesn't cover. | A synthetic/simulated waveform for "CPU usage" (rejected: would not reflect anything real about the running program); reusing the original text message alongside a graph (rejected: no space on a 128×64 monochrome panel without shrinking the graph) |
-| Six blinking LEDs share one interval, still six separate `asyncio` tasks (§19.3) | User-requested extension: demonstrates that adding "more of the same" only ever means one more concurrent task, never more shared-loop logic — same principle FR-01 already established for the original red LED. | A single task toggling all six LEDs together (rejected: defeats the point of demonstrating independent concurrent equipment, and reintroduces the coupling `asyncio` was adopted to avoid, §7.2) |
+| Both OLEDs plot live resource-usage graphs, not button-state text (§19.2) | User-requested change, after the button-state OLED message (the project's earlier behavior) was already validated. The "CPU" value is real measured time inside the displays' instrumented draw/transfer calls (drawing plus I2C/SPI transfer, not bus transfer alone), a partial approximation kept because bare-metal MicroPython on the ESP32 exposes no OS-level scheduler load metric to read instead — see §19.2 for what it does and doesn't cover. | A synthetic/simulated waveform for "CPU usage" (rejected: would not reflect anything real about the running program); reusing the earlier text message alongside a graph (rejected: no space on a 128×64 monochrome panel without shrinking the graph) |
+| Six blinking LEDs share one interval, still six separate `asyncio` tasks (§19.3) | Demonstrates that adding "more of the same" only ever means one more concurrent task, never more shared-loop logic — the same principle FR-01 already establishes for all six LEDs today. | A single task toggling all six LEDs together (rejected: defeats the point of demonstrating independent concurrent equipment, and reintroduces the coupling `asyncio` was adopted to avoid, §7.2) |
 
 ## 17. Future work (physical hardware phase, out of scope here)
 
@@ -477,33 +552,26 @@ reviewed commits. Proposed changes should identify whether they affect:
 Mandatory pin mappings and user-visible messages must not be changed
 without an explicit update to the assessment requirements.
 
-## 19. Extended features (beyond the original assignment)
+## 19. Implementation notes
 
-This section documents functionality added, at the user's explicit
-request, after the original mandatory deliverable (§2–§15) was already
-complete and validated. It does not replace or invalidate the functional
-requirements above; §16's decision log carries the short version of each
-decision below. The green LED's behavior and the OLEDs' original
-button-state purpose have both since settled: §19.2 documents what
-replaced the OLED text message, and the green LED's current behavior
-(now routed through `console_log()`, §19.4) is unchanged from FR-02
-otherwise.
+This section expands on implementation detail for the requirements in §4,
+beyond what fits in a single FR entry. §16's decision log carries the short
+rationale behind each choice described here.
 
-### 19.1 Second OLED, own I2C bus
+### 19.1 Two independent OLED I2C buses
 
-A second SSD1306 OLED (`oled-display-2` / `oled_display_2`) runs on its
-own independent hardware I2C bus, `machine.I2C(1)`, on GPIO15 (SCL) /
-GPIO22 (SDA) — separate from the original OLED's `I2C(0)` bus (GPIO32
-SCL / GPIO16 SDA per the pin move recorded in §16), so both are addressed
-concurrently without bus contention.
+The first SSD1306 OLED (`oled-display` / `oled_display`) runs on
+`machine.I2C(0)`, GPIO32 (SCL) / GPIO16 (SDA). The second
+(`oled-display-2` / `oled_display_2`) runs on its own independent hardware
+I2C bus, `machine.I2C(1)`, GPIO15 (SCL) / GPIO22 (SDA) — not a second
+address on the first bus — so both are addressed concurrently without bus
+contention.
 
-### 19.2 Both OLEDs now plot live resource-usage graphs
+### 19.2 What the two OLED graphs plot
 
-FR-05 originally required the (single) OLED to display `Boa sorte!` /
-`Consegui` depending on the push-button state. Neither OLED does this
-anymore — both were repurposed as Task-Manager-style scrolling bar graphs,
-one sample per horizontal pixel column (up to 128 samples of history),
-redrawn every sampling window:
+Both OLEDs are Task-Manager-style scrolling bar graphs, one sample per
+horizontal pixel column (up to 128 samples of history), redrawn every
+sampling window:
 
 - **First OLED — labeled "CPU."** MicroPython on bare ESP32 exposes no
   OS-level scheduler load metric, so the plotted value is a partial,
@@ -530,25 +598,22 @@ redrawn every sampling window:
   allocations internal to the firmware, and anything outside the
   gc-managed heap are not included. See `update_ram_graph()`.
 
-The push-button still turns the green LED on/off; its state now goes
-through `console_log()` (§19.4) rather than a text message on either
-OLED, since neither has room left for both a graph and a legible text
-message on a 128×64 monochrome panel.
+The push-button's state is logged through `console_log()` (§19.4), not a
+text message on either OLED, since neither has room left for both a graph
+and a legible text message on a 128×64 monochrome panel.
 
 ### 19.3 Six LEDs, one shared interval, six independent tasks
 
-Five additional LEDs (blue, yellow, white, orange, and a second red) join
-the original FR-01 red LED, all painted the same color on the board
-(`#0000FF`) even though `main.py` still tracks each one individually (see
-`BLINKING_LEDS`). Each runs as its own independent `asyncio` task
-(`blink_led()`) — the same pattern FR-01 already established: one more LED
-is always one more concurrent task, never more logic added to a shared
-loop.
+All six LEDs (red, blue, yellow, white, orange, and a second red) are
+painted the same color on the board (`#0000FF`) even though `main.py`
+still tracks each one individually (see `BLINKING_LEDS`). Each runs as its
+own independent `asyncio` task (`blink_led()`) — one more LED is always
+one more concurrent task, never more logic added to a shared loop.
 
 ### 19.4 TFT log console, write-only SPI, and the serial-mirroring decision
 
-A third display, an ILI9341 TFT, was added over genuine 4-wire SPI (SCK,
-MOSI, CS, D/C, plus a reset line — GPIO 18/23/5/21/19). Unlike the two
+The ILI9341 TFT uses genuine 4-wire SPI (SCK, MOSI, CS, D/C, plus a reset
+line — GPIO 18/23/5/21/19). Unlike the two
 OLEDs' graphs, the TFT (`tft_display`, driven by `ili9341.py`) works as a
 scrolling, colored activity log: `console_log()` writes one line per
 system event, one color per subsystem, wrapping back to the top of the
@@ -576,12 +641,3 @@ glyph to individual pixels via `framebuf.FrameBuffer.pixel()`, up to
 text/background color pair, a 256-entry lookup table from byte value to
 the corresponding 16 RGB565 bytes for that 8-pixel glyph slice, and reuses
 it per character rendered.
-
-All six currently blink on the same 500 ms base interval — toggling every
-500 ms, ≈1 s full cycle, matching the original FR-01 timing — functionally
-six identical, independent pieces of equipment rather than six different
-frequencies. Two extra push-buttons (GPIO34 decrease, GPIO35 increase —
-both wired with an external physical pull-down, since GPIO34/35 have no
-internal one) scale every LED's interval by the same power-of-two factor
-at once, clamped between 125 ms and 4 s, so all six always stay in
-lockstep with each other.

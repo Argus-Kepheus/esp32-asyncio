@@ -9,19 +9,6 @@ LEDs, a push-button driving a green LED, two activity-indicator LEDs,
 two SSD1306 OLEDs plotting live CPU/RAM graphs, and an ILI9341 TFT log
 console — all simulated in [Wokwi](https://wokwi.com).
 
-> **Project status:** the requirements and tables below describe the
-> original mandatory assessment. The red LED and push-button/green-LED
-> behavior are still exactly as described; the pin numbers below are kept
-> current (see the note under "Hardware requirements"). The OLED message
-> behavior, however, has been **superseded**, not just extended: both
-> OLEDs now show live resource-usage graphs instead of button text. Since
-> the original scope was completed, the hardware and `main.py` have also
-> been extended, at the user's request, with five more LEDs, two
-> activity-indicator LEDs, a second OLED, a TFT console, and two speed
-> buttons — see
-> [`technical-specification.md`](technical-specification.md)'s "Extended
-> features" section for the full current state.
-
 **Wokwi simulation:** <https://wokwi.com/projects/471528241540407297>
 
 ## Hardware requirements
@@ -29,16 +16,18 @@ console — all simulated in [Wokwi](https://wokwi.com).
 | Component | Wokwi identifier | ESP32 pin |
 |---|---|---:|
 | Board — Espressif ESP32-DevKitC V4 | `board-esp32-devkit-c-v4` | — |
-| Red LED (+ 220 Ω resistor) | `red-led` | GPIO 26 |
+| Six blinking LEDs (+ 220 Ω resistor each) | `red-led`, `blue-led`, `yellow-led`, `white-led`, `orange-led`, `red-led-2` | GPIO 26, 14, 27, 25, 33, 12 |
 | Green LED (+ 220 Ω resistor) | `green-led` | GPIO 4 |
-| Push-button, normally-open | `push-button` | GPIO 17 |
-| OLED display, SSD1306 128×64, I2C | `oled-display` | SCL = GPIO 32, SDA = GPIO 16 |
+| Main push-button, normally-open | `push-button` | GPIO 17 |
+| Two speed buttons (+ external 10 kΩ pull-down each) | `decrease-speed-button`, `increase-speed-button` | GPIO 34, 35 |
+| Two status-indicator LEDs (+ 220 Ω resistor each) | `bus-idle-led` (orange), `scheduler-idle-led` (yellow) | GPIO 13, 2 |
+| First OLED, SSD1306 128×64, I2C(0) | `oled-display` | SCL = GPIO 32, SDA = GPIO 16 |
+| Second OLED, SSD1306 128×64, I2C(1) | `oled-display-2` | SCL = GPIO 15, SDA = GPIO 22 |
+| TFT, ILI9341 240×320, SPI | `tft-display` | SCK 18, MOSI 23, CS 5, D/C 21, RST 19 |
 
-The red LED and OLED SCL pins moved off their originally-assigned GPIO 2
-and GPIO 25 at the user's explicit request, for board layout (see
-`technical-specification.md`, §16 decision log); the table above is kept
-current, not historical. All components run on the board's 3.3 V rail and
-share a common ground.
+The two OLEDs and the three push-buttons run on the board's 3.3 V rail;
+the TFT runs on 5 V (see `hardware-reference.md`, §6, for the physical-build
+caveat that implies). All components share a common ground.
 Full electrical detail (headers, reserved pins, wiring checklist) is in
 [`hardware-reference.md`](hardware-reference.md); exact per-part
 identifiers are in
@@ -47,31 +36,27 @@ identifiers are in
 ## Software requirements
 
 - MicroPython for ESP32.
-- `main.py` runs the red LED blink, push-button/green LED logic, and OLED
-  updates as concurrent `asyncio` tasks, so the red LED blink is never
-  delayed by an OLED refresh.
-- The push-button uses the ESP32's internal pull-down resistor
-  (`Pin.PULL_DOWN`); no external resistor is required.
-- The OLED uses I2C (`machine.I2C`) at address `0x3C`, driven by
-  `ssd1306.py`.
+- `main.py` runs thirteen concurrent `asyncio` flows — six blinking-LED
+  tasks, the scheduler-activity indicator, both OLED graph tasks, a
+  serial status task, and three button monitors — so no LED's blink is
+  ever delayed by a display refresh beyond the write itself.
+- The main push-button uses the ESP32's internal pull-down resistor
+  (`Pin.PULL_DOWN`); the two speed buttons need their own external
+  pull-down (GPIO34/35 have none internally).
+- The two OLEDs use I2C (`machine.I2C`, one bus each) at address `0x3C`,
+  driven by `ssd1306.py`; the TFT uses SPI (`machine.SPI`), driven by
+  this project's own `ili9341.py`.
 
 Full requirements and design rationale are in
 [`technical-specification.md`](technical-specification.md).
 
 ## Result
 
-| Push-button state | Green LED | OLED message |
-|---|---|---|
-| Released | OFF | `Boa sorte!` |
-| Pressed | ON | `Consegui` |
-
-The green LED column is still accurate. The OLED message column is not
-— **superseded**, not extended: neither OLED shows button text anymore,
-both are live CPU/RAM usage graphs (see "Extended features" in
-`technical-specification.md`).
-
-The red LED blinks continuously every 500 ms, independently of the
-push-button, green LED, and OLED.
+Six LEDs blink independently on a shared, button-adjustable interval; the
+main push-button drives a green LED and logs every transition to the TFT
+console and the serial console; the two OLEDs plot live CPU- and
+RAM-usage graphs; and the two status-indicator LEDs reflect display-bus
+and scheduler activity in real time.
 
 ## License
 

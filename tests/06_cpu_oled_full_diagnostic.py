@@ -1,17 +1,15 @@
-"""Test 6/14 — First OLED full diagnostic suite.
+"""Test 6/13 — CPU OLED full diagnostic suite.
 
 The most complete check: exercises full-screen pixel activation, pixel
 addressing, drawing primitives, text, inversion, contrast, display power
 control, and framebuffer scrolling on the 128x64 SSD1306 OLED. See
 tests/README.md for how to run this on wokwi.com.
 
-This is main.py's first OLED (I2C bus 0, oled_display).
+This is main.py's CPU OLED (I2C bus 0, GPIO 32/16).
 
-Uses the same hardware machine.I2C peripheral as main.py (see
-docs/EN/technical-specification.md, section 16 -- an earlier revision used
-machine.SoftI2C defensively; this test's passing result on wokwi.com is
-part of the evidence that confirmed hardware I2C works and made that
-workaround unnecessary).
+Uses the same hardware machine.I2C peripheral and current CPU OLED pins as
+main.py. This rewritten diagnostic must be run again before its result is
+recorded as evidence for the current hardware.
 
 Requires the hline()/vline() methods on ssd1306.SSD1306, added
 specifically to support this test (the upstream driver forwards them to

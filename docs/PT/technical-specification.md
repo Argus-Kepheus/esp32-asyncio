@@ -27,13 +27,20 @@ preservados. Consulte a §7.
 Desenvolver e simular uma aplicação MicroPython para ESP32 que execute
 concorrentemente:
 
-1. o piscar contínuo de um LED vermelho em intervalo fixo;
-2. a leitura de um botão pulsador normalmente aberto e ativo em nível alto;
-3. o controle de um LED verde segundo o estado do botão;
-4. a alteração dinâmica de uma mensagem em OLED SSD1306 segundo o mesmo
-   estado.
+1. o piscar de seis LEDs, cada um em sua própria tarefa `asyncio`, todos
+   compartilhando um intervalo ajustável;
+2. a leitura de um botão pulsador normalmente aberto e ativo em nível alto,
+   acionando um LED verde;
+3. a leitura de mais dois botões pulsadores que aceleram ou desaceleram
+   todos os seis LEDs piscantes ao mesmo tempo;
+4. gráficos ao vivo de uso de CPU e RAM em dois OLEDs SSD1306
+   independentes;
+5. um console de registro colorido, por subsistema, em uma TFT ILI9341,
+   espelhado no console serial; e
+6. dois LEDs indicadores de estado, refletindo a atividade do barramento
+   dos mostradores e do escalonador.
 
-Os entregáveis obrigatórios são:
+Os entregáveis são:
 
 - um arquivo `main.py` completo e executável;
 - o código e a documentação publicados em um repositório GitHub;
@@ -82,82 +89,111 @@ GPIO17 podem estar reservados à PSRAM.
 
 ## 4. Requisitos funcionais
 
-### RF-01 — LED vermelho
+### RF-01 — Seis LEDs piscantes
 
-- Identificador no Wokwi: `red-led`;
-- variável em Python: `red_led`;
-- constante: `RED_LED_PIN`;
-- GPIO: 26 (realocado do GPIO 2, originalmente fixo, a pedido explícito do
-  usuário, por layout da placa — ver §16, registro de decisões);
-- estado alternado a cada 500 ms;
-- funcionamento contínuo;
-- independente do botão, do LED verde e do OLED;
-- implementação não bloqueante.
+- Identificadores no Wokwi: `red-led`, `blue-led`, `yellow-led`,
+  `white-led`, `orange-led`, `red-led-2`;
+- variáveis em Python: `red_led`, `blue_led`, `yellow_led`, `white_led`,
+  `orange_led`, `red_led_2`;
+- constantes: `RED_LED_PIN` (GPIO 26), `BLUE_LED_PIN` (14),
+  `YELLOW_LED_PIN` (27), `WHITE_LED_PIN` (25), `ORANGE_LED_PIN` (33),
+  `RED_LED_2_PIN` (12);
+- todos fisicamente azuis (`#0000FF`) em `diagram.json`; os identificadores
+  Python são apenas rótulos individuais, não descrições de cor;
+- cada um em sua própria tarefa `asyncio` independente (`blink_led()`,
+  a partir da lista `BLINKING_LEDS`);
+- alternância em um intervalo-base de 500 ms, compartilhado e ajustável
+  (RF-03);
+- logicamente independentes entre si -- nenhum chama ou espera outro --,
+  embora todos compartilhem o mesmo escalonador cooperativo (nota de
+  engenharia da §5.3).
 
-Interpretação temporal:
+### RF-02 — Botão pulsador e LED verde
 
-- ligado por aproximadamente 500 ms;
-- desligado por aproximadamente 500 ms;
-- período completo aproximado de 1 s.
+- Identificadores no Wokwi: `push-button`, `green-led`;
+- variáveis em Python: `push_button`, `green_led`;
+- constantes: `BUTTON_PIN` (GPIO 17), `GREEN_LED_PIN` (GPIO 4);
+- botão: normalmente aberto e momentâneo, `Pin.IN` com `Pin.PULL_DOWN`
+  interno; solto = LOW, pressionado = HIGH;
+- LED verde: botão solto → apagado, botão pressionado → aceso;
+- cada transição estável é registrada via `console_log()`, em verde
+  (RF-05).
 
-### RF-02 — LED verde
+### RF-03 — Botões de velocidade
 
-- Identificador no Wokwi: `green-led`;
-- variável em Python: `green_led`;
-- constante: `GREEN_LED_PIN`;
-- GPIO: 4;
-- botão solto: LED apagado;
-- botão pressionado: LED aceso.
+- Identificadores no Wokwi: `decrease-speed-button`,
+  `increase-speed-button`;
+- variáveis em Python: `decrease_speed_button`, `increase_speed_button`;
+- constantes: `DECREASE_SPEED_BUTTON_PIN` (GPIO 34),
+  `INCREASE_SPEED_BUTTON_PIN` (GPIO 35);
+- pinos somente de entrada, sem resistor interno de redução -- cada um
+  precisa de seu próprio resistor externo de 10 kΩ até o GND (já em
+  `diagram.json`);
+- cada pressão escala o intervalo de todos os LEDs piscantes pelo mesmo
+  fator de potência de dois, limitado a [125 ms, 4 s]
+  (`BLINK_SPEED_STEP_MIN`/`_MAX`).
 
-### RF-03 — Botão pulsador
+### RF-04 — Dois gráficos de uso de recursos nos OLEDs
 
-- Identificador no Wokwi: `push-button`;
-- variável em Python: `push_button`;
-- constante: `BUTTON_PIN`;
-- GPIO: 17;
-- tipo: normalmente aberto e momentâneo;
-- botão solto: nível lógico baixo;
-- botão pressionado: nível lógico alto;
-- entrada configurada com `Pin.PULL_DOWN`;
-- tratamento de antirrepique por software;
-- ausência de filtro RC externo.
+- Identificadores no Wokwi: `oled-display`, `oled-display-2`;
+- variáveis em Python: `oled_display`, `oled_display_2`;
+- controlador: SSD1306 · resolução: 128 × 64 pixels · endereço `0x3C` em
+  ambos;
+- primeiro OLED: `machine.I2C(0)`, SCL GPIO 32, SDA GPIO 16 -- plota o
+  gráfico de "CPU" (§17.2);
+- segundo OLED: `machine.I2C(1)`, SCL GPIO 15, SDA GPIO 22 -- barramento
+  I2C de hardware próprio, independente; plota o gráfico de "RAM";
+- ambos redesenhados a cada 250 ms no mínimo
+  (`CPU_GRAPH_SAMPLE_INTERVAL_MS` / `RAM_GRAPH_SAMPLE_INTERVAL_MS`, um piso,
+  não um período exato — §9).
 
-### RF-04 — Display OLED
+### RF-05 — Console de registro na TFT
 
-- Identificador no Wokwi: `oled-display`;
-- variável em Python: `oled_display`;
-- controlador: SSD1306;
-- resolução: 128 × 64 pixels;
-- interface: I2C;
-- endereço: `0x3C`;
-- GPIO32: SCL (realocado do GPIO 25, originalmente fixo, a pedido
-  explícito do usuário, por layout da placa — ver §16, registro de
-  decisões);
-- GPIO16: SDA;
-- botão solto: exibir exatamente `Boa sorte!`;
-- botão pressionado: exibir exatamente `Consegui`;
-- atualizar a memória de quadro somente quando o estado estável do botão
-  mudar.
+- Identificador no Wokwi: `tft-display`;
+- variável em Python: `tft_display`;
+- controlador: ILI9341 · SPI genuíno de 4 fios: SCK GPIO 18, MOSI GPIO 23,
+  CS GPIO 5, D/C GPIO 21, RST GPIO 19;
+- `console_log()` escreve uma linha colorida por evento do sistema (uma
+  cor por subsistema), voltando ao topo da tela ao preenchê-la, e sempre
+  espelha cada linha no console serial também, independente da presença
+  da TFT (§17.4).
 
-### RF-05 — Coerência das saídas
+### RF-06 — LEDs indicadores de estado
 
-| Estado estável do botão | GPIO17 | LED verde | OLED |
-|---|---:|---|---|
-| Solto | LOW | Apagado | `Boa sorte!` |
-| Pressionado | HIGH | Aceso | `Consegui` |
-
-O LED vermelho permanece piscando nos dois estados.
+- Identificadores no Wokwi: `bus-idle-led`, `scheduler-idle-led`;
+- variáveis em Python: `bus_idle_led`, `scheduler_idle_led`;
+- constantes: `BUS_IDLE_LED_PIN` (GPIO 13), `SCHEDULER_IDLE_LED_PIN`
+  (GPIO 2);
+- laranja (`bus_idle_led`): aceso por padrão, apaga apenas durante uma
+  escrita instrumentada em algum mostrador -- leitura invertida de
+  "barramento ocupado";
+- amarelo (`scheduler_idle_led`): alterna a cada iteração de
+  `scheduler_idle_task()` -- uma visualização grosseira de vazão do
+  escalonador, não um sinal literal de ociosidade/prioridade (§17).
 
 ## 5. Arquitetura de software
 
 ### 5.1 Arquitetura assíncrona
 
-O projeto utiliza exclusivamente `asyncio` do MicroPython. Cada comportamento
-independente é organizado em uma corrotina cooperativa, por exemplo:
+O projeto utiliza exclusivamente `asyncio` do MicroPython. Treze fluxos
+concorrentes rodam sob um único escalonador:
 
-- tarefa de piscar o LED vermelho;
-- tarefa de amostragem e antirrepique do botão;
-- aplicação do estado estável ao LED verde e ao OLED.
+- `blink_led(entry)` -- seis tarefas independentes, uma por entrada de
+  `BLINKING_LEDS`, cada uma alternando seu próprio LED no intervalo
+  compartilhado (RF-01);
+- `scheduler_idle_task()` -- uma tarefa, alternando o LED amarelo a cada
+  iteração (RF-06);
+- `update_cpu_graph()` / `update_ram_graph()` -- uma tarefa por OLED,
+  redesenhando seu gráfico de recursos (RF-04);
+- `print_status()` -- uma tarefa, imprimindo a linha periódica de status
+  no serial;
+- `monitor_step_button()` -- duas tarefas, uma por botão de velocidade
+  (RF-03), cada uma criada com `asyncio.create_task()`;
+- `monitor_button()` -- o monitor do botão principal (RF-02), a única das
+  treze que `main()` aguarda (`await`) diretamente em vez de despachar com
+  `create_task()`; como nunca retorna, `main()` nunca termina sozinha, mas
+  isso não a distingue das outras doze em termos de comportamento de
+  escalonamento.
 
 As pausas são realizadas com:
 
@@ -198,11 +234,19 @@ A solução com `asyncio` foi escolhida porque proporciona:
 - manutenção mais simples;
 - expansão mais segura para novos sensores e atuadores;
 - menor acoplamento entre temporizações;
-- melhor tolerância a latências introduzidas por operações I2C do OLED.
+- pausas cooperativas explícitas via `await asyncio.sleep_ms()`, de forma
+  que nenhum LED trave esperando por outra tarefa ou por uma atualização
+  de mostrador.
 
-A programação continua sendo cooperativa: uma função síncrona excessivamente
-demorada ainda pode atrasar as outras tarefas. Por isso, a atualização do OLED
-é reduzida ao mínimo necessário.
+**Nota de engenharia -- o que o `asyncio` não resolve aqui:** os
+drivers `ssd1306` e `ili9341` fazem escritas I2C/SPI síncronas e
+bloqueantes dentro de `show()`/`fill_rect()`/`text()` (sem nenhum ponto
+`await` interno). Essa escrita bloqueia a CPU pela mesma duração
+independente de o código ao redor usar `asyncio`, um superlaço manual ou
+nada. O `asyncio` foi adotado por escalabilidade e organização de código,
+não para tornar a E/S dos mostradores não bloqueante -- documentado aqui
+explicitamente para evitar essa suposição incorreta mais adiante (ver
+§17.2 para o impacto medido dessas escritas).
 
 ### 5.4 Temporizadores de hardware
 
@@ -215,22 +259,21 @@ sem benefício funcional relevante.
 
 ### 6.1 LEDs e resistores
 
-Cada LED possui resistor de 220 Ω em série.
+Todos os nove LEDs (seis piscantes, o verde e os dois indicadores) possuem
+resistor limitador de 220 Ω em série, com o cátodo ligado ao GND comum.
 
 ```text
-GPIO26 ── 220 Ω ── ânodo do LED vermelho
+GPIO26 ── 220 Ω ── ânodo do primeiro LED piscante
 cátodo ── GND
 
 GPIO4 ── 220 Ω ── ânodo do LED verde
 cátodo ── GND
 ```
 
-O LED vermelho foi realocado do GPIO2 (originalmente fixo) para o GPIO26 a
-pedido explícito do usuário, por layout da placa — ver §16, registro de
-decisões. O GPIO2, liberado por essa mudança, hoje aciona o
-`scheduler_idle_led` (ver §17, funcionalidades estendidas); esse uso
-continua aceitável porque o circuito externo (LED + resistor até o GND)
-nunca impõe um nível inadequado durante a energização.
+O GPIO2 aciona hoje o `scheduler_idle_led` (§17); esse uso é seguro porque
+o circuito externo (LED + resistor até o GND) só drena corrente, nunca
+impõe um nível externo durante a energização (ver `docs/PT/hardware-reference.md`,
+§5, para a tabela completa dos pinos de *bootstrapping*).
 
 ### 6.2 Botão, resistor interno e antirrepique
 
@@ -270,20 +313,25 @@ Os nomes dos terminais do botão em `diagram.json` devem respeitar exatamente:
 1.l, 1.r, 2.l, 2.r
 ```
 
-### 6.3 OLED, I2C e limitação predefinida dos pinos
+### 6.3 Por que I2C nos dois OLEDs, e SPI na TFT
 
-O projeto determina previamente:
+O projeto determina, para o primeiro OLED:
 
 ```text
 GPIO32 = SCL
 GPIO16 = SDA
 ```
 
-Essa atribuição não foi escolhida por ser o mapeamento padrão do ESP32 nem por
-um estudo de desempenho. Ela deve ser declarada explicitamente no código, no
-circuito e na documentação. O SCL foi originalmente fixado no GPIO25 e
-depois realocado para o GPIO32 a pedido explícito do usuário, por layout
-da placa — ver §16, registro de decisões.
+e, para o segundo OLED, em um barramento `machine.I2C(1)` independente:
+
+```text
+GPIO15 = SCL
+GPIO22 = SDA
+```
+
+Essa atribuição não foi escolhida por ser o mapeamento padrão do ESP32 nem
+por um estudo de desempenho; é declarada explicitamente no código, no
+circuito e na documentação, e repetida da mesma forma nos dois barramentos.
 
 A versão consolidada utiliza `machine.I2C` (barramento de hardware), que
 declara os sinais de forma explícita:
@@ -298,22 +346,29 @@ i2c = I2C(
 ```
 
 Uma revisão anterior utilizava `machine.SoftI2C` de forma defensiva, sem
-confirmação de que fosse necessário. A execução bem-sucedida de
-`tests/05_oled_basic.py` e `tests/06_oled_full_diagnostic.py` no wokwi.com,
-ambos com `machine.I2C` de hardware, confirmou que essa substituição era
-desnecessária; consulte a §16.
+confirmação de que fosse necessário. Execuções históricas de diagnósticos
+antecessores no Wokwi confirmaram o barramento I2C de hardware, mas não validam
+a pinagem nem os testes atuais. Os diagnósticos vigentes são
+`tests/05_cpu_oled_basic.py` e `tests/06_cpu_oled_full_diagnostic.py`, em
+GPIO32 (SCL) e GPIO16 (SDA), e ainda devem ser reexecutados; consulte a §16.
 
-O display também necessita de VCC e GND. Esses dois terminais são conexões de
-alimentação, e não sinais de comunicação.
+Os dois displays também necessitam de VCC e GND. Esses terminais são conexões
+de alimentação, e não sinais de comunicação.
 
-Alguns módulos SSD1306 físicos usam SPI, que pode exigir SCK, MOSI, CS, DC e
-RST. SPI pode oferecer maior taxa de transferência, porém utiliza mais
-terminais. Essa vantagem não é relevante neste projeto porque:
+I2C foi mantido para os dois OLEDs porque:
 
-- o mapeamento I2C foi predefinido;
-- o componente `board-ssd1306` do Wokwi utiliza I2C;
-- as mensagens são curtas e estáticas;
-- o display é atualizado somente nas transições do botão.
+- usa apenas dois sinais por barramento, mantendo baixo o total de pinos
+  mesmo com dois displays;
+- o componente `board-ssd1306` do Wokwi utiliza a variante I2C;
+- o conteúdo de cada um -- um gráfico de barras redesenhado periodicamente
+  -- não precisa da maior taxa de transferência do SPI para se manter
+  responsivo num piso de atualização de 250 ms (§9).
+
+O console da TFT (RF-05) é um caso à parte: usa SPI genuíno de 4 fios (SCK,
+MOSI, CS, D/C, mais RST), porque o controlador ILI9341 usado aqui é uma
+peça SPI e porque o quadro colorido maior (240×320) da tela se beneficia da
+maior taxa de transferência do SPI. São duas decisões independentes para
+dois displays diferentes, não uma única restrição de projeto.
 
 ## 7. Integração de comentários e revisões
 
@@ -369,31 +424,29 @@ OLED_SCL_PIN
 
 Identificadores Python não podem conter hífen; por isso, usam sublinhado.
 
-## 9. Estratégia de atualização dinâmica do OLED
+## 9. Estratégia de atualização dos gráficos OLED
 
-O OLED não deve ser redesenhado continuamente.
+Os dois OLEDs redesenham em uma janela de amostragem fixa --
+`CPU_GRAPH_SAMPLE_INTERVAL_MS` / `RAM_GRAPH_SAMPLE_INTERVAL_MS`, hoje
+250 ms cada -- não em um evento de mudança de estado do botão ou similar:
 
-A memória de quadro é enviada:
+- `update_cpu_graph()` e `update_ram_graph()` rodam cada um seu próprio
+  laço `while True`, redesenhando a cada iteração e então fazendo
+  `await asyncio.sleep_ms(250)`;
+- `asyncio.sleep_ms()` garante apenas um atraso mínimo, então a janela de
+  amostragem é medida com `time.ticks_us()`, não assumida como exata --
+  uma iteração mais lenta (por exemplo, uma escrita concorrente de
+  `console_log()`) empurra o intervalo real além de 250 ms, e
+  `update_cpu_graph()` leva isso em conta explicitamente ao calcular sua
+  porcentagem (§17.2);
+- cada redesenho faz um `fill()` completo e replota todo o histórico
+  rolante, não só a coluna mais nova, já que `framebuf` não tem primitiva
+  para deslocar pixels existentes para a esquerda.
 
-1. durante a inicialização;
-2. quando o estado estável do botão muda.
-
-Princípio lógico:
-
-```python
-if stable_button_state != previous_button_state:
-    update_green_led(stable_button_state)
-    update_oled_display(stable_button_state)
-```
-
-Benefícios:
-
-- redução do tráfego I2C;
-- menor ocupação do processador;
-- menor latência introduzida pelas escritas no display;
-- eliminação de redesenhos desnecessários;
-- redução de cintilação;
-- menor interferência nas demais tarefas.
+Isto é redesenho periódico incondicional, não uma atualização orientada por
+eventos: os dois OLEDs são, eles próprios, parte do que mantém o
+processador ocupado (a medição de "CPU" do §17.2), então redesenhar
+continuamente é intencional aqui, não algo a minimizar.
 
 ## 10. Estrutura do repositório
 
@@ -421,7 +474,7 @@ esp32-asyncio/
 │       └── technical-specification.md
 ├── tests/
 │   ├── README.md
-│   └── 01_red_led_basic.py ... 14_console_serial_fallback.py  (14 scripts)
+│   └── 01_blue_led_basic.py ... 13_tft_text_diagnostic.py  (13 scripts)
 └── report/
     ├── README.md
     ├── build.ps1
@@ -446,7 +499,8 @@ O circuito é montado no arquivo `diagram.json`. Esse arquivo contém:
 Mover apenas o trajeto de um fio altera as instruções visuais de roteamento,
 mas não muda a conexão elétrica enquanto as extremidades permanecerem iguais.
 
-O projeto no navegador deve conter `main.py`, `ssd1306.py` e `diagram.json`.
+O projeto no navegador deve conter `main.py`, `ssd1306.py`, `ili9341.py` e
+`diagram.json`.
 Após a validação, deve ser salvo na conta do usuário e compartilhado por um
 endereço público do Wokwi.
 
@@ -469,9 +523,12 @@ Os endereços do GitHub e do Wokwi devem ser apresentados separadamente.
 | Entregável | Conteúdo |
 |---|---|
 | Código-fonte | `main.py` completo e executável |
-| Controlador do OLED | `ssd1306.py` |
+| Controlador dos OLEDs | `ssd1306.py` |
+| Controlador da TFT | `ili9341.py` |
 | Circuito | `diagram.json` |
 | Configuração local | `wokwi.toml` |
+| Testes de diagnóstico | `tests/` (treze scripts, não fazem parte do entregável) |
+| Relatório técnico | `report/` (`relatorio.tex`, `relatorio.pdf`) |
 | Repositório | Endereço público do GitHub |
 | Simulação | Endereço compartilhável do Wokwi |
 | Documentação | README e documentos técnicos em `docs/EN/` e `docs/PT/` |
@@ -479,7 +536,7 @@ Os endereços do GitHub e do Wokwi devem ser apresentados separadamente.
 
 ## 14. Plano de validação
 
-### 14.1 Teste isolado do LED vermelho
+### 14.1 Teste isolado de um LED piscante
 
 Critérios:
 
@@ -488,18 +545,25 @@ Critérios:
 - ligação GPIO26 → resistor → ânodo → cátodo → GND.
 
 Atraso bloqueante pode ser usado somente neste teste temporário, pois o objetivo
-é isolar o hardware.
+é isolar o hardware. Ver `tests/01_blue_led_basic.py` a
+`tests/03_blue_led_asyncio.py` para a progressão completa até o idioma
+`asyncio` usado em `main.py`.
 
-### 14.2 Teste isolado do OLED
+### 14.2 Teste isolado de um OLED
 
 Critérios:
 
-- `i2c.scan()` detecta o endereço `0x3C`;
+- `i2c.scan()` detecta o endereço `0x3C` no barramento correspondente;
 - todos os pixels acendem e apagam;
 - padrões quadriculados complementares são exibidos;
 - linhas horizontais e verticais percorrem toda a tela;
 - pixels, linhas, retângulos e texto são renderizados;
 - inversão, contraste e controle de energia respondem.
+
+Ver `tests/05_cpu_oled_basic.py` / `tests/06_cpu_oled_full_diagnostic.py`
+(primeiro OLED, `I2C(0)`) e `tests/11_ram_oled_basic.py` (segundo OLED,
+`I2C(1)`, testado isoladamente -- não prova operação simultânea dos dois
+barramentos, ver 14.6).
 
 ### 14.3 Teste do botão e do LED verde
 
@@ -514,17 +578,14 @@ Critérios:
 
 Critérios:
 
-- o LED vermelho continua piscando em todos os estados;
-- o LED verde acompanha o botão;
-- o OLED mostra a mensagem correta;
-- a mudança ocorre após o estado estável;
-- o OLED não é atualizado repetidamente enquanto o estado não muda;
+- os seis LEDs piscantes continuam alternando em todos os estados do
+  botão, sem travar nem serem travados por outra tarefa além da latência
+  de escrita documentada em 14.6/§17.2;
+- o LED verde acompanha o botão, e a transição é registrada via
+  `console_log()` (verde) tanto na TFT quanto no serial;
+- os dois gráficos OLED continuam sendo redesenhados a cada janela de
+  amostragem (§9), independentemente do estado do botão;
 - não há exceções no monitor serial.
-
-Os três primeiros critérios sobre o OLED descrevem o comportamento
-*original*; hoje ambos os OLEDs foram **substituídos** por gráficos de
-uso de CPU/RAM ao vivo, não redesenhados só na mudança de estado do botão
-(ver §17, funcionalidades estendidas).
 
 ### 14.5 Limites de intervalo dos botões de velocidade
 
@@ -613,10 +674,10 @@ Em uma montagem física devem ser considerados:
 | LED vermelho | GPIO26 (realocado do GPIO2 originalmente fixo — ver linha abaixo), alternância a cada 500 ms |
 | LED verde | GPIO4, acompanha o estado estável do botão |
 | OLED | SSD1306 128 × 64, endereço `0x3C` |
-| Barramento do OLED | `machine.I2C` (hardware); `SoftI2C` foi adotado defensivamente numa revisão anterior e revertido após confirmação em `tests/05_oled_basic.py` e `tests/06_oled_full_diagnostic.py` |
+| Barramento do OLED | `machine.I2C` (hardware); diagnósticos atuais em `tests/05_cpu_oled_basic.py` e `tests/06_cpu_oled_full_diagnostic.py`, ainda pendentes de reexecução após a reformulação da suíte |
 | Mapeamento OLED | GPIO32 = SCL (realocado do GPIO25 originalmente fixo); GPIO16 = SDA |
 | `RED_LED_PIN` → GPIO26, `OLED_SCL_PIN` → GPIO32 | Realocados a pedido explícito do usuário, por layout da placa, à medida que o circuito cresceu. GPIO2 passou a acionar o `scheduler_idle_led`; GPIO25 passou a acionar o `white_led` (§17) |
-| Atualização OLED | Somente na inicialização e nas transições estáveis |
+| *(Substituída -- ver linha "Gráficos de uso de recursos" abaixo)* Atualização OLED | Decisão original: somente na inicialização e nas transições estáveis do botão. Não é mais como nenhum dos dois OLEDs se comporta (§9) |
 | Versão do firmware no `diagram.json` | Não fixar `attrs.env`; usar a versão padrão/atual do Wokwi |
 | Licença | CC0 1.0 Universal |
 | Idioma do código | Inglês |
@@ -624,35 +685,26 @@ Em uma montagem física devem ser considerados:
 | Gráficos de uso de recursos nos dois OLEDs | Extensão pedida pelo usuário (§17.2). O valor de "CPU" é tempo real medido dentro das chamadas instrumentadas de desenho/transferência dos mostradores (desenho mais transferência I2C/SPI, não só o barramento), um substituto parcial e aproximado mantido porque o MicroPython no ESP32 bare-metal não expõe métrica de carga do escalonador do SO — ver §17.2 para o que ele cobre e o que não cobre |
 | LEDs azuis com mesmo intervalo, seis tarefas separadas | Extensão pedida pelo usuário (§17.3). Cada LED continua sendo uma task `asyncio` independente, mesmo com todos no mesmo intervalo de 500 ms |
 
-## 17. Funcionalidades estendidas (além do escopo original)
+## 17. Notas de implementação
 
-Esta seção documenta funcionalidades adicionadas, a pedido explícito do
-usuário, depois que o entregável obrigatório original (§2–§14) já estava
-completo e validado. Ela não substitui nem invalida os requisitos
-funcionais das seções anteriores; a tabela do §16 traz a versão resumida
-de cada decisão abaixo. O comportamento do LED verde e o propósito
-original do OLED já se estabilizaram desde então: o §17.2 documenta o que
-substituiu a mensagem de texto do OLED, e o comportamento atual do LED
-verde (agora encaminhado por `console_log()`, §17.4) permanece igual ao
-do RF-02 fora isso.
+Esta seção detalha a implementação dos requisitos do §4, além do que cabe
+em uma entrada RF individual. A tabela do §16 traz a versão resumida de
+cada decisão abaixo.
 
-### 17.1 Segundo OLED, barramento I2C próprio
+### 17.1 Dois barramentos I2C independentes para os OLEDs
 
-Um segundo display OLED SSD1306 (`oled-display-2` / `oled_display_2`)
-roda em seu próprio barramento I2C de hardware, independente:
-`machine.I2C(1)`, em GPIO15 (SCL) / GPIO22 (SDA) — separado do barramento
-`I2C(0)` do primeiro OLED (GPIO32 SCL / GPIO16 SDA, conforme a
-realocação de pinos registrada no §16). Os dois são endereçados ao mesmo
-tempo, sem disputa de barramento.
+O primeiro OLED (`oled-display` / `oled_display`) roda em
+`machine.I2C(0)`, GPIO32 (SCL) / GPIO16 (SDA). O segundo
+(`oled-display-2` / `oled_display_2`) roda em seu próprio barramento I2C
+de hardware, independente: `machine.I2C(1)`, GPIO15 (SCL) / GPIO22 (SDA)
+— não um segundo endereço no primeiro barramento. Os dois são endereçados
+ao mesmo tempo, sem disputa de barramento.
 
-### 17.2 Os dois OLEDs agora plotam gráficos de uso de recursos, ao vivo
+### 17.2 O que os dois gráficos OLED plotam
 
-O requisito original exigia que o (único) OLED mostrasse `Boa sorte!` /
-`Consegui` conforme o estado do botão. Nenhum dos dois OLEDs faz mais
-isso — ambos foram reaproveitados como gráficos de barras rolantes, no
-estilo do Gerenciador de Tarefas do Windows, uma amostra por coluna de
-pixel horizontal (até 128 amostras de histórico), redesenhados a cada
-janela de amostragem:
+Os dois OLEDs são gráficos de barras rolantes, no estilo do Gerenciador de
+Tarefas do Windows, uma amostra por coluna de pixel horizontal (até 128
+amostras de histórico), redesenhados a cada janela de amostragem:
 
 - **Primeiro OLED — rotulado "CPU".** O MicroPython no ESP32 puro não expõe
   nenhuma métrica de carga de escalonador em nível de sistema operacional,
@@ -680,37 +732,26 @@ janela de amostragem:
   nativas/C internas ao firmware e qualquer memória fora do heap gerenciado
   pelo coletor de lixo não estão incluídas. Ver `update_ram_graph()`.
 
-O botão ainda liga/desliga o LED verde; seu estado agora passa por
-`console_log()` (§17.4) em vez de uma mensagem de texto em qualquer
-OLED, já que nenhum dos dois tem espaço sobrando para um gráfico e uma
-mensagem de texto legível ao mesmo tempo num painel monocromático de
-128×64.
+O estado do botão é registrado via `console_log()` (§17.4), não uma
+mensagem de texto em qualquer OLED, já que nenhum dos dois tem espaço
+sobrando para um gráfico e uma mensagem de texto legível ao mesmo tempo
+num painel monocromático de 128×64.
 
 ### 17.3 Seis LEDs, um intervalo compartilhado, seis tarefas independentes
 
-Cinco LEDs adicionais (azul, amarelo, branco, laranja e um segundo
-vermelho) se juntam ao LED vermelho original, todos pintados da mesma cor
+Os seis LEDs (vermelho, azul, amarelo, branco, laranja e um segundo
+vermelho) são todos pintados da mesma cor
 na placa (`#0000FF`), mesmo que o `main.py` continue rastreando cada um
 individualmente (ver `BLINKING_LEDS`). Cada um roda como sua própria task
-`asyncio` independente (`blink_led()`) — o mesmo padrão já estabelecido
-pelo LED vermelho original: mais um LED sempre significa mais uma task
-concorrente, nunca mais lógica adicionada a um laço compartilhado.
-
-Atualmente os seis piscam no mesmo intervalo-base de 500 ms — alternando
-a cada 500 ms, ciclo completo de aproximadamente 1 s, igual à temporização
-original do LED vermelho — funcionando como seis equipamentos idênticos e
-independentes, em vez de seis frequências diferentes. Dois botões extras
-(GPIO34 para diminuir, GPIO35 para aumentar — ambos com resistor de
-pull-down físico externo, já que GPIO34/35 não têm pull-down interno)
-escalam o intervalo de todos os LEDs pelo mesmo fator de potência de 2 ao
-mesmo tempo, limitado entre 125 ms e 4 s, de forma que os seis sempre
-fiquem sincronizados entre si.
+`asyncio` independente (`blink_led()`) -- mais um LED sempre significa
+mais uma task concorrente, nunca mais lógica adicionada a um laço
+compartilhado.
 
 ### 17.4 Console de registro na TFT, SPI somente de escrita, e a decisão de espelhar no serial
 
-Um terceiro mostrador, uma TFT ILI9341, foi adicionado por SPI genuíno de
-4 fios (SCK, MOSI, CS, D/C, mais uma linha de reinicialização —
-GPIO~18/23/5/21/19). Diferentemente dos gráficos dos dois OLEDs, a TFT
+A TFT ILI9341 usa SPI genuíno de 4 fios (SCK, MOSI, CS, D/C, mais uma
+linha de reinicialização — GPIO~18/23/5/21/19). Diferentemente dos
+gráficos dos dois OLEDs, a TFT
 (`tft_display`, controlada por `ili9341.py`) funciona como um registro de
 atividade colorido e rolante: `console_log()` escreve uma linha por
 evento do sistema, uma cor por subsistema, voltando ao topo da tela ao

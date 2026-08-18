@@ -1,4 +1,4 @@
-"""Test 10/14 — Idle-indicator LEDs, basic wiring check (GPIO 13, GPIO 2).
+"""Test 10/13 — Orange and yellow status LEDs, basic wiring check.
 
 Isolates the two LEDs main.py drives as activity indicators rather than a
 fixed blink pattern: bus_idle_led (orange, GPIO 13, ON when the I2C/SPI
@@ -27,17 +27,19 @@ from machine import Pin
 from time import sleep_ms
 
 BLINK_INTERVAL_MS = 500
+ORANGE_LED_PIN = 13
+YELLOW_LED_PIN = 2
 
-bus_idle_led = Pin(13, Pin.OUT, value=1)
-scheduler_idle_led = Pin(2, Pin.OUT, value=0)
+orange_led = Pin(ORANGE_LED_PIN, Pin.OUT, value=1)
+yellow_led = Pin(YELLOW_LED_PIN, Pin.OUT, value=0)
 
-print("Idle-LED test started (orange=GPIO13, yellow=GPIO2)")
+print("Status-LED test started (orange=GPIO13, yellow=GPIO2)")
 
 while True:
-    bus_idle_led.value(not bus_idle_led.value())
-    scheduler_idle_led.value(not scheduler_idle_led.value())
+    orange_led.value(not orange_led.value())
+    yellow_led.value(not yellow_led.value())
     print(
-        "orange(GPIO13):", "ON" if bus_idle_led.value() else "OFF",
-        "| yellow(GPIO2):", "ON" if scheduler_idle_led.value() else "OFF",
+        "orange(GPIO13):", "ON" if orange_led.value() else "OFF",
+        "| yellow(GPIO2):", "ON" if yellow_led.value() else "OFF",
     )
     sleep_ms(BLINK_INTERVAL_MS)

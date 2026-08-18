@@ -1,6 +1,6 @@
-"""Test 9/14 — Speed buttons, GPIO 34/35, external pull-down required.
+"""Test 9/13 — Blue interval buttons, GPIO 34/35, external pull-down.
 
-Isolates the two step-buttons that scale the blinking LEDs' interval:
+Isolates the two blue buttons that scale the blinking LEDs' interval:
 decrease on GPIO 34, increase on GPIO 35. See tests/README.md for how to
 run this on wokwi.com.
 
@@ -23,11 +23,13 @@ from machine import Pin
 import time
 
 POLL_INTERVAL_MS = 50
+DECREASE_INTERVAL_BUTTON_PIN = 34
+INCREASE_INTERVAL_BUTTON_PIN = 35
 
-decrease_button = Pin(34, Pin.IN)
-increase_button = Pin(35, Pin.IN)
+decrease_button = Pin(DECREASE_INTERVAL_BUTTON_PIN, Pin.IN)
+increase_button = Pin(INCREASE_INTERVAL_BUTTON_PIN, Pin.IN)
 
-print("Speed-button test started (decrease=GPIO34, increase=GPIO35)")
+print("Blue interval-button test started (decrease=GPIO34, increase=GPIO35)")
 
 last_decrease = None
 last_increase = None

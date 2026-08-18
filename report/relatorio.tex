@@ -476,72 +476,68 @@ A implementação de texto (\texttt{ili9341.py}, método \texttt{text()}) foi ot
 
 O desenvolvimento foi acompanhado por testes progressivos. A separação dos subsistemas permitiu distinguir erros de ligação, inicialização e lógica de aplicação.
 
-Os catorze itens a seguir descrevem \emph{scripts de diagnóstico disponíveis} no repositório (\texttt{tests/}) -- o que cada um se propõe a verificar e como --, não uma alegação de que cada um foi executado e aprovado nesta revisão. A Tabela~\ref{tab:matriz-testes}, ao final desta seção, é a fonte da verdade sobre quais desses scripts têm um resultado de execução de fato registrado; um script existir no repositório não é, por si só, evidência de que ele passou.
+Os treze itens a seguir descrevem \emph{scripts de diagnóstico do hardware atual} disponíveis no repositório (\texttt{tests/}) -- o que cada um se propõe a verificar e como --, não uma alegação de que cada um foi executado e aprovado nesta revisão. A suíte cobre somente os seis LEDs azuis, o botão verde e seu LED, os dois botões azuis de intervalo, os LEDs laranja e amarelo e os três mostradores presentes em \texttt{diagram.json}. A Tabela~\ref{tab:matriz-testes}, ao final desta seção, é a fonte da verdade sobre quais scripts têm um resultado de execução registrado; um script existir no repositório não é, por si só, evidência de aprovação.
 
 \begin{enumerate}
-  \item \textbf{Teste isolado do primeiro LED piscante:} Utilizou um laço bloqueante mínimo somente para diagnóstico. O GPIO~26 foi alternado a cada 500~[ms] e o estado foi registrado no monitor serial. O objetivo foi confirmar placa, pino, resistor, polaridade e retorno ao terra sem interferência das demais funções.
+  \item \textbf{Primeiro LED azul, acionamento básico:} Liga e desliga explicitamente o primeiro LED azul (GPIO~26), confirmando pino, resistor, polaridade e retorno ao terra.
 
-  \item \textbf{Teste do mesmo LED com o idioma de alternância:} Repetiu o teste anterior usando \texttt{led.value(not led.value())}, o mesmo idioma de alternância de nível que \texttt{blink\_led()} efetivamente usa em \texttt{main.py}, ainda em um laço bloqueante, sem \texttt{asyncio} -- isolando essa mudança de estilo de código como uma variável independente da introdução do \texttt{asyncio} no teste seguinte.
+  \item \textbf{Primeiro LED azul, alternância:} Repete o teste anterior usando \texttt{led.value(not led.value())}, o mesmo padrão de alternância usado por \texttt{blink\_led()}, ainda sem \texttt{asyncio}.
 
-  \item \textbf{Teste do mesmo LED com \texttt{asyncio}:} Repetiu o teste anterior, agora encapsulado em uma corrotina agendada com \texttt{asyncio.create\_task()} dentro de \texttt{asyncio.run()}, isolando especificamente o suporte a \texttt{asyncio} do firmware como variável, separado da fiação e do idioma de alternância já confirmados.
+  \item \textbf{Primeiro LED azul com \texttt{asyncio}:} Repete a alternância do GPIO~26 em uma corrotina agendada com \texttt{asyncio.create\_task()} dentro de \texttt{asyncio.run()}.
 
-  \item \textbf{Teste isolado do botão e do LED verde:} Amostrou o GPIO~17 periodicamente e refletiu o estado lido no GPIO~4, sem qualquer dependência de nenhum LED piscante ou do OLED. O objetivo foi confirmar a fiação do botão, o resistor interno de redução e o comportamento ativo em nível alto isoladamente.
+  \item \textbf{Teste isolado do botão e do LED verde:} Amostra o GPIO~17 periodicamente e reflete o estado lido no GPIO~4, sem qualquer dependência de nenhum LED piscante ou do OLED. O objetivo é confirmar a fiação do botão, o resistor interno de redução e o comportamento ativo em nível alto isoladamente.
 
-  \item \textbf{Teste básico do OLED:} Inicializou o barramento I\textsuperscript{2}C em GPIO~32 e GPIO~16, confirmou a detecção do endereço \texttt{0x3C} por meio de \texttt{i2c.scan()} e apresentou uma mensagem simples.
+  \item \textbf{OLED de CPU:} Inicializa \texttt{I2C(0)} em GPIO~32/16, confirma o endereço \texttt{0x3C} e apresenta \texttt{CPU OLED OK}.
 
-  \item \textbf{Diagnóstico gráfico do SSD1306:} Exercitou todos os pixels ligados e desligados, padrões quadriculados complementares, varreduras horizontais e verticais, grade, pixels individuais, linhas, retângulos, áreas preenchidas, texto, inversão, contraste, desligamento, religamento e deslocamento do quadro.
+  \item \textbf{Diagnóstico gráfico do OLED de CPU:} Exercita pixels, linhas, formas, texto, inversão, contraste, alimentação e deslocamento do quadro no mesmo \texttt{I2C(0)} do teste 5.
 
-  \item \textbf{Teste básico dos LEDs extras:} Verificou, um de cada vez e com um laço bloqueante mínimo, a fiação dos cinco LEDs piscantes adicionais (GPIO~14, 27, 25, 33 e 12), no mesmo espírito do teste 1.
+  \item \textbf{Demais LEDs azuis:} Verifica, um de cada vez, os LEDs azuis 2--6 nos GPIOs~14, 27, 25, 33 e 12.
 
-  \item \textbf{Seis LEDs piscantes concorrentes:} Reuniu o LED do teste 1--3 e os cinco LEDs do teste 7 rodando ao mesmo tempo, cada um em sua própria tarefa \texttt{asyncio}, exatamente como \texttt{BLINKING\_LEDS} em \texttt{main.py}.
+  \item \textbf{Seis LEDs azuis concorrentes:} Reúne os seis LEDs azuis, cada um em sua própria tarefa \texttt{asyncio}, com a mesma lista de GPIOs usada por \texttt{BLINKING\_LEDS}.
 
-  \item \textbf{Botões de velocidade:} Validou os dois botões pulsadores adicionais (GPIO~34 e GPIO~35) e seus resistores externos de \textit{pull-down}, diferentemente do resistor interno usado pelo botão principal no teste 4.
+  \item \textbf{Botões azuis de intervalo:} Valida os botões GPIO~34/35 e seus resistores externos de \textit{pull-down}.
 
-  \item \textbf{LEDs indicadores:} Validou apenas a fiação dos dois LEDs indicadores de estado do sistema -- laranja de barramento ocioso (GPIO~13) e amarelo de atividade do escalonador (GPIO~2) --, alternando-os em um temporizador fixo; não exercita a lógica real de ocupação/atividade de \texttt{main.py}, que depende do barramento e do escalonador em funcionamento para ter sentido.
+  \item \textbf{LEDs laranja e amarelo:} Valida apenas a fiação dos GPIOs~13/2, alternando-os em um temporizador fixo; não comprova a lógica de barramento/escalonador de \texttt{main.py}.
 
-  \item \textbf{Segundo OLED:} Validou o segundo barramento I\textsuperscript{2}C independente (\texttt{I2C(1)}, GPIO~15/22) do segundo OLED, isolado do barramento do primeiro.
+  \item \textbf{OLED de RAM:} Inicializa \texttt{I2C(1)} em GPIO~15/22, confirma \texttt{0x3C} e apresenta \texttt{RAM OLED OK}, isolado do OLED de CPU.
 
-  \item \textbf{TFT básica:} Validou a fiação SPI de 4 fios da TFT (SCK~18, MOSI~23, CS~5, D/C~21) e sua linha de reinicialização (RST~19): inicialização do painel e preenchimentos de cor sólida.
+  \item \textbf{TFT básica:} Valida a fiação SPI de 4 fios da TFT (SCK~18, MOSI~23, CS~5, D/C~21) e sua linha de reinicialização (RST~19): inicialização do painel e preenchimentos de cor sólida.
 
-  \item \textbf{Diagnóstico de texto da TFT:} Exercitou o método \texttt{text()} de \texttt{ili9341.py} -- a primitiva sobre a qual o console de registro de \texttt{main.py} é construído -- em todas as cores usadas pelo console, incluindo o retorno ao topo da tela ao preencher todas as linhas visíveis.
+  \item \textbf{Diagnóstico de texto da TFT:} Exercita o método \texttt{text()} de \texttt{ili9341.py} -- a primitiva sobre a qual o console de registro de \texttt{main.py} é construído -- em todas as cores usadas pelo console, incluindo o retorno ao topo da tela ao preencher todas as linhas visíveis.
 
-  \item \textbf{Reserva do console para o serial (sem hardware):} Único teste puramente lógico da sequência -- não toca nenhum \texttt{Pin}/\texttt{I2C}/\texttt{SPI} e roda em CPython comum, sem Wokwi nem placa. Reproduz a lógica de \texttt{console\_log()} para confirmar que toda mensagem chega ao console serial tanto com \texttt{tft\_display} igual a \texttt{None} quanto com um objeto ativo simulando uma TFT fisicamente ausente porém eletricamente silenciosa (Seção~\ref{sec:tft-console}).
 \end{enumerate}
 
-A sequência de testes reduziu o espaço de busca de falhas: se um subsistema simples não funcionasse, o problema poderia ser tratado antes da integração com o restante da aplicação. A tabela de dependências completa entre os quatorze testes, e uma recomendação de subconjunto mínimo (\textit{smoke test}) para quando não há tempo de rodar todos, estão em \texttt{tests/README.md}.
+A sequência de testes reduz o espaço de busca de falhas: se um subsistema simples não funcionar, o problema pode ser tratado antes da integração com o restante da aplicação. A tabela dos treze testes e a recomendação de subconjunto mínimo (\textit{smoke test}) estão em \texttt{tests/README.md}.
 
-Além dos catorze testes isolados, quatro procedimentos de validação integrada -- limites dos botões de velocidade, operação simultânea dos três mostradores, caminho de falha da TFT e uma execução prolongada para observar a dessincronização dos LEDs e a latência do botão -- estão definidos como TC-08 a TC-11 em \texttt{docs/EN/technical-specification.md} (§12) e como itens 14.5 a 14.8 em \texttt{docs/PT/technical-specification.md} (§14). Nenhum dos quatro foi executado nesta revisão; são procedimentos definidos para quando \texttt{main.py} completo for de fato rodado, não resultados.
+Além dos treze testes isolados, quatro procedimentos de validação integrada -- limites dos botões de intervalo, operação simultânea dos três mostradores, caminho de falha da TFT e uma execução prolongada -- estão definidos como TC-08 a TC-11 em \texttt{docs/EN/technical-specification.md} (§12) e como itens 14.5 a 14.8 em \texttt{docs/PT/technical-specification.md} (§14). Nenhum dos quatro foi executado nesta revisão.
 
 \begin{table}[htbp]
   \centering
-  \caption{Matriz de execução dos catorze testes isolados desta revisão.}
+  \caption{Matriz de execução dos treze testes do hardware atual.}
   \label{tab:matriz-testes}
   \begin{tabularx}{\textwidth}{@{}C{0.5cm} >{\raggedright\arraybackslash\hsize=1.35\hsize}X C{3.3cm} C{2.1cm} >{\raggedright\arraybackslash\hsize=0.65\hsize}X@{}}
     \toprule
     \# & Script & Execução registrada & Firmware & Resultado \\
     \midrule
-    1 & \texttt{01\_red\_led\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    2 & \texttt{02\_red\_led\_blink.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    3 & \texttt{03\_red\_led\_asyncio.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    4 & \texttt{04\_push\_button\_green\_led.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    5 & \texttt{05\_oled\_basic.py} & Wokwi web, data não registrada$^{2}$ & -- & Passou, historicamente$^{2}$ \\
-    6 & \texttt{06\_oled\_full\_diagnostic.py} & Wokwi web, data não registrada$^{2}$ & -- & Passou, historicamente$^{2}$ \\
-    7 & \texttt{07\_extra\_leds\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    8 & \texttt{08\_blinking\_leds\_asyncio.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    9 & \texttt{09\_speed\_buttons.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    10 & \texttt{10\_idle\_leds\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    11 & \texttt{11\_oled2\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
+    1 & \texttt{01\_blue\_led\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
+    2 & \texttt{02\_blue\_led\_blink.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
+    3 & \texttt{03\_blue\_led\_asyncio.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
+    4 & \texttt{04\_green\_button\_led.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
+    5 & \texttt{05\_cpu\_oled\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
+    6 & \texttt{06\_cpu\_oled\_full\_diagnostic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
+    7 & \texttt{07\_additional\_blue\_leds\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
+    8 & \texttt{08\_blue\_leds\_asyncio.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
+    9 & \texttt{09\_blue\_interval\_buttons.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
+    10 & \texttt{10\_status\_leds\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
+    11 & \texttt{11\_ram\_oled\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
     12 & \texttt{12\_tft\_basic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
     13 & \texttt{13\_tft\_text\_diagnostic.py} & Nenhuma nesta revisão & -- & Não avaliado$^{1}$ \\
-    14 & \texttt{14\_console\_serial\_fallback.py} & Desktop, CPython$^{3}$ & N/A$^{3}$ & Passou -- saída conferida nesta revisão \\
     \bottomrule
   \end{tabularx}
 
   \vspace{0.3em}
   \raggedright\footnotesize
-  $^{1}$Script presente no repositório e descrito nesta seção, mas sem nenhuma execução registrada nesta revisão -- não deve ser lido como aprovado até ser de fato executado (em Wokwi ou hardware real) e esta tabela ser atualizada com o resultado.\\
-  $^{2}$Execução documentada no registro de decisões de \texttt{docs/PT/technical-specification.md} (§16), anterior à realocação do SCL do primeiro OLED de GPIO~25 para GPIO~32 (Seção~\ref{sec:requisitos}). O resultado permanece válido para a lógica I\textsuperscript{2}C exercida, mas não confirma a pinagem atual sem uma nova execução.\\
-  $^{3}$Roda sob CPython de mesa, não MicroPython, Wokwi ou hardware real -- o script não usa nenhum módulo específico do MicroPython (Seção~\ref{sec:tft-console}).
+  $^{1}$Script presente e coerente com a pinagem atual, mas sem execução registrada depois desta reformulação -- não deve ser tratado como aprovado até ser executado em Wokwi ou hardware real.
 \end{table}
 
 \section{Circuito simulado}
@@ -564,7 +560,7 @@ A Figura~\ref{fig:circuito} apresenta o estado atual do circuito no Wokwi. Com o
 
 O projeto atende aos requisitos definidos por meio de uma implementação modular e reproduzível. A escolha da ESP32-DevKitC V4 reduz ambiguidades de pinagem, enquanto o uso explícito de cada GPIO (Tabela~\ref{tab:pinagem}) preserva a correspondência entre código, documentação e circuito. As duas interfaces de comunicação adotadas -- I\textsuperscript{2}C para os dois OLEDs e SPI de 4 fios para a TFT -- atendem adequadamente à natureza distinta do tráfego de cada mostrador, conforme discutido na Seção~\ref{sec:mostrador-interface}.
 
-A arquitetura assíncrona permite a concorrência de treze fluxos independentes (Seção~\ref{sec:estrutura-geral}) sob um único escalonador cooperativo. O antirrepique compartilhado elimina a necessidade de filtro externo nesta aplicação e em suas três variantes de botão, e as otimizações aplicadas ao console de registro da TFT -- tabela de conversão de cor pré-calculada, limpeza apenas do trecho residual de cada linha -- mantêm o tempo de escrita bloqueante baixo o suficiente para não dominar o próprio gráfico de uso de CPU que ele ajuda a alimentar. Por fim, os quatorze testes isolados e progressivos (Seção~\ref{sec:testes}) forneceram evidências de funcionamento de cada subsistema antes da integração completa.
+A arquitetura assíncrona permite a concorrência de treze fluxos independentes (Seção~\ref{sec:estrutura-geral}) sob um único escalonador cooperativo. O antirrepique compartilhado elimina a necessidade de filtro externo nesta aplicação e em suas três variantes de botão, e as otimizações aplicadas ao console de registro da TFT -- tabela de conversão de cor pré-calculada, limpeza apenas do trecho residual de cada linha -- mantêm o tempo de escrita bloqueante baixo o suficiente para não dominar o próprio gráfico de uso de CPU que ele ajuda a alimentar. Por fim, os treze testes isolados da Seção~\ref{sec:testes} cobrem os componentes do hardware vigente; sua execução no circuito atualizado permanece pendente e deve ser registrada na matriz de evidências.
 
 A entrega é complementada por dois meios de acesso: a simulação pública no Wokwi e o repositório versionado no GitHub. Em conjunto, eles possibilitam executar, inspecionar, reproduzir e evoluir o projeto.
 

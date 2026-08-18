@@ -54,78 +54,85 @@ signal named GPIO25, not the 25th physical pin.
 
 | Function | Wokwi ID | Python variable/constant | GPIO | Header pin |
 |---|---|---|---:|---|
-| Red LED output | `red-led` | `red_led` / `RED_LED_PIN` | GPIO26 | J2-10 |
+| Blinking LED 1 output | `red-led` | `red_led` / `RED_LED_PIN` | GPIO26 | J2-10 |
+| Blinking LED 2 output | `blue-led` | `blue_led` / `BLUE_LED_PIN` | GPIO14 | J2-12 |
+| Blinking LED 3 output | `yellow-led` | `yellow_led` / `YELLOW_LED_PIN` | GPIO27 | J2-11 |
+| Blinking LED 4 output | `white-led` | `white_led` / `WHITE_LED_PIN` | GPIO25 | J2-9 |
+| Blinking LED 5 output | `orange-led` | `orange_led` / `ORANGE_LED_PIN` | GPIO33 | J2-8 |
+| Blinking LED 6 output | `red-led-2` | `red_led_2` / `RED_LED_2_PIN` | GPIO12 | J2-13 |
 | Green LED output | `green-led` | `green_led` / `GREEN_LED_PIN` | GPIO4 | J3-13 |
 | Push-button input | `push-button` | `push_button` / `BUTTON_PIN` | GPIO17 | J3-11 |
-| OLED I²C data | `oled-display` | `oled_display` / `OLED_SDA_PIN` | GPIO16 | J3-12 |
-| OLED I²C clock | `oled-display` | `oled_display` / `OLED_SCL_PIN` | GPIO32 | J2-7 |
+| Decrease-speed button | `decrease-speed-button` | `decrease_speed_button` / `DECREASE_SPEED_BUTTON_PIN` | GPIO34 | J2-5 |
+| Increase-speed button | `increase-speed-button` | `increase_speed_button` / `INCREASE_SPEED_BUTTON_PIN` | GPIO35 | J2-6 |
+| Bus-idle LED (orange) | `bus-idle-led` | `bus_idle_led` / `BUS_IDLE_LED_PIN` | GPIO13 | J2-15 |
+| Scheduler-idle LED (yellow) | `scheduler-idle-led` | `scheduler_idle_led` / `SCHEDULER_IDLE_LED_PIN` | GPIO2 | J3-15 |
+| First OLED, I²C clock | `oled-display` | `oled_display` / `OLED_SCL_PIN` | GPIO32 | J2-7 |
+| First OLED, I²C data | `oled-display` | `oled_display` / `OLED_SDA_PIN` | GPIO16 | J3-12 |
+| Second OLED, I²C clock | `oled-display-2` | `oled_display_2` / `OLED2_SCL_PIN` | GPIO15 | J3-16 |
+| Second OLED, I²C data | `oled-display-2` | `oled_display_2` / `OLED2_SDA_PIN` | GPIO22 | J3-3 |
+| TFT SPI clock | `tft-display` | `tft_display` / `TFT_SCK_PIN` | GPIO18 | J3-9 |
+| TFT SPI data out | `tft-display` | `tft_display` / `TFT_MOSI_PIN` | GPIO23 | J3-2 |
+| TFT chip select | `tft-display` | `tft_display` / `TFT_CS_PIN` | GPIO5 | J3-10 |
+| TFT data/command | `tft-display` | `tft_display` / `TFT_DC_PIN` | GPIO21 | J3-6 |
+| TFT hardware reset | `tft-display` | `tft_display` / `TFT_RST_PIN` | GPIO19 | J3-8 |
+| Flash-mode slide switch | `flash-mode-switch` | — (`diagram.json` only, no `main.py` code reads it) | GPIO0 | J3-14 |
 | OLED / push-button supply | — | — | 3V3 | J2-1 |
 
-The red LED and OLED SCL pins were moved off GPIO2/GPIO25 (their
-originally-assigned pins, kept in the decision log at
-`technical-specification.md` §16) at the user's explicit request, for
-board layout. This table reflects the current wiring, not the original
-assignment.
+The six blinking LEDs are all physically blue (`#0000FF`) in `diagram.json`
+despite their per-LED Python identifiers (`red_led`, `blue_led`,
+`yellow_led`, `white_led`, `orange_led`, `red_led_2`) — those names are
+historical per-LED labels, not color descriptions; see
+`technical-specification.md` §16 for why `red_led` and the first OLED's
+SCL ended up on GPIO26/GPIO32 rather than the board-layout-driven pins
+they started on.
 
 ```python
 RED_LED_PIN = 26
+BLUE_LED_PIN = 14
+YELLOW_LED_PIN = 27
+WHITE_LED_PIN = 25
+ORANGE_LED_PIN = 33
+RED_LED_2_PIN = 12
 GREEN_LED_PIN = 4
 BUTTON_PIN = 17
-OLED_SDA_PIN = 16
+DECREASE_SPEED_BUTTON_PIN = 34
+INCREASE_SPEED_BUTTON_PIN = 35
+BUS_IDLE_LED_PIN = 13
+SCHEDULER_IDLE_LED_PIN = 2
 OLED_SCL_PIN = 32
+OLED_SDA_PIN = 16
+OLED2_SCL_PIN = 15
+OLED2_SDA_PIN = 22
+TFT_SCK_PIN = 18
+TFT_MOSI_PIN = 23
+TFT_CS_PIN = 5
+TFT_DC_PIN = 21
+TFT_RST_PIN = 19
 ```
 
 Wiring topology (see `component-specifications.md` for exact Wokwi part
 IDs and `diagram.json` for routed connections):
 
 ```text
-GPIO26 ── 220 Ω resistor ── red LED anode   · red LED cathode   ── GND
+GPIO26/14/27/25/33/12 ── 220 Ω resistor each ── blinking LED anode · cathode ── GND
 GPIO4  ── 220 Ω resistor ── green LED anode · green LED cathode ── GND
+GPIO13 ── 220 Ω resistor ── bus-idle LED anode (orange) · cathode ── GND
+GPIO2  ── 220 Ω resistor ── scheduler-idle LED anode (yellow) · cathode ── GND
 3V3    ── push-button ── GPIO17                       (active HIGH)
-GPIO32 = OLED SCL   GPIO16 = OLED SDA   3V3 = OLED VCC   GND = OLED GND
+3V3    ── decrease/increase-speed button ── GPIO34/35 (active HIGH, external 10 kΩ pull-down)
+GPIO32 = OLED1 SCL   GPIO16 = OLED1 SDA   (machine.I2C(0), address 0x3C)
+GPIO15 = OLED2 SCL   GPIO22 = OLED2 SDA   (machine.I2C(1), address 0x3C)
+GPIO18/23/5/21/19 = TFT SCK/MOSI/CS/D-C/RST (SPI(2))
 ```
 
-All peripherals share a common ground; the OLED and push-button use the
-3.3 V rail only.
-
-### 3.1 Extended hardware GPIO-to-header mapping
-
-Everything added after the original five signals above, at the user's
-explicit request (see "Extended features" in `technical-specification.md`
-for the behavioral rationale — this table only covers physical wiring).
-Unlike §3, this hardware is still under active development and this
-table may lag behind the latest iteration; `main.py`'s pin-assignment
-constants are the ultimate source of truth.
-
-| Function | Python variable/constant | GPIO | Header pin |
-|---|---|---:|---|
-| Blue LED output | `blue_led` / `BLUE_LED_PIN` | GPIO14 | J2-12 |
-| Yellow LED output | `yellow_led` / `YELLOW_LED_PIN` | GPIO27 | J2-11 |
-| White LED output | `white_led` / `WHITE_LED_PIN` | GPIO25 | J2-9 |
-| Orange LED output | `orange_led` / `ORANGE_LED_PIN` | GPIO33 | J2-8 |
-| Second red LED output | `red_led_2` / `RED_LED_2_PIN` | GPIO12 | J2-13 |
-| Decrease-speed button | `decrease_speed_button` / `DECREASE_SPEED_BUTTON_PIN` | GPIO34 | J2-5 |
-| Increase-speed button | `increase_speed_button` / `INCREASE_SPEED_BUTTON_PIN` | GPIO35 | J2-6 |
-| Bus-idle LED (orange) | `bus_idle_led` / `BUS_IDLE_LED_PIN` | GPIO13 | J2-15 |
-| Scheduler-idle LED (yellow) | `scheduler_idle_led` / `SCHEDULER_IDLE_LED_PIN` | GPIO2 | J3-15 |
-| Second OLED, I²C clock | `oled_display_2` / `OLED2_SCL_PIN` | GPIO15 | J3-16 |
-| Second OLED, I²C data | `oled_display_2` / `OLED2_SDA_PIN` | GPIO22 | J3-3 |
-| TFT SPI clock | `tft_display` / `TFT_SCK_PIN` | GPIO18 | J3-9 |
-| TFT SPI data out | `tft_display` / `TFT_MOSI_PIN` | GPIO23 | J3-2 |
-| TFT chip select | `tft_display` / `TFT_CS_PIN` | GPIO5 | J3-10 |
-| TFT data/command | `tft_display` / `TFT_DC_PIN` | GPIO21 | J3-6 |
-| TFT hardware reset | `tft_display` / `TFT_RST_PIN` | GPIO19 | J3-8 |
-| Flash-mode slide switch | — (`diagram.json` only, no `main.py` code reads it) | GPIO0 | J3-14 |
-
-Notes specific to this extended set:
+All peripherals share a common ground. Power rails: the two OLEDs and the
+three push-buttons use the 3.3 V rail; the TFT is wired to 5 V — see §6
+for the caveat that implies for a physical build.
 
 - GPIO34/35 (the two speed buttons) are input-only and have no internal
   pull resistors, unlike `BUTTON_PIN`'s `Pin.PULL_DOWN` — each needs its
   own external 10 kΩ pull-down resistor to GND (already in
-  `diagram.json`; see `tests/09_speed_buttons.py`).
-- GPIO2 now hosts `scheduler_idle_led`, not the red LED (which moved to
-  GPIO26, freeing GPIO2 up) — see the updated bootstrapping note in §5.
-- GPIO25, vacated by the OLED SCL move, is now `white_led`'s pin.
+  `diagram.json`; see `tests/09_blue_interval_buttons.py`).
 - The second OLED uses a second, independent hardware I²C bus
   (`machine.I2C(1)`), not a second address on the first bus, so it runs
   concurrently with the first OLED without contention.
@@ -159,7 +166,7 @@ Per-pin bootstrapping notes for this project (none force an external level
 against the pin's normal boot-time state, but the reasoning differs per
 pin — this is not one blanket justification for all five):
 
-- **GPIO0** — the flash-mode slide switch (§3.1). Not read by any
+- **GPIO0** — the flash-mode slide switch (§3). Not read by any
   `main.py` code; the switch itself is the boot-mode selection mechanism,
   used deliberately during an actual flashing attempt, not during normal
   operation.
@@ -191,15 +198,24 @@ printed to.
 ## 6. Electrical characteristics
 
 - **Logic level:** 3.3 V. Never apply 5 V to a GPIO.
-- **Common ground:** every component (LEDs, button, OLED) must share the
-  same GND reference, or GPIO/I²C signal levels are undefined.
-- **LED current limiting:** each LED uses a 220 Ω series resistor; do not
-  omit it in a physical build.
-- **OLED interface:** I²C only, on GPIO32 (SCL) / GPIO16 (SDA) — this is a
-  predefined project requirement, not an optimization; see
-  `technical-specification.md` §6.3 for why I²C was chosen over SPI, and
+- **Common ground:** every component (LEDs, buttons, OLEDs, TFT) must
+  share the same GND reference, or GPIO/I²C/SPI signal levels are
+  undefined.
+- **LED current limiting:** each of the nine LEDs uses a 220 Ω series
+  resistor; do not omit it in a physical build.
+- **OLED interface:** I²C only, on GPIO32/GPIO16 (first OLED) and
+  GPIO15/GPIO22 (second OLED) — a predefined project requirement, not an
+  optimization; see `technical-specification.md` §6.3 for why I²C was
+  chosen for the OLEDs and SPI for the TFT, and
   `component-specifications.md` §2 for the driver/bus details (hardware
   `machine.I2C`).
+- **TFT power:** wired to the board's 5 V rail in `diagram.json`, not
+  3.3 V like the two OLEDs — safe for a TFT module with its own onboard
+  regulator/level-shifting, but a bare ILI9341 panel without that support
+  circuitry must be powered at 3.3 V instead. The five SPI data/control
+  lines (SCK, MOSI, CS, D/C, RST) stay at 3.3 V logic either way, since
+  they come straight from the ESP32's GPIOs, not the display's own VCC
+  rail.
 
 ## 7. Physical implementation checklist
 
@@ -208,31 +224,19 @@ simulation only):
 
 - board is an ESP32-DevKitC V4 (or verified-compatible equivalent) fitted
   with a WROOM, not WROVER, module;
-- OLED powered from 3.3 V; all grounds tied together;
-- each LED has its 220 Ω series resistor; red → GPIO26, green → GPIO4;
-- push-button between GPIO17 and 3V3, no external pull-up;
-- OLED SDA → GPIO16, OLED SCL → GPIO32;
-- nothing connected to `CLK`, `D0`–`D3`, `CMD`;
-- no GPIO receives 5 V.
-
-For the extended hardware (§3.1) -- still evolving, so treat this as a
-starting checklist, not a final one:
-
-- the five extra LEDs each have their own 220 Ω series resistor;
+- both OLEDs powered from 3.3 V; all grounds tied together;
+- each of the nine LEDs has its own 220 Ω series resistor;
+- the main push-button sits between GPIO17 and 3V3, no external pull-up;
 - the two speed buttons each have their own external 10 kΩ pull-down
   resistor to GND (no internal one available on GPIO34/35);
-- the second OLED's SCL/SDA (GPIO15/22) are wired to its own bus, not
-  shared with the first OLED's GPIO32/16;
+- first OLED: SDA → GPIO16, SCL → GPIO32; second OLED: SDA → GPIO22,
+  SCL → GPIO15, wired to its own bus, not shared with the first;
 - the TFT's RST line (GPIO19) is wired even though some Wokwi TFT parts
   mark it non-functional in simulation -- a real panel needs it;
-- confirm which kind of ILI9341 module is on hand before wiring VCC: this
-  project's `diagram.json` powers the TFT from the ESP32's 5 V pin, which
-  is only safe for a module with its own onboard 3.3 V regulator and
-  level shifting (common on breakout boards); a bare ILI9341 panel
-  without that support circuitry must be powered at 3.3 V instead. The
-  five data/control lines (SCK, MOSI, CS, D/C, RST) stay at 3.3 V logic
-  either way, since they come straight from the ESP32's GPIOs, not from
-  the display's own VCC rail.
+- confirm which kind of ILI9341 module is on hand before wiring VCC (§6);
+- nothing connected to `CLK`, `D0`–`D3`, `CMD`;
+- no GPIO receives 5 V directly (the TFT's VCC is a display supply pin,
+  not a GPIO).
 
 ## 8. References
 
