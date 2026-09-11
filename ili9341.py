@@ -32,6 +32,11 @@ class ILI9341:
         self.height = height
 
         self._glyph_byte_tables = {}
+        self._fill_rows = {}
+        # Grown on first use and reused (never shrunk) across calls -- see
+        # text()'s docstring for why.
+        self._mono_buf = bytearray()
+        self._pixel_buf = bytearray()
 
         self.cs.value(1)
         self._hard_reset()
@@ -71,9 +76,27 @@ class ILI9341:
         self._command(_PASET, bytes([y0 >> 8, y0 & 0xFF, y1 >> 8, y1 & 0xFF]))
         self._command(_RAMWR)
 
+    def _fill_row(self, color565, width):
+        """Return a `width`-pixel-wide RGB565 row of solid color565,
+        reusing (and, on first use for this color, building and caching)
+        one full-width row per color instead of allocating a fresh bytes
+        object on every fill_rect() call -- same cache-by-color idea as
+        _glyph_byte_table(), since fill_rect() is dominated in practice
+        by a handful of repeated colors (e.g. console_log()'s background
+        clear). The cached row is only ever grown, never rebuilt smaller,
+        and returned as a zero-copy memoryview slice so a narrower request
+        (like that background clear, width < self.width) doesn't need its
+        own allocation either.
+        """
+        row = self._fill_rows.get(color565)
+        if row is None or len(row) < width * 2:
+            row = bytes([color565 >> 8, color565 & 0xFF]) * width
+            self._fill_rows[color565] = row
+        return memoryview(row)[:width * 2]
+
     def fill_rect(self, x, y, width, height, color565):
         self._set_window(x, y, x + width - 1, y + height - 1)
-        row = bytes([color565 >> 8, color565 & 0xFF]) * width
+        row = self._fill_row(color565, width)
         self.dc.value(1)
         self.cs.value(0)
         for _ in range(height):
@@ -131,17 +154,39 @@ class ILI9341:
         MicroPython's built-in font, the same one ssd1306.py uses), then
         expands it to RGB565 one MONO_HLSB byte (8 pixels) at a time via
         _glyph_byte_table() before sending a single blit.
+
+        The mono/pixel scratch buffers (self._mono_buf/self._pixel_buf)
+        are grown on demand and reused across calls instead of allocating
+        fresh bytearrays every line: this is the method behind
+        console_log(), called repeatedly for the life of the program, so
+        allocating and discarding a few KB per call would otherwise churn
+        the heap (and, on this project, visibly move its own RAM-usage
+        graph) for no reason -- most lines are the same length or shorter
+        than a previous one, so most calls after the first hit an
+        already-sized buffer.
         """
         width = len(string) * CHAR_WIDTH
         if width == 0:
             return
         stride = width // 8  # exact: CHAR_WIDTH is a multiple of 8
-        mono = bytearray(stride * CHAR_HEIGHT)
+
+        mono_len = stride * CHAR_HEIGHT
+        if len(self._mono_buf) < mono_len:
+            self._mono_buf = bytearray(mono_len)
+        mono = memoryview(self._mono_buf)[:mono_len]
         glyphs = framebuf.FrameBuffer(mono, width, CHAR_HEIGHT, framebuf.MONO_HLSB)
+        # text() only sets the "on" bits of each glyph, it never clears
+        # a background -- a fresh bytearray() is zeroed automatically,
+        # but this buffer is reused, so leftover 1-bits from a longer or
+        # different previous line must be cleared explicitly first.
+        glyphs.fill(0)
         glyphs.text(string, 0, 0, 1)
 
         table = self._glyph_byte_table(color565, bg565)
-        pixels = bytearray(width * CHAR_HEIGHT * 2)
+        pixel_len = width * CHAR_HEIGHT * 2
+        if len(self._pixel_buf) < pixel_len:
+            self._pixel_buf = bytearray(pixel_len)
+        pixels = memoryview(self._pixel_buf)[:pixel_len]
         out = 0
         for byte_value in mono:
             chunk_start = byte_value * 16

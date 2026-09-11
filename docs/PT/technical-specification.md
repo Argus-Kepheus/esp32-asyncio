@@ -437,8 +437,11 @@ Os dois OLEDs redesenham em uma janela de amostragem fixa --
   `update_cpu_graph()` leva isso em conta explicitamente ao calcular sua
   porcentagem (§17.2);
 - cada redesenho faz um `fill()` completo e replota todo o histórico
-  rolante, não só a coluna mais nova, já que `framebuf` não tem primitiva
-  para deslocar pixels existentes para a esquerda.
+  rolante, não só a coluna mais nova, ainda que `framebuf` tenha sim uma
+  primitiva para deslocar pixels existentes para a esquerda (`scroll()`,
+  exposta por `ssd1306.py` e exercitada por
+  `tests/06_cpu_oled_full_diagnostic.py`) -- o redesenho do zero foi
+  mantido pelo motivo abaixo, não por essa primitiva estar indisponível.
 
 Isto é redesenho periódico incondicional, não uma atualização orientada por
 eventos: os dois OLEDs são, eles próprios, parte do que mantém o

@@ -295,8 +295,11 @@ button-state or other event edge:
   gap past 250 ms, and `update_cpu_graph()` accounts for that explicitly
   when computing its percentage (§19.2);
 - every redraw does a full `fill()` and re-plots the whole scrolling
-  history, not just the newest column, since `framebuf` has no primitive
-  for shifting existing pixel data left.
+  history, not just the newest column, even though `framebuf` does have a
+  primitive for shifting existing pixel data left (`scroll()`, wrapped by
+  `ssd1306.py` and exercised by `tests/06_cpu_oled_full_diagnostic.py`) —
+  redrawing from scratch was kept for the reason below, not because
+  scroll-and-append-one-column was unavailable.
 
 This is unconditional periodic redraw, not event-driven update: the two
 OLEDs are themselves part of what keeps the processor busy (§19.2's "CPU"
