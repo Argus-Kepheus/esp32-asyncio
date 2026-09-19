@@ -1,0 +1,51 @@
+name: Repository validation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate canonical state
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check generated firmware configuration
+        run: python tools/generate_config.py --check
+
+      - name: Check generated documentation
+        run: python tools/generate_docs.py --check
+
+      - name: Validate repository consistency
+        run: python tools/validate_repository.py
+
+      - name: Compile Python sources
+        shell: bash
+        run: |
+          python -m py_compile \
+            main.py \
+            ili9341.py \
+            ssd1306.py \
+            lib/__init__.py \
+            lib/generated_config.py \
+            diagnostics/*.py \
+            tools/*.py
