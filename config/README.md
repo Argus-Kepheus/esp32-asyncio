@@ -110,7 +110,7 @@ configuration. No historical documentation was corrected in this wave.
 Human-readable documentation may show the same canonical fact in more than one
 place, but high-risk repeated tables are now generated from `config/`.
 
-`tools/generate_docs.py` currently derives hardware/runtime views in EN/PT.
+`tools/generate_docs.py` currently derives hardware/runtime views in EN/PT/ES.
 Component sheets deliberately avoid duplicating concrete wiring/passive values,
 and functional specifications reference generated hardware views instead of
 maintaining separate pin maps.
