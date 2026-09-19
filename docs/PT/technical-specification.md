@@ -1,6 +1,6 @@
 <!-- doc-id: technical-specification -->
 <!-- language: PT -->
-<!-- content-revision: 4 -->
+<!-- content-revision: 5 -->
 
 # Especificação técnica — esp32-asyncio
 
@@ -322,7 +322,7 @@ mapeamento atual de barramentos, GPIOs e frequência é canônico em
 
 Uma revisão anterior utilizava `machine.SoftI2C` de forma defensiva, sem
 confirmação de que fosse necessário. Os diagnósticos vigentes,
-`tests/05_cpu_oled_basic.py` e `tests/06_cpu_oled_full_diagnostic.py`,
+`diagnostics/05_cpu_oled_basic.py` e `diagnostics/06_cpu_oled_full_diagnostic.py`,
 foram aprovados no Wokwi web em 18/08/2026; consulte a §16.
 
 Os dois displays também necessitam de VCC e GND. Esses terminais são conexões
@@ -419,7 +419,7 @@ de mudança de estado do botão ou similar:
   rolante, não só a coluna mais nova, ainda que `framebuf` tenha sim uma
   primitiva para deslocar pixels existentes para a esquerda (`scroll()`,
   exposta por `ssd1306.py` e exercitada por
-  `tests/06_cpu_oled_full_diagnostic.py`) -- o redesenho do zero foi
+  `diagnostics/06_cpu_oled_full_diagnostic.py`) -- o redesenho do zero foi
   mantido pelo motivo abaixo, não por essa primitiva estar indisponível.
 
 Isto é redesenho periódico incondicional, não uma atualização orientada por
@@ -471,7 +471,7 @@ esp32-asyncio/
 │       ├── component-specifications.md
 │       ├── hardware-reference.md
 │       └── technical-specification.md
-├── tests/
+├── diagnostics/
 │   ├── README.md
 │   └── 01_blue_led_basic.py ... 13_tft_text_diagnostic.py  (13 scripts)
 └── report/
@@ -527,7 +527,8 @@ Os endereços do GitHub e do Wokwi devem ser apresentados separadamente.
 | Controlador da TFT | `ili9341.py` |
 | Circuito | `diagram.json` |
 | Configuração local | `wokwi.toml` |
-| Testes de diagnóstico | `tests/` (treze scripts, não fazem parte do entregável) |
+| Diagnósticos manuais | `diagnostics/` (treze scripts; não são testes automatizados e não fazem parte do entregável) |
+| Testes automatizados | `tests/` (reservado para uma suíte futura) |
 | Relatório técnico | `report/` (`relatorio.tex`, `relatorio.pdf`) |
 | Repositório | Endereço público do GitHub |
 | Simulação | Endereço compartilhável do Wokwi |
@@ -546,8 +547,8 @@ Critérios:
 - a ligação corresponde ao mapa GPIO canônico em `hardware-reference.md`, §3.
 
 Atraso bloqueante pode ser usado somente neste teste temporário, pois o objetivo
-é isolar o hardware. Ver `tests/01_blue_led_basic.py` a
-`tests/03_blue_led_asyncio.py` para a progressão completa até o idioma
+é isolar o hardware. Ver `diagnostics/01_blue_led_basic.py` a
+`diagnostics/03_blue_led_asyncio.py` para a progressão completa até o idioma
 `asyncio` usado em `main.py`.
 
 ### 14.2 Teste isolado de um OLED
@@ -561,8 +562,8 @@ Critérios:
 - pixels, linhas, retângulos e texto são renderizados;
 - inversão, contraste e controle de energia respondem.
 
-Ver `tests/05_cpu_oled_basic.py` / `tests/06_cpu_oled_full_diagnostic.py`
-(OLED0 de CPU, `I2C(0)`) e `tests/11_ram_oled_basic.py` (OLED1 de RAM,
+Ver `diagnostics/05_cpu_oled_basic.py` / `diagnostics/06_cpu_oled_full_diagnostic.py`
+(OLED0 de CPU, `I2C(0)`) e `diagnostics/11_ram_oled_basic.py` (OLED1 de RAM,
 `I2C(1)`, testado isoladamente -- não prova operação simultânea dos dois
 barramentos, ver 14.6).
 
@@ -696,7 +697,7 @@ Como trabalho futuro, uma montagem física deve manter o antirrepique de softwar
 | LEDs azuis piscantes | Identificadores numerados de 1 a 6; GPIOs em `config/hardware.json` e intervalo-base em `config/runtime.json` |
 | LED verde | Ligação em `config/hardware.json`; acompanha o estado estável do botão |
 | OLED | SSD1306; dimensões/endereço atuais em `config/hardware.json` |
-| Barramento do OLED | `machine.I2C` (hardware); diagnósticos atuais em `tests/05_cpu_oled_basic.py` e `tests/06_cpu_oled_full_diagnostic.py`, aprovados no Wokwi web em 18/08/2026 |
+| Barramento do OLED | `machine.I2C` (hardware); diagnósticos atuais em `diagnostics/05_cpu_oled_basic.py` e `diagnostics/06_cpu_oled_full_diagnostic.py`, aprovados no Wokwi web em 18/08/2026 |
 | Mapeamento OLED | Ver tabela gerada em `hardware-reference.md`, §3 |
 | Identificadores dos seis LEDs azuis | `blue_led_1` a `blue_led_6` no Python, `BLUE_LED_1_PIN` a `BLUE_LED_6_PIN` nas constantes e `blue-led-1` a `blue-led-6` no Wokwi |
 | *(Substituída -- ver linha "Gráficos de uso de recursos" abaixo)* Atualização OLED | Decisão original: somente na inicialização e nas transições estáveis do botão. Não é mais como nenhum dos dois OLEDs se comporta (§9) |
