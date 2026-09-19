@@ -81,7 +81,7 @@
         "PT": "docs/PT/technical-specification.md",
         "ES": "docs/ES/technical-specification.md"
       },
-      "content_revision": 6,
+      "content_revision": 7,
       "required_sections": [
         "document-control",
         "objective",
