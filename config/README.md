@@ -60,24 +60,31 @@ own it.
 | Executable behavior | firmware |
 | Academic report | `report/` snapshot; not an operational authority |
 
-## Transitional state after Wave 1
+## Transitional state after Wave 2
 
-Existing values in `main.py`, `diagram.json`, `docs/`, and `tests/`
-still repeat some of the same facts. They are retained intentionally in Wave 1
-to avoid combining governance changes with behavioral or structural changes.
+Existing values in `main.py`, `diagram.json`, `docs/`, and the current
+manual diagnostics still repeat some canonical facts. They remain in place
+intentionally so configuration governance can be introduced before firmware or
+folder structure is changed.
 
-Starting with Wave 2:
+Wave 2 adds:
 
-1. generated firmware configuration can be derived from these canonical files;
-2. validators can compare `diagram.json` and derived artifacts against them;
-3. documentation tables can later be generated or validated from the same
-   data;
-4. stale manual copies can progressively be replaced by references or generated
-   content.
+1. `tools/generate_config.py`, which deterministically derives
+   `lib/generated_config.py` from these canonical files;
+2. `tools/validate_repository.py`, which checks the canonical configuration
+   against `main.py`, `diagram.json`, and the generated module;
+3. static checks for GPIO conflicts, input-only pin misuse, component identity,
+   resistor values, bus settings, display addresses, button key bindings, and
+   electrical connectivity.
 
-Until Wave 2 validation exists, changes to hardware or runtime policy should be
-made in `config/` first and then mirrored carefully to the current executable
-and documentation so that the repository remains operational.
+`main.py` does not import `lib/generated_config.py` yet. That integration is
+deliberately deferred to the firmware-modularization wave so Wave 2 does not
+change runtime behavior.
+
+For changes to hardware or runtime policy, edit `config/` first, regenerate
+with `python tools/generate_config.py --write`, and run
+`python tools/validate_repository.py`. Until later documentation waves remove
+manual duplication, affected documentation must still be reviewed separately.
 
 ## Provenance
 
