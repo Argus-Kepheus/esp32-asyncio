@@ -1,3 +1,7 @@
+<!-- doc-id: component-specifications -->
+<!-- language: EN -->
+<!-- content-revision: 2 -->
+
 # Component Specifications — esp32-asyncio
 
 One specification sheet per physical/simulated component used in
@@ -14,6 +18,7 @@ module (WROOM vs. WROVER) compatibility, electrical characteristics, and a
 physical wiring checklist, see
 [`docs/hardware-reference.md`](hardware-reference.md).
 
+<!-- section: microcontroller-board -->
 ## 1. Microcontroller board — ESP32-DevKitC V4
 
 | Field | Value |
@@ -48,6 +53,7 @@ representative sample, not a duplicate of that table.
 | `GND.1` / `GND.2` | — | LED cathodes, OLED GND, TFT GND |
 | `TX` / `RX` | — | `$serialMonitor` (debug output only, not part of the functional requirements) |
 
+<!-- section: displays -->
 ## 2. Displays — SSD1306 OLEDs and ILI9341 TFT
 
 ### 2.1 SSD1306 OLED (×2)
@@ -89,6 +95,7 @@ Current isolated diagnostics: `tests/12_tft_basic.py` (SPI init, solid
 fills), `tests/13_tft_text_diagnostic.py` (text rendering, console
 colors).
 
+<!-- section: leds -->
 ## 3. LEDs
 
 Nine LEDs total. The six blinking LEDs are all physically blue
@@ -104,6 +111,7 @@ the circuit and Python source.
 | Cathode connected to | ESP32 GND | ESP32 GND | ESP32 GND | ESP32 GND |
 | Behavior | Each toggles independently on the shared interval (FR-01) | Mirrors the debounced button state (FR-02) | ON by default, OFF during an instrumented display write (FR-06) | Toggles every `scheduler_idle_task()` iteration (FR-06) |
 
+<!-- section: series-resistors -->
 ## 4. Series resistors
 
 | Field | LED resistors | Speed-button pull-downs |
@@ -113,6 +121,7 @@ the circuit and Python source.
 | Value | 220 Ω | 10 kΩ |
 | Purpose | Current-limiting for each LED at 3.3 V logic level | External pull-down for GPIO34/35, which have no internal one |
 
+<!-- section: push-buttons -->
 ## 5. Push-buttons
 
 | Field | Main button | Speed buttons (×2) |
@@ -130,6 +139,7 @@ the circuit and Python source.
 > connection silently fails and the button never registers a press. Always
 > use the exact pin names listed above.
 
+<!-- section: flash-mode-switch -->
 ## 6. Flash-mode slide switch
 
 | Field | Value |
