@@ -129,3 +129,15 @@ python tools/generate_docs.py --check
 ```
 
 Do not edit the contents between generated markers manually.
+
+
+## Diagnostics and tests
+
+| Path | Role |
+|---|---|
+| `diagnostics/` | ordered manual checks for Wokwi or physical ESP32 hardware |
+| `tests/` | reserved for future automated software tests |
+
+Manual diagnostic evidence requires observation of simulator or physical
+hardware behavior. It is deliberately kept separate from any future host-side
+automated test suite.
