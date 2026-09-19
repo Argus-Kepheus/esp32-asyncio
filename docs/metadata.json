@@ -27,7 +27,7 @@
         "EN": "docs/EN/README.md",
         "PT": "docs/PT/README.md"
       },
-      "content_revision": 2,
+      "content_revision": 3,
       "required_sections": [
         "hardware-requirements",
         "software-requirements",
@@ -40,7 +40,7 @@
         "EN": "docs/EN/component-specifications.md",
         "PT": "docs/PT/component-specifications.md"
       },
-      "content_revision": 2,
+      "content_revision": 3,
       "required_sections": [
         "microcontroller-board",
         "displays",
@@ -55,7 +55,7 @@
         "EN": "docs/EN/hardware-reference.md",
         "PT": "docs/PT/hardware-reference.md"
       },
-      "content_revision": 2,
+      "content_revision": 3,
       "required_sections": [
         "selected-board",
         "board-rationale",
@@ -73,7 +73,7 @@
         "EN": "docs/EN/technical-specification.md",
         "PT": "docs/PT/technical-specification.md"
       },
-      "content_revision": 3,
+      "content_revision": 4,
       "required_sections": [
         "document-control",
         "objective",
