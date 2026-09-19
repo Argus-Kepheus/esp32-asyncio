@@ -78,9 +78,7 @@ This is intentionally not a sentence-by-sentence translation comparison.
 Translations may use natural language-specific structure and wording while
 remaining normatively equivalent.
 
-A future language such as ES can be added by registering it in
-`docs/metadata.json` and satisfying the same document/revision/section
-contract.
+Spanish (ES) is now a maintained translation. Any additional language must be registered in `docs/metadata.json` and satisfy the same document/revision/section contract.
 
 
 ## Generate documentation blocks
@@ -105,7 +103,7 @@ component specification sheets.
 
 ## Manual diagnostics semantics
 
-Wave 5 separates manual hardware diagnostics from future automated tests:
+Wave 5 separated manual hardware diagnostics from automated tests; Wave 9 activates the automated layer:
 
 - `diagnostics/` contains the 13 ordered Wokwi/physical-hardware diagnostic
   scripts and `diagnostics/metadata.json`;
