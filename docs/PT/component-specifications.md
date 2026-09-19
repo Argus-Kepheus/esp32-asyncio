@@ -1,3 +1,7 @@
+<!-- doc-id: component-specifications -->
+<!-- language: PT -->
+<!-- content-revision: 2 -->
+
 # Especificações dos componentes — esp32-asyncio
 
 Este documento apresenta uma ficha de especificação para cada componente
@@ -15,6 +19,7 @@ reservados, a compatibilidade entre módulos WROOM e WROVER, as características
 elétricas e a lista de verificação da montagem física, consulte
 [`hardware-reference.md`](hardware-reference.md).
 
+<!-- section: microcontroller-board -->
 ## 1. Placa microcontroladora — ESP32-DevKitC V4
 
 | Campo | Valor |
@@ -49,6 +54,7 @@ linhas é uma amostra representativa, não uma duplicata daquela tabela.
 | `GND.1` / `GND.2` | — | Cátodos dos LEDs, GND dos OLEDs e da TFT |
 | `TX` / `RX` | — | `$serialMonitor`, somente para diagnóstico; não faz parte dos requisitos funcionais |
 
+<!-- section: displays -->
 ## 2. Mostradores — OLEDs SSD1306 e TFT ILI9341
 
 ### 2.1 OLED SSD1306 (×2)
@@ -90,6 +96,7 @@ Diagnósticos isolados atuais: `tests/12_tft_basic.py` (inicialização SPI,
 preenchimentos sólidos), `tests/13_tft_text_diagnostic.py` (renderização
 de texto, cores do console).
 
+<!-- section: leds -->
 ## 3. LEDs
 
 Nove LEDs no total. Os seis LEDs piscantes são todos fisicamente azuis
@@ -105,6 +112,7 @@ de 1 a 6 no circuito e no código Python.
 | Cátodo conectado a | GND do ESP32 | GND do ESP32 | GND do ESP32 | GND do ESP32 |
 | Comportamento | Cada um alterna de forma independente no intervalo compartilhado (RF-01) | Reproduz o estado estável do botão (RF-02) | Aceso por padrão, apaga durante uma escrita instrumentada (RF-06) | Alterna a cada iteração de `scheduler_idle_task()` (RF-06) |
 
+<!-- section: series-resistors -->
 ## 4. Resistores em série
 
 | Campo | Resistores dos LEDs | Pull-downs dos botões de velocidade |
@@ -114,6 +122,7 @@ de 1 a 6 no circuito e no código Python.
 | Resistência | 220 Ω | 10 kΩ |
 | Finalidade | Limitação da corrente de cada LED no nível lógico de 3,3 V | Pull-down externo para GPIO34/35, que não têm um interno |
 
+<!-- section: push-buttons -->
 ## 5. Botões pulsadores
 
 | Campo | Botão principal | Botões de velocidade (×2) |
@@ -132,6 +141,7 @@ de 1 a 6 no circuito e no código Python.
 > ligação pode falhar silenciosamente e o botão nunca registrar o acionamento.
 > Use sempre exatamente os nomes de terminais indicados acima.
 
+<!-- section: flash-mode-switch -->
 ## 6. Chave deslizante de modo de gravação
 
 | Campo | Valor |
