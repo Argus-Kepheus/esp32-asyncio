@@ -33,7 +33,10 @@ console.
 | `ili9341.py`, `ssd1306.py` | Display drivers |
 | `diagram.json` | Circuit and layout for Wokwi |
 | `wokwi.toml` | Local Wokwi-for-VS-Code simulator config |
-| `docs/PT/` and `docs/EN/` | Bilingual technical documentation |
+| `config/` | Canonical hardware/runtime configuration |
+| `lib/generated_config.py` | Generated MicroPython-safe configuration artifact |
+| `tools/` | Configuration/document generation and repository validation |
+| `docs/PT/` and `docs/EN/` | Multilingual technical documentation governed by `docs/metadata.json` |
 | `tests/` | Manual hardware diagnostic scripts |
 | `report/` | Technical report in LaTeX and PDF |
 
