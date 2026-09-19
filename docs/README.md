@@ -146,3 +146,22 @@ Spanish (`ES`, locale `es`) is a maintained translation with the same
 document IDs, content revisions and semantic-section requirements as EN/PT.
 Generated hardware/runtime blocks are produced from the same canonical
 `config/` sources, and CI rejects stale or incomplete ES documentation.
+
+
+## Wave 9 status
+
+The repository now has two complementary verification layers:
+
+- `tests/` — automated CPython `unittest` checks for generated artifacts,
+  multilingual documentation contracts and static source invariants;
+- `diagnostics/` — manual Wokwi/physical-hardware checks requiring observed
+  peripheral behavior.
+
+GitHub Actions runs the automated suite on every validated change. Passing
+host-side tests remains intentionally weaker than proving MicroPython/Wokwi or
+physical-hardware behavior.
+
+More advanced optional work — automated Wokwi execution, MicroPython firmware
+compatibility matrices, scheduler-jitter benchmarks and bus-latency
+instrumentation — is left as future research/engineering work rather than
+being introduced without a concrete measurement requirement.
