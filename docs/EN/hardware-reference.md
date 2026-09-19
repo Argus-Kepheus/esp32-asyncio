@@ -14,16 +14,18 @@ repeated here. Per-part Wokwi identifiers live in
 <!-- section: selected-board -->
 ## 1. Selected board
 
+<!-- BEGIN GENERATED: board-summary -->
 | Property | Project definition |
 |---|---|
 | Manufacturer | Espressif Systems |
 | Board name | ESP32-DevKitC V4 |
-| Wokwi part identifier | `board-esp32-devkit-c-v4` (`diagram.json` id `esp32`) |
+| Wokwi identifier | `board-esp32-devkit-c-v4` (`diagram.json` id `esp32`) |
 | Header arrangement | 38 pins, 19 per side (J2, J3) |
-| Microcontroller family | Original ESP32 |
+| Microcontroller family | ESP32 |
 | Recommended physical module | ESP32-WROOM-32E |
 | Firmware | MicroPython for ESP32 |
 | Logic voltage | 3.3 V (not 5 V tolerant) |
+<!-- END GENERATED: board-summary -->
 
 ```json
 { "type": "board-esp32-devkit-c-v4", "id": "esp32" }
@@ -59,7 +61,8 @@ All source and circuit references use the **ESP32 GPIO number**, not the
 sequential physical position of a header terminal — e.g. `GPIO25` is the
 signal named GPIO25, not the 25th physical pin.
 
-| Function | Wokwi ID | Python variable/constant | GPIO | Header pin |
+<!-- BEGIN GENERATED: gpio-map -->
+| Function | Wokwi identifier | Python variable/constant | GPIO | Header pin |
 |---|---|---|---:|---|
 | Blinking LED 1 output | `blue-led-1` | `blue_led_1` / `BLUE_LED_1_PIN` | GPIO26 | J2-10 |
 | Blinking LED 2 output | `blue-led-2` | `blue_led_2` / `BLUE_LED_2_PIN` | GPIO14 | J2-12 |
@@ -73,17 +76,18 @@ signal named GPIO25, not the 25th physical pin.
 | Increase-speed button | `increase-speed-button` | `increase_speed_button` / `INCREASE_SPEED_BUTTON_PIN` | GPIO35 | J2-6 |
 | Bus-idle LED (orange) | `bus-idle-led` | `bus_idle_led` / `BUS_IDLE_LED_PIN` | GPIO13 | J2-15 |
 | Scheduler-idle LED (yellow) | `scheduler-idle-led` | `scheduler_idle_led` / `SCHEDULER_IDLE_LED_PIN` | GPIO2 | J3-15 |
-| CPU OLED0, I²C clock | `oled0-display` | `oled0_display` / `OLED0_SCL_PIN` | GPIO32 | J2-7 |
-| CPU OLED0, I²C data | `oled0-display` | `oled0_display` / `OLED0_SDA_PIN` | GPIO16 | J3-12 |
-| RAM OLED1, I²C clock | `oled1-display` | `oled1_display` / `OLED1_SCL_PIN` | GPIO15 | J3-16 |
-| RAM OLED1, I²C data | `oled1-display` | `oled1_display` / `OLED1_SDA_PIN` | GPIO22 | J3-3 |
+| CPU OLED0, I2C clock | `oled0-display` | `oled0_display` / `OLED0_SCL_PIN` | GPIO32 | J2-7 |
+| CPU OLED0, I2C data | `oled0-display` | `oled0_display` / `OLED0_SDA_PIN` | GPIO16 | J3-12 |
+| RAM OLED1, I2C clock | `oled1-display` | `oled1_display` / `OLED1_SCL_PIN` | GPIO15 | J3-16 |
+| RAM OLED1, I2C data | `oled1-display` | `oled1_display` / `OLED1_SDA_PIN` | GPIO22 | J3-3 |
 | TFT SPI clock | `tft-display` | `tft_display` / `TFT_SCK_PIN` | GPIO18 | J3-9 |
 | TFT SPI data out | `tft-display` | `tft_display` / `TFT_MOSI_PIN` | GPIO23 | J3-2 |
 | TFT chip select | `tft-display` | `tft_display` / `TFT_CS_PIN` | GPIO5 | J3-10 |
 | TFT data/command | `tft-display` | `tft_display` / `TFT_DC_PIN` | GPIO21 | J3-6 |
 | TFT hardware reset | `tft-display` | `tft_display` / `TFT_RST_PIN` | GPIO19 | J3-8 |
-| Flash-mode slide switch | `flash-mode-switch` | — (`diagram.json` only, no `main.py` code reads it) | GPIO0 | J3-14 |
+| Flash-mode slide switch | `flash-mode-switch` | — | GPIO0 | J3-14 |
 | OLED / push-button supply | — | — | 3V3 | J2-1 |
+<!-- END GENERATED: gpio-map -->
 
 The six blinking LEDs are all physically blue (`#0000FF`) in `diagram.json`.
 They use the same 1–6 numbering in Wokwi IDs, Python variables and pin
@@ -161,12 +165,14 @@ predefined project requirements, that reassignment is out of scope here.
 <!-- section: restricted-gpios -->
 ## 5. Restricted / reserved GPIOs
 
+<!-- BEGIN GENERATED: gpio-constraints -->
 | Restriction | Pins | Why |
 |---|---|---|
-| Reserved for SPI flash | `CLK`, `D0`, `D1`, `D2`, `D3`, `CMD` | Internal flash communication; using them as GPIO can prevent the firmware from booting |
-| Input-only | GPIO34–GPIO39 | Cannot drive outputs; no internal pull-up/pull-down |
-| Bootstrapping | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | Sampled at boot to select boot mode — see below for what each one drives here and why it doesn't interfere |
-| Primary UART | GPIO1, GPIO3 | Used for programming/diagnostic output and the Wokwi serial monitor; not used by project peripherals |
+| Reserved for SPI flash | `CLK`, `D0`, `D1`, `D2`, `D3`, `CMD` | Internal flash communication; do not use as project GPIO |
+| Input-only | GPIO34, GPIO35, GPIO36, GPIO37, GPIO38, GPIO39 | Cannot drive outputs; no internal pull-up/pull-down |
+| Bootstrapping | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | Sampled at boot; project uses are documented and validated |
+| Primary UART | GPIO1, GPIO3 | Used for programming/diagnostic serial; not a project peripheral |
+<!-- END GENERATED: gpio-constraints -->
 
 Per-pin bootstrapping notes for this project (none force an external level
 against the pin's normal boot-time state, but the reasoning differs per
