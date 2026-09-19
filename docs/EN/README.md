@@ -25,10 +25,10 @@ console — all simulated in [Wokwi](https://wokwi.com).
 | Six blinking LEDs (+ 220 Ω) | `blue-led-1` … `blue-led-6` | GPIO 26, 14, 27, 25, 33, 12 |
 | Green LED (+ 220 Ω) | `green-led` | GPIO 4 |
 | Main push-button | `push-button` | GPIO 17 |
-| Two speed buttons | `decrease-speed-button`, `increase-speed-button` | GPIO 34, 35 |
-| Two status-indicator LEDs | `bus-idle-led`, `scheduler-idle-led` | GPIO 13, 2 |
-| CPU OLED0, SSD1306 128×64, I2C(0) | `oled0-display` | SCL = GPIO 32, SDA = GPIO 16 |
-| RAM OLED1, SSD1306 128×64, I2C(1) | `oled1-display` | SCL = GPIO 15, SDA = GPIO 22 |
+| Two speed buttons (+ external 10000 Ω pull-down each) | `decrease-speed-button`, `increase-speed-button` | GPIO 34, 35 |
+| Two status-indicator LEDs (+ 220 Ω each) | `bus-idle-led`, `scheduler-idle-led` | GPIO 13, 2 |
+| CPU OLED0, SSD1306 128×64, I2C(0) @ 0x3C | `oled0-display` | SCL = GPIO 32, SDA = GPIO 16 |
+| RAM OLED1, SSD1306 128×64, I2C(1) @ 0x3C | `oled1-display` | SCL = GPIO 15, SDA = GPIO 22 |
 | TFT log display, ILI9341 240×320, SPI | `tft-display` | SCK 18, MOSI 23, CS 5, D/C 21, RST 19 |
 <!-- END GENERATED: hardware-overview -->
 
