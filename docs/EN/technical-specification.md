@@ -1,5 +1,10 @@
+<!-- doc-id: technical-specification -->
+<!-- language: EN -->
+<!-- content-revision: 3 -->
+
 # Technical Specification — esp32-asyncio
 
+<!-- section: document-control -->
 ## 1. Document control
 
 | Field | Value |
@@ -17,8 +22,9 @@
 This document consolidates the project's requirements and engineering
 decisions. Comments from additional collaborators may be integrated in
 later revisions provided that the mandatory behavior and traceability
-described here are preserved. See §7 for the process.
+described here are preserved. See §18 for the revision process.
 
+<!-- section: objective -->
 ## 2. Objective
 
 Develop and simulate an ESP32 MicroPython application that concurrently:
@@ -39,6 +45,7 @@ The deliverables are a complete executable `main.py` (with its `ssd1306.py`
 and `ili9341.py` drivers), this repository published on GitHub, and a
 shareable Wokwi platform link showing the simulated circuit.
 
+<!-- section: simulation-platform -->
 ## 3. Simulation platform decision
 
 Wokwi is the platform used for this project.
@@ -72,6 +79,7 @@ header mapping, module compatibility, reserved pins, and a physical wiring
 checklist are kept in
 [`docs/hardware-reference.md`](hardware-reference.md).
 
+<!-- section: functional-requirements -->
 ## 4. Functional requirements
 
 ### FR-01 — Six blinking LEDs
@@ -154,6 +162,7 @@ checklist are kept in
 - Shareable GitHub repository URL
 - Shareable Wokwi platform URL showing the circuit
 
+<!-- section: naming-conventions -->
 ## 5. Naming conventions
 
 | Context | Convention | Examples |
@@ -163,8 +172,9 @@ checklist are kept in
 | Python pin constants | UPPER_SNAKE_CASE | `BLUE_LED_1_PIN`, `GREEN_LED_PIN`, `BUTTON_PIN`, `OLED0_SCL_PIN`, `OLED0_SDA_PIN` |
 | Repository folder | kebab-case | `esp32-asyncio` |
 
-All source code, comments and documentation are written in English.
+Source code and code comments are written in English. Narrative documentation is maintained in multiple languages under the parity rules defined in `docs/metadata.json`, with English as the canonical narrative version.
 
+<!-- section: electrical-design -->
 ## 6. Electrical design
 
 ### 6.1 Connection table
@@ -208,6 +218,7 @@ part and because the console's larger 240×320 color frame benefits from
 SPI's higher transfer rate. The two interface choices are independent
 decisions for two different displays, not a single project-wide constraint.
 
+<!-- section: software-architecture -->
 ## 7. Software architecture
 
 ### 7.1 Cooperative asynchronous tasks
@@ -262,6 +273,7 @@ incorrect assumption to the contrary.
   interrupt-like periodicity is not required here, and OLED transfers must
   not be performed from inside a timer callback.
 
+<!-- section: debounce-strategy -->
 ## 8. Debounce strategy
 
 Although the simulated `wokwi-pushbutton` does not bounce (§6.2), the
@@ -280,6 +292,7 @@ This avoids a blocking debounce delay and prevents false LED/OLED
 transitions, while the 30 ms acceptance window stays imperceptible during
 normal manual operation.
 
+<!-- section: oled-update-strategy -->
 ## 9. OLED graph update strategy
 
 Both OLEDs redraw on a fixed sampling window — `CPU_GRAPH_SAMPLE_INTERVAL_MS`
@@ -306,6 +319,7 @@ OLEDs are themselves part of what keeps the processor busy (§19.2's "CPU"
 measurement), so redrawing continuously is intentional here, not something
 to minimize.
 
+<!-- section: state-model -->
 ## 10. State model
 
 | Stable state | GPIO 17 | Green LED | Console log line |
@@ -317,6 +331,7 @@ The six blinking-LED tasks, the two OLED graph tasks and the TFT console are
 all orthogonal to this state model: none of them pause, restart or change
 behavior when the button transitions.
 
+<!-- section: startup-failure -->
 ## 11. Startup and failure behavior
 
 At module-load time, before `main()` runs, the application:
@@ -344,6 +359,7 @@ panel does not reliably produce an `OSError` at all (§19.4), so this
 graceful-degradation path is confirmed to trigger only for driver/wiring
 faults that do raise, not for a simply-disconnected TFT.
 
+<!-- section: verification-plan -->
 ## 12. Verification plan
 
 ### TC-01 — Startup with button released
@@ -459,6 +475,7 @@ display-heavy periods.
 **Executed and passed on 2026-08-18 in Wokwi web.** The project author
 confirmed the expected long-run LED phase drift and button latency behavior.
 
+<!-- section: workflow -->
 ## 13. Wokwi, VS Code and GitHub workflow
 
 The GitHub repository is the version-controlled source of truth. Wokwi
@@ -477,6 +494,7 @@ Both links are required in the README because they serve different
 purposes: GitHub exposes source, documentation and history; Wokwi runs the
 submitted behavior interactively with no installation.
 
+<!-- section: repository-contents -->
 ## 14. Repository contents
 
 | File | Purpose |
@@ -496,6 +514,7 @@ submitted behavior interactively with no installation.
 | `tests/` | Thirteen current-hardware diagnostic scripts, `01_blue_led_basic.py` through `13_tft_text_diagnostic.py` (not part of the deliverable) — see `tests/README.md` |
 | `report/` | LaTeX source (`relatorio.tex`), compiled PDF, build script and circuit figure for the (Portuguese-language) technical report — see `report/README.md` |
 
+<!-- section: acceptance-criteria -->
 ## 15. Acceptance criteria
 
 The project is accepted when:
@@ -514,6 +533,7 @@ The project is accepted when:
 - the repository is published on GitHub with both project links in the
   README.
 
+<!-- section: decision-log -->
 ## 16. Design decision log
 
 This table exists so collaborators can append their own decisions,
@@ -537,6 +557,7 @@ a row, keep the reasoning short and explicit.
 | Both OLEDs plot live resource-usage graphs, not button-state text (§19.2) | User-requested change, after the button-state OLED message (the project's earlier behavior) was already validated. The "CPU" value is real measured time inside the displays' instrumented draw/transfer calls (drawing plus I2C/SPI transfer, not bus transfer alone), a partial approximation kept because bare-metal MicroPython on the ESP32 exposes no OS-level scheduler load metric to read instead — see §19.2 for what it does and doesn't cover. | A synthetic/simulated waveform for "CPU usage" (rejected: would not reflect anything real about the running program); reusing the earlier text message alongside a graph (rejected: no space on a 128×64 monochrome panel without shrinking the graph) |
 | Six blinking LEDs share one interval, still six separate `asyncio` tasks (§19.3) | Demonstrates that adding "more of the same" only ever means one more concurrent task, never more shared-loop logic — the same principle FR-01 already establishes for all six LEDs today. | A single task toggling all six LEDs together (rejected: defeats the point of demonstrating independent concurrent equipment, and reintroduces the coupling `asyncio` was adopted to avoid, §7.2) |
 
+<!-- section: future-work -->
 ## 17. Future work (physical hardware phase, out of scope here)
 
 - A **real, mechanical** push button needs the debounce logic in §8 (and
@@ -545,6 +566,7 @@ a row, keep the reasoning short and explicit.
 - Re-evaluate I2C vs. SPI if the physical build has spare GPIOs and a higher
   display refresh rate becomes a requirement.
 
+<!-- section: revision-guidance -->
 ## 18. Revision integration guidance
 
 Complementary comments from other designers should be added through
@@ -560,6 +582,7 @@ reviewed commits. Proposed changes should identify whether they affect:
 Mandatory pin mappings and user-visible messages must not be changed
 without an explicit update to the assessment requirements.
 
+<!-- section: implementation-notes -->
 ## 19. Implementation notes
 
 This section expands on implementation detail for the requirements in §4,
@@ -612,9 +635,8 @@ and a legible text message on a 128×64 monochrome panel.
 
 ### 19.3 Six LEDs, one shared interval, six independent tasks
 
-All six LEDs (red, blue, yellow, white, orange, and a second red) are
-painted the same color on the board (`#0000FF`) even though `main.py`
-still tracks each one individually (see `BLINKING_LEDS`). Each runs as its
+All six blinking LEDs are blue in the current circuit (`#0000FF`) and
+are tracked individually by `main.py` (see `BLINKING_LEDS`). Each runs as its
 own independent `asyncio` task (`blink_led()`) — one more LED is always
 one more concurrent task, never more logic added to a shared loop.
 
