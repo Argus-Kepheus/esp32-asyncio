@@ -886,7 +886,7 @@ def main() -> int:
         OUTPUT_PATH,
     ):
         if not required.exists():
-            fail(f"Missing required Wave 2 file: {required.relative_to(ROOT)}")
+            fail(f"Missing required repository file: {required.relative_to(ROOT)}")
 
     hardware = load_json(HARDWARE_PATH)
     runtime = load_json(RUNTIME_PATH)
