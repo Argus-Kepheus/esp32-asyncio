@@ -31,7 +31,7 @@ project does not need a JSON parser or a pre-build step at runtime.
 python tools/validate_repository.py
 ```
 
-The Wave 2 validator checks:
+The repository validator checks:
 
 - internal consistency of canonical GPIO assignments;
 - unsafe use of ESP32 input-only pins as outputs;
