@@ -37,16 +37,17 @@ console.
 | `lib/generated_config.py` | Generated MicroPython-safe configuration artifact |
 | `tools/` | Configuration/document generation and repository validation |
 | `docs/PT/` and `docs/EN/` | Multilingual technical documentation governed by `docs/metadata.json` |
-| `tests/` | Manual hardware diagnostic scripts |
+| `diagnostics/` | Manual Wokwi/physical-hardware diagnostic scripts |
+| `tests/` | Reserved for future automated tests |
 | `report/` | Technical report in LaTeX and PDF |
 
 ## Validation
 
-The `tests/` folder contains standalone scripts that isolate individual
+The `diagnostics/` folder contains standalone scripts that isolate individual
 components (each LED, each button, each display) rather than exercising
 `main.py` as a whole. They are manual diagnostics for Wokwi or a physical
 board, not automated proof that `main.py` passes — see
-[`tests/README.md`](tests/README.md) for the recommended run order and
+[`diagnostics/README.md`](diagnostics/README.md) for the recommended run order and
 recorded results.
 
 ## Limitations
