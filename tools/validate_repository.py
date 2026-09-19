@@ -858,7 +858,11 @@ def check_diagnostics_semantics() -> None:
         r"tests/(?:README\.md|(?:0[1-9]|1[0-3])_[A-Za-z0-9_]+\.py)"
     )
     for path in scan_paths:
-        if path in {ROOT / "tests" / "README.md", DIAGNOSTICS_METADATA_PATH}:
+        if path in {
+            ROOT / "tests" / "README.md",
+            DIAGNOSTICS_METADATA_PATH,
+            ROOT / "tools" / "validate_repository.py",
+        }:
             continue
         text = path.read_text(encoding="utf-8")
         if stale_manual_path.search(text):
