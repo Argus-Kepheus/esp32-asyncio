@@ -1,3 +1,7 @@
+<!-- doc-id: hardware-reference -->
+<!-- language: PT -->
+<!-- content-revision: 2 -->
+
 # Referência de hardware da ESP32-DevKitC V4
 
 Este documento é a fonte principal para identificação da placa física, do
@@ -9,6 +13,7 @@ são repetidas integralmente aqui. Os identificadores dos componentes no Wokwi
 estão em
 [`component-specifications.md`](component-specifications.md).
 
+<!-- section: selected-board -->
 ## 1. Placa selecionada
 
 | Propriedade | Definição do projeto |
@@ -30,6 +35,7 @@ A placa não deve ser substituída por outro tipo sem uma revisão completa do
 mapeamento apresentado na §3 e do registro de decisões da §16 de
 `technical-specification.md`.
 
+<!-- section: board-rationale -->
 ## 2. Por que esta placa e por que “ESP32” não é suficiente
 
 A atividade exige apenas “MicroPython para ESP32” e não determina uma placa
@@ -61,6 +67,7 @@ DevKitC V4 é a placa portadora, com USB, regulador, botões e conectores. O
 módulo metálico contém o circuito integrado ESP32, a memória flash, a antena e,
 conforme a variante, PSRAM. Uma DevKitC V4 pode receber diferentes módulos.
 
+<!-- section: gpio-header-mapping -->
 ## 3. Mapeamento dos GPIOs nos conectores
 
 Todas as referências no código e no circuito utilizam o **número do GPIO do
@@ -154,6 +161,7 @@ para a ressalva que isso implica numa montagem física.
   qualquer script MicroPython rodar; nenhum código do `main.py` interage
   com ele. Ver §7.
 
+<!-- section: module-compatibility -->
 ## 4. Compatibilidade dos módulos — WROOM e WROVER
 
 O projeto necessita de GPIO16 e GPIO17 para o SDA do OLED e o botão.
@@ -168,6 +176,7 @@ Uma placa baseada em WROVER exigiria remapeamento de pinos em `main.py`,
 `diagram.json`, na montagem e na documentação. Como GPIO16 e GPIO17 são
 atribuições predefinidas do projeto, esse remapeamento está fora do escopo.
 
+<!-- section: restricted-gpios -->
 ## 5. GPIOs restritos ou reservados
 
 | Restrição | Terminais | Motivo |
@@ -211,6 +220,7 @@ usado pelo REPL do MicroPython e por todo `print()` do código. Na prática,
 LEDs interval: ... ms"` do `print_status()` (e os diagnósticos de falha
 de inicialização do OLED/TFT).
 
+<!-- section: electrical-characteristics -->
 ## 6. Características elétricas
 
 - **Nível lógico:** 3,3 V. Nunca aplique 5 V diretamente a um GPIO.
@@ -234,6 +244,7 @@ de inicialização do OLED/TFT).
 - **Filtro de entrada:** não há filtro RC externo em nenhum dos três
   botões; o repique é tratado por software.
 
+<!-- section: physical-checklist -->
 ## 7. Lista de verificação para implementação física
 
 Para uma futura montagem real:
@@ -257,6 +268,7 @@ Para uma futura montagem real:
 - não aplicar 5 V diretamente a nenhum GPIO (o VCC da TFT é um pino de
   alimentação do display, não um GPIO).
 
+<!-- section: references -->
 ## 8. Referências
 
 **Espressif e MicroPython:**
@@ -274,6 +286,7 @@ Para uma futura montagem real:
 - [Componente `board-esp32-devkit-c-v4`](https://docs.wokwi.com/parts/board-esp32-devkit-c-v4)
 - [Formato de `diagram.json`](https://docs.wokwi.com/diagram-format)
 
+<!-- section: board-identification -->
 ## 9. Declaração de identificação da placa
 
 Texto recomendado para relatórios e documentação de entrega:
