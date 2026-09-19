@@ -1,3 +1,7 @@
+<!-- doc-id: project-overview -->
+<!-- language: PT -->
+<!-- content-revision: 2 -->
+
 # esp32-asyncio
 
 **Language / Idioma:** [English](../EN/README.md) | [Português](README.md)
@@ -12,6 +16,7 @@ uma tela TFT ILI9341 -- tudo simulado no [Wokwi](https://wokwi.com).
 
 **Simulação no Wokwi:** <https://wokwi.com/projects/471528241540407297>
 
+<!-- section: hardware-requirements -->
 ## Requisitos de hardware
 
 | Componente | Identificador no Wokwi | Pino no ESP32 |
@@ -35,6 +40,7 @@ reservados, checklist de fiação) está em
 exatos de cada peça estão em
 [`component-specifications.md`](component-specifications.md).
 
+<!-- section: software-requirements -->
 ## Requisitos de software
 
 - MicroPython para ESP32.
@@ -53,6 +59,7 @@ exatos de cada peça estão em
 Os requisitos completos e as decisões de projeto estão em
 [`technical-specification.md`](technical-specification.md).
 
+<!-- section: result -->
 ## Resultado
 
 Seis LEDs piscam de forma independente em um intervalo compartilhado e
@@ -62,6 +69,7 @@ plotam gráficos ao vivo de uso de CPU e RAM; e os dois LEDs indicadores
 refletem, em tempo real, a atividade do barramento dos mostradores e do
 escalonador.
 
+<!-- section: license -->
 ## Licença
 
 Este projeto é dedicado ao domínio público sob a licença
