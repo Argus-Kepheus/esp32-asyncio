@@ -262,10 +262,7 @@ explicitamente para evitar essa suposição incorreta mais adiante (ver
 
 ### 5.4 Temporizadores de hardware
 
-Temporizadores de hardware não são necessários para o requisito de 500 ms. A
-tolerância temporal da aplicação é compatível com `asyncio`, e a adoção de
-interrupções ou funções de retorno de temporizador acrescentaria complexidade
-sem benefício funcional relevante.
+Temporizadores de hardware não são necessários para a temporização configurada desta aplicação. A tolerância temporal é compatível com `asyncio`, e a adoção de interrupções ou funções de retorno de temporizador acrescentaria complexidade sem benefício funcional relevante.
 
 <!-- section: electrical-design -->
 ## 6. Projeto do circuito
