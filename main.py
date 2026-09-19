@@ -30,79 +30,66 @@ from machine import Pin, I2C, SPI
 
 from ssd1306 import SSD1306_I2C
 from ili9341 import ILI9341, CHAR_WIDTH, CHAR_HEIGHT
+from lib.generated_config import (
+    BASE_BLINK_INTERVALS_MS,
+    BLINK_SPEED_INITIAL_STEP,
+    BLINK_SPEED_SCALE_BASE,
+    BLINK_SPEED_STEP_MAX,
+    BLINK_SPEED_STEP_MIN,
+    BLUE_LED_1_BLINK_INTERVAL_MS,
+    BLUE_LED_1_PIN,
+    BLUE_LED_2_BLINK_INTERVAL_MS,
+    BLUE_LED_2_PIN,
+    BLUE_LED_3_BLINK_INTERVAL_MS,
+    BLUE_LED_3_PIN,
+    BLUE_LED_4_BLINK_INTERVAL_MS,
+    BLUE_LED_4_PIN,
+    BLUE_LED_5_BLINK_INTERVAL_MS,
+    BLUE_LED_5_PIN,
+    BLUE_LED_6_BLINK_INTERVAL_MS,
+    BLUE_LED_6_PIN,
+    BUS_IDLE_LED_PIN,
+    BUTTON_DEBOUNCE_MS,
+    BUTTON_PIN,
+    BUTTON_SAMPLE_INTERVAL_MS,
+    CONSOLE_BACKGROUND,
+    CONSOLE_BLUE,
+    CONSOLE_GREEN,
+    CONSOLE_LOG_THROTTLE,
+    CONSOLE_ORANGE,
+    CONSOLE_PURPLE,
+    CONSOLE_RED,
+    CONSOLE_WHITE,
+    CONSOLE_YELLOW,
+    CPU_GRAPH_SAMPLE_INTERVAL_MS,
+    DECREASE_SPEED_BUTTON_PIN,
+    GREEN_LED_PIN,
+    INCREASE_SPEED_BUTTON_PIN,
+    OLED0_I2C_BUS_ID,
+    OLED0_SCL_PIN,
+    OLED0_SDA_PIN,
+    OLED1_I2C_BUS_ID,
+    OLED1_SCL_PIN,
+    OLED1_SDA_PIN,
+    OLED_HEIGHT,
+    OLED_I2C_ADDRESS,
+    OLED_I2C_FREQUENCY_HZ,
+    OLED_WIDTH,
+    PRINT_STATUS_INTERVAL_MS,
+    RAM_GRAPH_SAMPLE_INTERVAL_MS,
+    SCHEDULER_IDLE_LED_PIN,
+    TFT_CS_PIN,
+    TFT_DC_PIN,
+    TFT_MOSI_PIN,
+    TFT_RST_PIN,
+    TFT_SCK_PIN,
+    TFT_SPI_BAUDRATE_HZ,
+    TFT_SPI_BUS_ID,
+)
 
-# --- Pin assignments ---------------------------------------------------------
-BLUE_LED_1_PIN = 26
-GREEN_LED_PIN = 4
-BUTTON_PIN = 17
-OLED0_SCL_PIN = 32
-OLED0_SDA_PIN = 16
-
-# --- Remaining blue blinking LEDs -------------------------------------------
-# GPIO 34/35 are input-only on the ESP32 (no output driver) and cannot be
-# used here. GPIO 12 (BLUE_LED_6_PIN) is a strapping pin (sets flash voltage
-# at boot) -- safe here because this LED only ever sinks current to GND
-# through a resistor, it never pulls the pin toward 3V3 during boot.
-BLUE_LED_2_PIN = 14
-BLUE_LED_3_PIN = 27
-BLUE_LED_4_PIN = 25
-BLUE_LED_5_PIN = 33
-BLUE_LED_6_PIN = 12
-
-# --- Pin assignments (4-wire SPI TFT: SCK, MOSI, CS, D/C) -------------------
-TFT_SCK_PIN = 18
-TFT_MOSI_PIN = 23
-TFT_CS_PIN = 5
-TFT_DC_PIN = 21
-TFT_RST_PIN = 19
-
-# --- Pin assignments (speed buttons + idle indicators) ----------------------
-# GPIO 34/35 are input-only and have no internal pull resistors at all, so
-# (unlike BUTTON_PIN) these two need an external physical pull-down --
-# see diagram.json.
-DECREASE_SPEED_BUTTON_PIN = 34
-INCREASE_SPEED_BUTTON_PIN = 35
-BUS_IDLE_LED_PIN = 13
-SCHEDULER_IDLE_LED_PIN = 2
-
-# --- Pin assignments (RAM OLED1, its own I2C bus) ----------------------------
-# A separate machine.I2C(1) bus, independent of CPU OLED0's I2C(0), so
-# both can be addressed at the same time without bus contention.
-OLED1_SCL_PIN = 15
-OLED1_SDA_PIN = 22
-
-# --- Timing configuration ----------------------------------------------------
-# All six blinking LEDs share the same base interval -- each is still its
-# own independent asyncio task (see BLINKING_LEDS/blink_led()), just running
-# the same 500 ms period, as if they were separate, identical equipment.
-BLUE_LED_1_BLINK_INTERVAL_MS = 500
-BLUE_LED_2_BLINK_INTERVAL_MS = 500
-BLUE_LED_3_BLINK_INTERVAL_MS = 500
-BLUE_LED_4_BLINK_INTERVAL_MS = 500
-BLUE_LED_5_BLINK_INTERVAL_MS = 500
-BLUE_LED_6_BLINK_INTERVAL_MS = 500
-
-# Each speed-button press doubles or halves every blinking LED's interval at
-# once (relative to its own 500 ms base above), so all six always stay in
-# lockstep with each other. The step is clamped so the interval can't reach
-# 0 ms or run away to an absurd wait.
-BLINK_SPEED_STEP_MIN = -2  # fastest: 500ms x0.25 = 125 ms
-BLINK_SPEED_STEP_MAX = 3   # slowest: 500ms x8 = 4 s
-
-BUTTON_SAMPLE_INTERVAL_MS = 5
-# Wokwi's simulated push-button is bounce-free, so this debounce window is
-# not required to pass the simulation. It is kept because it is the correct
-# behavior for a real, physical button (see docs, "Debounce strategy").
-BUTTON_DEBOUNCE_MS = 30
-
-# --- Display configuration ----------------------------------------------------
-OLED_WIDTH = 128
-OLED_HEIGHT = 64
-OLED_I2C_ADDRESS = 0x3C
-OLED_I2C_FREQUENCY_HZ = 400_000
-CPU_GRAPH_SAMPLE_INTERVAL_MS = 250
-RAM_GRAPH_SAMPLE_INTERVAL_MS = 250
-PRINT_STATUS_INTERVAL_MS = 1000
+# Hardware pins, buses, timings and console colors are generated from
+# config/hardware.json + config/runtime.json. Do not redefine them here.
+# Regenerate lib/generated_config.py with tools/generate_config.py.
 
 # --- Peripheral setup ----------------------------------------------------
 blue_led_1 = Pin(BLUE_LED_1_PIN, Pin.OUT, value=0)
@@ -126,11 +113,9 @@ BLINKING_LEDS = [
     [blue_led_5, BLUE_LED_5_BLINK_INTERVAL_MS],
     [blue_led_6, BLUE_LED_6_BLINK_INTERVAL_MS],
 ]
-# Snapshot of each LED's un-scaled interval, same order as BLINKING_LEDS --
-# the reference apply_blink_speed_step() always scales from, so repeated
-# presses can't compound rounding error across many small steps.
-BASE_BLINK_INTERVALS_MS = tuple(interval_ms for _, interval_ms in BLINKING_LEDS)
-blink_speed_step = 0
+# BASE_BLINK_INTERVALS_MS and the initial speed step come from the generated
+# runtime configuration, so the executable does not maintain a second policy.
+blink_speed_step = BLINK_SPEED_INITIAL_STEP
 
 
 def apply_blink_speed_step(step_delta):
@@ -140,7 +125,7 @@ def apply_blink_speed_step(step_delta):
     blink_speed_step = max(
         BLINK_SPEED_STEP_MIN, min(BLINK_SPEED_STEP_MAX, blink_speed_step + step_delta)
     )
-    scale = 2**blink_speed_step
+    scale = BLINK_SPEED_SCALE_BASE**blink_speed_step
     for entry, base_interval_ms in zip(BLINKING_LEDS, BASE_BLINK_INTERVALS_MS):
         entry[1] = round(base_interval_ms * scale)
     console_log("Blue LEDs: interval -> {} ms".format(BLINKING_LEDS[0][1]), CONSOLE_BLUE)
@@ -194,7 +179,7 @@ scheduler_idle_led = Pin(SCHEDULER_IDLE_LED_PIN, Pin.OUT, value=0)
 # revision used machine.SoftI2C as an unconfirmed defensive compatibility
 # choice; that is no longer needed.
 oled0_i2c = I2C(
-    0,
+    OLED0_I2C_BUS_ID,
     scl=Pin(OLED0_SCL_PIN),
     sda=Pin(OLED0_SDA_PIN),
     freq=OLED_I2C_FREQUENCY_HZ,
@@ -229,7 +214,7 @@ oled0_display = create_oled_display(oled0_i2c, "OLED0")
 # Second, independent hardware I2C bus (I2C(1)) driving a second SSD1306 --
 # runs alongside CPU OLED0's I2C(0) bus without contention.
 oled1_i2c = I2C(
-    1,
+    OLED1_I2C_BUS_ID,
     scl=Pin(OLED1_SCL_PIN),
     sda=Pin(OLED1_SDA_PIN),
     freq=OLED_I2C_FREQUENCY_HZ,
@@ -238,7 +223,12 @@ oled1_display = create_oled_display(oled1_i2c, "OLED1")
 
 # 4-wire SPI TFT (SCK, MOSI, CS, D/C), independent of the I2C OLEDs above --
 # all three displays run at the same time, on separate buses/pins.
-tft_spi = SPI(2, baudrate=20_000_000, sck=Pin(TFT_SCK_PIN), mosi=Pin(TFT_MOSI_PIN))
+tft_spi = SPI(
+    TFT_SPI_BUS_ID,
+    baudrate=TFT_SPI_BAUDRATE_HZ,
+    sck=Pin(TFT_SCK_PIN),
+    mosi=Pin(TFT_MOSI_PIN),
+)
 
 
 def create_tft_display():
@@ -275,21 +265,7 @@ tft_display = create_tft_display()
 # The TFT is a scrolling activity log, like `dmesg` or a package-manager
 # install log: one colored line per event, oldest lines wrap back to the
 # top once the screen fills (no true scrolling -- see console_log()).
-# Each color is tied to one subsystem, matching that subsystem's physical
-# LED where it has one:
-CONSOLE_BLUE = 0x001F      # six blinking blue LEDs
-CONSOLE_ORANGE = 0xFD20    # bus_idle_led -- I2C/SPI activity
-CONSOLE_YELLOW = 0xFFE0    # scheduler_idle_led -- scheduler activity
-CONSOLE_GREEN = 0x07E0     # push_button / green_led
-CONSOLE_RED = 0xF800       # CPU usage
-CONSOLE_PURPLE = 0xCD1C    # RAM usage
-CONSOLE_WHITE = 0xFFFF     # everything else (startup, init diagnostics)
-CONSOLE_BACKGROUND = 0x0000
-
-# update_cpu_graph()/update_ram_graph() only log their ORANGE/RED/PURPLE
-# lines once every this-many samples (see make_throttle()).
-CONSOLE_LOG_THROTTLE = 4
-
+# Color assignments and log throttling are generated from config/runtime.json.
 console_row = 0
 CONSOLE_MAX_ROWS = tft_display.height // CHAR_HEIGHT if tft_display else 0
 CONSOLE_MAX_CHARS = tft_display.width // CHAR_WIDTH if tft_display else 0
