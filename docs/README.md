@@ -79,3 +79,53 @@ To add a language:
 
 The canonical language remains EN unless an explicit repository-wide
 governance change is made.
+
+
+## Document roles
+
+The documentation is intentionally split by responsibility:
+
+| Document | Responsibility |
+|---|---|
+| root `README.md` | onboarding, quick start, repository navigation |
+| `docs/<LANG>/README.md` | concise project overview; hardware inventory is generated |
+| `technical-specification.md` | functional behavior, architecture, rationale, acceptance/validation semantics |
+| `hardware-reference.md` | human-readable hardware view; canonical tables are generated from `config/hardware.json` |
+| `component-specifications.md` | component identity, interface type, software role and component-specific notes; no duplicate wiring table |
+| `docs/metadata.json` | multilingual document/revision/section contract |
+| `report/` | academic/report snapshot; not an operational source of truth |
+
+Concrete hardware/runtime values should not be introduced manually into a
+document merely for convenience. Prefer, in order:
+
+1. a generated block derived from `config/`;
+2. a link/reference to an existing generated view; or
+3. validation against the canonical configuration when repetition is
+   unavoidable for a specific engineering reason.
+
+## Generated documentation blocks
+
+Wave 4 introduces `tools/generate_docs.py`. Generated regions are marked:
+
+```text
+<!-- BEGIN GENERATED: block-name -->
+...
+<!-- END GENERATED: block-name -->
+```
+
+Current generated views include:
+
+- EN/PT hardware inventories;
+- EN/PT board summaries;
+- EN/PT GPIO-to-header maps;
+- EN/PT GPIO-constraint tables;
+- EN/PT runtime-parameter summaries.
+
+Use:
+
+```text
+python tools/generate_docs.py --write
+python tools/generate_docs.py --check
+```
+
+Do not edit the contents between generated markers manually.
