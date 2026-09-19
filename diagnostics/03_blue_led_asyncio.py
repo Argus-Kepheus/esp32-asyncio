@@ -1,15 +1,15 @@
-"""Test 3/13 — First blue LED, blinking via asyncio (GPIO 26).
+"""Diagnostic 3/13 — First blue LED, blinking via asyncio (GPIO 26).
 
-Same circuit and toggle idiom as test 2, but now wrapped exactly the way
+Same circuit and toggle idiom as diagnostic 2, but now wrapped exactly the way
 main.py runs it: an `async def` coroutine scheduled with
 `asyncio.create_task()` inside `asyncio.run()`, using
 `await asyncio.sleep_ms()` instead of a blocking `time.sleep_ms()`. See
-tests/README.md for how to run this on wokwi.com.
+diagnostics/README.md for how to run this on wokwi.com.
 
 This isolates `import asyncio` and the asyncio event loop itself from the
-GPIO/wiring already checked by tests 1-2.
+GPIO/wiring already checked by diagnostics 1-2.
 
-Expected: identical behavior to test 2 -- the blue LED toggles every
+Expected: identical behavior to diagnostic 2 -- the blue LED toggles every
 500 ms, continuously -- but driven by an asyncio task instead of a plain
 loop.
 """
