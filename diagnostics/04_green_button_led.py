@@ -1,7 +1,7 @@
-"""Test 4/13 — Green push-button (GPIO 17) driving the green LED (GPIO 4).
+"""Diagnostic 4/13 — Green push-button (GPIO 17) driving the green LED (GPIO 4).
 
 Isolates the digital input side of the project: the push-button and the
-green LED it directly drives. See tests/README.md for how to run this on
+green LED it directly drives. See diagnostics/README.md for how to run this on
 wokwi.com.
 
 Deliberately uses a plain blocking loop (no asyncio, no ssd1306 import,
