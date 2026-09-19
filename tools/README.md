@@ -74,7 +74,7 @@ after the new configuration pipeline is already verifiable.
 
 ## Documentation parity
 
-Wave 3 adds a semantic parity contract for EN/PT documentation.
+Wave 3 adds a semantic parity contract for EN/PT/ES documentation.
 
 The validator reads `docs/metadata.json` and verifies that each maintained
 language:
@@ -102,7 +102,7 @@ python tools/generate_docs.py --write
 
 The documentation generator reads the canonical `config/hardware.json` and
 `config/runtime.json` files and maintains the explicitly marked generated
-regions in EN/PT documentation.
+regions in EN/PT/ES documentation.
 
 This allows several human-facing views of the same fact without creating
 several independent sources of truth: the representations are duplicated for
