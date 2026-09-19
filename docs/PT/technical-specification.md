@@ -272,21 +272,11 @@ sem benefício funcional relevante.
 
 ### 6.1 LEDs e resistores
 
-Todos os nove LEDs (seis piscantes, o verde e os dois indicadores) possuem
-resistor limitador de 220 Ω em série, com o cátodo ligado ao GND comum.
-
-```text
-GPIO26 ── 220 Ω ── ânodo do primeiro LED piscante
-cátodo ── GND
-
-GPIO4 ── 220 Ω ── ânodo do LED verde
-cátodo ── GND
-```
-
-O GPIO2 aciona hoje o `scheduler_idle_led` (§17); esse uso é seguro porque
-o circuito externo (LED + resistor até o GND) só drena corrente, nunca
-impõe um nível externo durante a energização (ver `docs/PT/hardware-reference.md`,
-§5, para a tabela completa dos pinos de *bootstrapping*).
+Todos os LEDs exigem limitação de corrente e GND comum. Os valores atuais dos
+resistores, GPIOs e restrições de pinos são canônicos em
+`config/hardware.json` e apresentados nas tabelas geradas de
+`hardware-reference.md`. A topologia conceitual é saída ESP32 → resistor
+limitador → LED → GND; os detalhes concretos não são duplicados aqui.
 
 ### Resumo dos parâmetros de execução
 
@@ -306,35 +296,19 @@ impõe um nível externo durante a energização (ver `docs/PT/hardware-referenc
 <!-- section: debounce-strategy -->
 ### 6.2 Botão, resistor interno e antirrepique
 
-O botão é ligado entre 3V3 e GPIO17:
+A ligação e a configuração de pull do botão principal são canônicas em
+`config/hardware.json` e exibidas em `hardware-reference.md`, §3. A entrada
+usa `Pin.PULL_DOWN`: contato aberto resulta em LOW e contato fechado em HIGH.
 
-```text
-3V3 ── botão normalmente aberto ── GPIO17
-```
+O antirrepique é realizado por software, de maneira não bloqueante:
 
-A entrada utiliza:
-
-```python
-push_button = Pin(BUTTON_PIN, Pin.IN, Pin.PULL_DOWN)
-```
-
-Assim:
-
-- contato aberto: LOW;
-- contato fechado: HIGH.
-
-Não é instalado resistor externo de redução e não é empregado filtro RC. O
-tratamento do repique é realizado por software, de maneira não bloqueante.
-
-Estratégia adotada:
-
-- amostragem aproximada a cada 5 ms;
+- amostragem no intervalo `BUTTON_SAMPLE_INTERVAL_MS`;
 - identificação de um estado candidato;
-- aceitação da mudança somente após aproximadamente 30 ms de estabilidade;
+- aceitação somente após a janela `BUTTON_DEBOUNCE_MS` estável;
 - geração de uma única transição lógica por acionamento.
 
-Esse intervalo é imperceptível ao usuário e evita oscilações no LED verde e
-atualizações repetidas do OLED.
+Os valores atuais desses parâmetros são gerados de `config/runtime.json` na
+tabela de runtime acima.
 
 Os nomes dos terminais do botão em `diagram.json` devem respeitar exatamente:
 
@@ -431,17 +405,17 @@ Identificadores Python não podem conter hífen; por isso, usam sublinhado.
 <!-- section: oled-update-strategy -->
 ## 9. Estratégia de atualização dos gráficos OLED
 
-Os dois OLEDs redesenham em uma janela de amostragem fixa --
-`CPU_GRAPH_SAMPLE_INTERVAL_MS` / `RAM_GRAPH_SAMPLE_INTERVAL_MS`, hoje
-250 ms cada -- não em um evento de mudança de estado do botão ou similar:
+Os dois OLEDs redesenham em janelas de amostragem fixas --
+`CPU_GRAPH_SAMPLE_INTERVAL_MS` / `RAM_GRAPH_SAMPLE_INTERVAL_MS` -- cujos
+valores atuais são gerados de `config/runtime.json` acima, e não em um evento
+de mudança de estado do botão ou similar:
 
 - `update_cpu_graph()` e `update_ram_graph()` rodam cada um seu próprio
-  laço `while True`, redesenhando a cada iteração e então fazendo
-  `await asyncio.sleep_ms(250)`;
+  laço `while True`, redesenhando a cada iteração e então aguardando o intervalo de amostragem configurado correspondente;
 - `asyncio.sleep_ms()` garante apenas um atraso mínimo, então a janela de
   amostragem é medida com `time.ticks_us()`, não assumida como exata --
   uma iteração mais lenta (por exemplo, uma escrita concorrente de
-  `console_log()`) empurra o intervalo real além de 250 ms, e
+  `console_log()`) empurra o intervalo real além do piso configurado, e
   `update_cpu_graph()` leva isso em conta explicitamente ao calcular sua
   porcentagem (§17.2);
 - cada redesenho faz um `fill()` completo e replota todo o histórico
@@ -472,7 +446,7 @@ As tarefas dos seis LEDs piscantes, dos dois gráficos OLED e do console TFT sã
 <!-- section: startup-failure -->
 ## Comportamento de inicialização e falhas
 
-Antes de `main()` iniciar o laço assíncrono, a aplicação configura as saídas, entradas e barramentos; verifica os dois OLEDs pelo endereço `0x3C`; e tenta criar o objeto da TFT. A ausência de um OLED detectável mantém esse display indisponível sem impedir a inicialização dos demais subsistemas.
+Antes de `main()` iniciar o laço assíncrono, a aplicação configura as saídas, entradas e barramentos; verifica os dois OLEDs pelo endereço canônico configurado; e tenta criar o objeto da TFT. A ausência de um OLED detectável mantém esse display indisponível sem impedir a inicialização dos demais subsistemas.
 
 A TFT usa SPI somente de escrita. Por isso, uma tela fisicamente ausente pode não produzir erro detectável; `console_log()` espelha incondicionalmente todas as mensagens no serial para que os eventos não sejam perdidos nesse caso. As limitações e caminhos de falha detalhados permanecem documentados nas notas de implementação e no plano de validação.
 
@@ -583,7 +557,7 @@ Atraso bloqueante pode ser usado somente neste teste temporário, pois o objetiv
 
 Critérios:
 
-- `oled0_i2c.scan()` ou `oled1_i2c.scan()` detecta o endereço `0x3C` no barramento correspondente;
+- `oled0_i2c.scan()` ou `oled1_i2c.scan()` detecta o endereço canônico configurado no barramento correspondente;
 - todos os pixels acendem e apagam;
 - padrões quadriculados complementares são exibidos;
 - linhas horizontais e verticais percorrem toda a tela;
@@ -599,8 +573,8 @@ barramentos, ver 14.6).
 
 Critérios:
 
-- botão solto: GPIO17 LOW e LED verde apagado;
-- botão pressionado: GPIO17 HIGH e LED verde aceso;
+- botão solto: entrada LOW e LED verde apagado;
+- botão pressionado: entrada HIGH e LED verde aceso;
 - manter o botão pressionado não produz múltiplas transições;
 - oscilações de contato não causam cintilação perceptível.
 
@@ -724,13 +698,13 @@ Como trabalho futuro, uma montagem física deve manter o antirrepique de softwar
 | Arquitetura | Apenas `asyncio`; sem superlaço temporizado como arquitetura principal |
 | Atrasos | `await asyncio.sleep_ms()` no programa entregue |
 | Temporizador de hardware | Não necessário |
-| Botão | GPIO17, ativo em HIGH, `Pin.PULL_DOWN` |
-| Antirrepique | Software, aproximadamente 30 ms; sem filtro RC |
-| LEDs azuis piscantes | GPIO26, 14, 27, 25, 33 e 12; identificadores numerados de 1 a 6; alternância-base a cada 500 ms |
-| LED verde | GPIO4, acompanha o estado estável do botão |
-| OLED | SSD1306 128 × 64, endereço `0x3C` |
+| Botão | Ligação/pull definidos em `config/hardware.json`; ativo em HIGH com `Pin.PULL_DOWN` |
+| Antirrepique | Software; intervalos definidos em `config/runtime.json`; sem filtro RC |
+| LEDs azuis piscantes | Identificadores numerados de 1 a 6; GPIOs em `config/hardware.json` e intervalo-base em `config/runtime.json` |
+| LED verde | Ligação em `config/hardware.json`; acompanha o estado estável do botão |
+| OLED | SSD1306; dimensões/endereço atuais em `config/hardware.json` |
 | Barramento do OLED | `machine.I2C` (hardware); diagnósticos atuais em `tests/05_cpu_oled_basic.py` e `tests/06_cpu_oled_full_diagnostic.py`, aprovados no Wokwi web em 18/08/2026 |
-| Mapeamento OLED | GPIO32 = SCL; GPIO16 = SDA |
+| Mapeamento OLED | Ver tabela gerada em `hardware-reference.md`, §3 |
 | Identificadores dos seis LEDs azuis | `blue_led_1` a `blue_led_6` no Python, `BLUE_LED_1_PIN` a `BLUE_LED_6_PIN` nas constantes e `blue-led-1` a `blue-led-6` no Wokwi |
 | *(Substituída -- ver linha "Gráficos de uso de recursos" abaixo)* Atualização OLED | Decisão original: somente na inicialização e nas transições estáveis do botão. Não é mais como nenhum dos dois OLEDs se comporta (§9) |
 | Versão do firmware no `diagram.json` | Não fixar `attrs.env`; usar a versão padrão/atual do Wokwi |
@@ -765,7 +739,7 @@ amostras de histórico), redesenhados a cada janela de amostragem:
   nenhuma métrica de carga de escalonador em nível de sistema operacional,
   então o valor plotado é um substituto parcial e aproximado, não uma
   métrica completa de utilização de CPU: a fração de cada janela de
-  amostragem de no mínimo 250 ms (um piso, não um período exato — ver o
+  janela de amostragem configurada (um piso, não um período exato — ver o
   próprio comentário de temporização de `update_cpu_graph()`) gasta dentro
   das chamadas síncronas instrumentadas dos três mostradores, cronometradas
   por inteiro entre `_bus_busy_begin()` / `_bus_busy_end()`. Esse intervalo
@@ -782,7 +756,7 @@ amostras de histórico), redesenhados a cada janela de amostragem:
   docstring de `update_cpu_graph()` em `main.py` para a ressalva completa.
 - **OLED1 — rotulado "RAM".** Um valor real e medido, não simulado,
   mas restrito às estatísticas de heap do coletor de lixo do MicroPython
-  (`gc.mem_alloc()` / `gc.mem_free()`), amostradas a cada no mínimo 250 ms
+  (`gc.mem_alloc()` / `gc.mem_free()`), amostradas na janela configurada
   — não à RAM física total do ESP32. A pilha de execução, alocações
   nativas/C internas ao firmware e qualquer memória fora do heap gerenciado
   pelo coletor de lixo não estão incluídas. Ver `update_ram_graph()`.
