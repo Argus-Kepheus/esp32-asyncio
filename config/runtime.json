@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "authority": {
+    "status": "canonical",
+    "scope": [
+      "application timing",
+      "debounce policy",
+      "blink speed policy",
+      "resource-graph sampling",
+      "serial status cadence",
+      "console throttling and colors"
+    ],
+    "baseline_commit": "2096a531e6386d44b52d936bbeb7589940cc2b17",
+    "provenance": [
+      "main.py"
+    ],
+    "excludes": {
+      "GPIO and electrical configuration": "config/hardware.json",
+      "display bus frequency": "config/hardware.json",
+      "Wokwi simulator process/ports": "wokwi.toml"
+    }
+  },
+  "blinking_leds": {
+    "shared_base_interval_ms": 500,
+    "speed_control": {
+      "scale_base": 2,
+      "step_min": -2,
+      "step_max": 3,
+      "initial_step": 0
+    }
+  },
+  "buttons": {
+    "sample_interval_ms": 5,
+    "debounce_ms": 30
+  },
+  "resource_graphs": {
+    "cpu_sample_interval_ms": 250,
+    "ram_sample_interval_ms": 250
+  },
+  "serial_status": {
+    "print_interval_ms": 1000
+  },
+  "console": {
+    "log_throttle": 4,
+    "colors_rgb565": {
+      "blinking_leds_blue": "0x001F",
+      "bus_activity_orange": "0xFD20",
+      "scheduler_activity_yellow": "0xFFE0",
+      "main_button_green": "0x07E0",
+      "cpu_graph_red": "0xF800",
+      "ram_graph_purple": "0xCD1C",
+      "default_white": "0xFFFF",
+      "background_black": "0x0000"
+    }
+  }
+}
