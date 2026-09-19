@@ -18,17 +18,19 @@ console — all simulated in [Wokwi](https://wokwi.com).
 <!-- section: hardware-requirements -->
 ## Hardware requirements
 
+<!-- BEGIN GENERATED: hardware-overview -->
 | Component | Wokwi identifier | ESP32 pin |
 |---|---|---:|
-| Board — Espressif ESP32-DevKitC V4 | `board-esp32-devkit-c-v4` | — |
-| Six blinking LEDs (+ 220 Ω resistor each) | `blue-led-1` through `blue-led-6` | GPIO 26, 14, 27, 25, 33, 12 |
-| Green LED (+ 220 Ω resistor) | `green-led` | GPIO 4 |
-| Main push-button, normally-open | `push-button` | GPIO 17 |
-| Two speed buttons (+ external 10 kΩ pull-down each) | `decrease-speed-button`, `increase-speed-button` | GPIO 34, 35 |
-| Two status-indicator LEDs (+ 220 Ω resistor each) | `bus-idle-led` (orange), `scheduler-idle-led` (yellow) | GPIO 13, 2 |
+| Board — ESP32-DevKitC V4 | board-esp32-devkit-c-v4 | — |
+| Six blinking LEDs (+ 220 Ω) | `blue-led-1` … `blue-led-6` | GPIO 26, 14, 27, 25, 33, 12 |
+| Green LED (+ 220 Ω) | `green-led` | GPIO 4 |
+| Main push-button | `push-button` | GPIO 17 |
+| Two speed buttons | `decrease-speed-button`, `increase-speed-button` | GPIO 34, 35 |
+| Two status-indicator LEDs | `bus-idle-led`, `scheduler-idle-led` | GPIO 13, 2 |
 | CPU OLED0, SSD1306 128×64, I2C(0) | `oled0-display` | SCL = GPIO 32, SDA = GPIO 16 |
 | RAM OLED1, SSD1306 128×64, I2C(1) | `oled1-display` | SCL = GPIO 15, SDA = GPIO 22 |
-| TFT, ILI9341 240×320, SPI | `tft-display` | SCK 18, MOSI 23, CS 5, D/C 21, RST 19 |
+| TFT log display, ILI9341 240×320, SPI | `tft-display` | SCK 18, MOSI 23, CS 5, D/C 21, RST 19 |
+<!-- END GENERATED: hardware-overview -->
 
 The two OLEDs and the three push-buttons run on the board's 3.3 V rail;
 the TFT runs on 5 V (see `hardware-reference.md`, §6, for the physical-build
