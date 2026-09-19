@@ -1,6 +1,6 @@
 <!-- doc-id: technical-specification -->
 <!-- language: PT -->
-<!-- content-revision: 6 -->
+<!-- content-revision: 7 -->
 
 # Especificação técnica — esp32-asyncio
 
@@ -532,7 +532,7 @@ Os endereços do GitHub e do Wokwi devem ser apresentados separadamente.
 | Circuito | `diagram.json` |
 | Configuração local | `wokwi.toml` |
 | Diagnósticos manuais | `diagnostics/` (treze scripts; não são testes automatizados e não fazem parte do entregável) |
-| Testes automatizados | `tests/` (reservado para uma suíte futura) |
+| Testes automatizados | `tests/` (suíte host-side `unittest` para geração, documentação e contratos de código-fonte) |
 | Relatório técnico | `report/` (`relatorio.tex`, `relatorio.pdf`) |
 | Repositório | Endereço público do GitHub |
 | Simulação | Endereço compartilhável do Wokwi |
@@ -668,6 +668,9 @@ Em uma montagem física devem ser considerados:
 - disponibilidade real de GPIO16 e GPIO17 no módulo instalado;
 - comportamento de inicialização do GPIO2;
 - diferenças entre clones de placas ESP32.
+
+- a suíte automatizada host-side em `tests/` deve passar; e
+- o workflow de validação do repositório deve passar no GitHub Actions.
 
 <!-- section: decision-log -->
 <!-- section: acceptance-criteria -->
