@@ -1,11 +1,11 @@
-"""Test 5/13 — CPU OLED basic check: I2C scan + current-role label.
+"""Diagnostic 5/13 — CPU OLED basic check: I2C scan + current-role label.
 
 The simplest possible OLED check: confirm the display answers on the I2C
 bus at the expected address and can render one line of static text. See
-tests/README.md for how to run this on wokwi.com.
+diagnostics/README.md for how to run this on wokwi.com.
 
 This is main.py's CPU OLED0 (I2C bus 0) -- the RAM OLED1
-(I2C bus 1, GPIO 15/22) has its own isolated check, test 11.
+(I2C bus 1, GPIO 15/22) has its own isolated check, diagnostic 11.
 
 Uses the same hardware machine.I2C peripheral and current GPIO mapping as
 main.py.
