@@ -1,6 +1,6 @@
 <!-- doc-id: technical-specification -->
 <!-- language: EN -->
-<!-- content-revision: 4 -->
+<!-- content-revision: 5 -->
 
 # Technical Specification — esp32-asyncio
 
@@ -323,7 +323,7 @@ button-state or other event edge:
 - every redraw does a full `fill()` and re-plots the whole scrolling
   history, not just the newest column, even though `framebuf` does have a
   primitive for shifting existing pixel data left (`scroll()`, wrapped by
-  `ssd1306.py` and exercised by `tests/06_cpu_oled_full_diagnostic.py`) —
+  `ssd1306.py` and exercised by `diagnostics/06_cpu_oled_full_diagnostic.py`) —
   redrawing from scratch was kept for the reason below, not because
   scroll-and-append-one-column was unavailable.
 
@@ -523,7 +523,8 @@ submitted behavior interactively with no installation.
 | `docs/technical-specification.md` | This document |
 | `docs/component-specifications.md` | Per-component specification sheets (board, display, LEDs, resistors, push-button) |
 | `docs/hardware-reference.md` | Board/module identification, GPIO-to-header map, reserved pins, electrical characteristics, wiring checklist |
-| `tests/` | Thirteen current-hardware diagnostic scripts, `01_blue_led_basic.py` through `13_tft_text_diagnostic.py` (not part of the deliverable) — see `tests/README.md` |
+| `diagnostics/` | Thirteen manual current-hardware diagnostic scripts, `01_blue_led_basic.py` through `13_tft_text_diagnostic.py` (not automated tests; not part of the deliverable) — see `diagnostics/README.md` |
+| `tests/` | Reserved for future automated tests |
 | `report/` | LaTeX source (`relatorio.tex`), compiled PDF, build script and circuit figure for the (Portuguese-language) technical report — see `report/README.md` |
 
 <!-- section: acceptance-criteria -->
