@@ -1,16 +1,16 @@
-"""Test 9/13 — Blue interval buttons, GPIO 34/35, external pull-down.
+"""Diagnostic 9/13 — Blue interval buttons, GPIO 34/35, external pull-down.
 
 Isolates the two blue buttons that scale the blinking LEDs' interval:
-decrease on GPIO 34, increase on GPIO 35. See tests/README.md for how to
+decrease on GPIO 34, increase on GPIO 35. See diagnostics/README.md for how to
 run this on wokwi.com.
 
-Unlike the main push-button (test 4, GPIO 17, internal Pin.PULL_DOWN),
+Unlike the main push-button (diagnostic 4, GPIO 17, internal Pin.PULL_DOWN),
 GPIO 34/35 are input-only ESP32 pins with **no internal pull resistors at
 all** -- Pin.PULL_DOWN is not requested here because the hardware can't
 provide it. Each button needs its own external 10 kOhm pull-down resistor
 to GND in diagram.json/the physical build; without it, the pin floats and
 readings will be erratic rather than a clean LOW when released. If this
-test's readings look noisy or stuck HIGH with nothing pressed, check the
+diagnostic's readings look noisy or stuck HIGH with nothing pressed, check the
 external resistor first, before suspecting the button/GPIO itself.
 
 Expected: with both buttons released, the serial monitor prints "released"
