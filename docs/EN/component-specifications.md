@@ -1,6 +1,6 @@
 <!-- doc-id: component-specifications -->
 <!-- language: EN -->
-<!-- content-revision: 3 -->
+<!-- content-revision: 4 -->
 
 # Component Specifications — esp32-asyncio
 
