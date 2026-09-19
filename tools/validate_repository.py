@@ -23,6 +23,10 @@ from generate_config import (
     build_constants,
     render_generated_config,
 )
+from generate_docs import (
+    render_file as render_document_file,
+    target_files as document_target_files,
+)
 
 MAIN_PATH = ROOT / "main.py"
 DIAGRAM_PATH = ROOT / "diagram.json"
@@ -623,6 +627,51 @@ def semantic_sections(text: str) -> list[str]:
     ]
 
 
+
+def check_generated_documentation(hardware: dict, runtime: dict) -> None:
+    for relative, language, names in document_target_files():
+        path = ROOT / relative
+        if not path.exists():
+            fail(f"Missing generated-document target: {relative}")
+            continue
+        try:
+            expected = render_document_file(
+                path, language, names, hardware, runtime
+            )
+        except Exception as exc:
+            fail(f"Cannot render generated documentation for {relative}: {exc}")
+            continue
+
+        actual = path.read_text(encoding="utf-8")
+        if actual != expected:
+            fail(
+                f"Generated documentation is stale: {relative}; run "
+                "python tools/generate_docs.py --write"
+            )
+
+
+def check_documentation_deduplication() -> None:
+    # Component sheets describe identity/role, while concrete wiring and
+    # passive values belong to canonical config + generated hardware views.
+    forbidden_component_patterns = {
+        "concrete GPIO assignment": r"\bGPIO\s*\d+\b|\bGPIO\d+\b",
+        "OLED address literal": r"\b0x3C\b",
+        "LED resistor literal": r"\b220\s*Ω\b",
+        "speed-button resistor literal": r"\b10\s*kΩ\b",
+    }
+    for relative in (
+        "docs/EN/component-specifications.md",
+        "docs/PT/component-specifications.md",
+    ):
+        text = (ROOT / relative).read_text(encoding="utf-8")
+        for label, pattern in forbidden_component_patterns.items():
+            if re.search(pattern, text, re.IGNORECASE):
+                fail(
+                    f"{relative}: duplicated canonical hardware fact "
+                    f"({label}); reference hardware-reference/config instead"
+                )
+
+
 def check_documentation_parity() -> None:
     metadata = load_json(DOC_METADATA_PATH)
     if not metadata:
@@ -737,6 +786,7 @@ def main() -> int:
         DIAGRAM_PATH,
         DOC_METADATA_PATH,
         ROOT / "tools" / "generate_config.py",
+        ROOT / "tools" / "generate_docs.py",
         OUTPUT_PATH,
     ):
         if not required.exists():
@@ -751,10 +801,12 @@ def main() -> int:
         check_runtime_schema(runtime)
     if hardware and runtime:
         check_generated_file(hardware, runtime)
+        check_generated_documentation(hardware, runtime)
         check_main_sync(hardware, runtime)
         check_diagram_sync(hardware)
 
     check_documentation_parity()
+    check_documentation_deduplication()
 
     print("esp32-asyncio repository validation")
     print(f"Errors: {len(errors)}")
