@@ -32,6 +32,7 @@ MAIN_PATH = ROOT / "main.py"
 DIAGRAM_PATH = ROOT / "diagram.json"
 DOC_METADATA_PATH = ROOT / "docs" / "metadata.json"
 DIAGNOSTICS_METADATA_PATH = ROOT / "diagnostics" / "metadata.json"
+TESTS_METADATA_PATH = ROOT / "tests" / "metadata.json"
 
 errors: list[str] = []
 warnings: list[str] = []
@@ -828,7 +829,7 @@ def check_diagnostics_semantics() -> None:
 
     tests_readme = ROOT / "tests" / "README.md"
     if not tests_readme.exists():
-        fail("tests/README.md must reserve tests/ for future automated tests")
+        fail("tests/README.md must document the automated test suite")
     else:
         text = tests_readme.read_text(encoding="utf-8").lower()
         if "automated" not in text:
@@ -864,6 +865,7 @@ def check_diagnostics_semantics() -> None:
         if path in {
             ROOT / "tests" / "README.md",
             DIAGNOSTICS_METADATA_PATH,
+        TESTS_METADATA_PATH,
             ROOT / "tools" / "validate_repository.py",
         }:
             continue
@@ -873,6 +875,54 @@ def check_diagnostics_semantics() -> None:
                 f"{path.relative_to(ROOT)}: stale reference to a manual "
                 "diagnostic under the former tests/ path"
             )
+
+
+
+def check_automated_test_semantics() -> None:
+    metadata = load_json(TESTS_METADATA_PATH)
+    if not metadata:
+        return
+
+    if metadata.get("mode") != "automated":
+        fail("tests/metadata.json must declare mode=automated")
+
+    runner = metadata.get("runner", "")
+    if "unittest" not in runner:
+        fail("tests/metadata.json must declare the unittest runner")
+
+    entries = metadata.get("tests", [])
+    if not entries:
+        fail("tests/metadata.json contains no automated tests")
+        return
+
+    ids = [entry.get("id") for entry in entries]
+    filenames = [entry.get("file") for entry in entries]
+    if len(ids) != len(set(ids)):
+        fail("Duplicate automated test IDs in tests/metadata.json")
+    if len(filenames) != len(set(filenames)):
+        fail("Duplicate automated test filenames in tests/metadata.json")
+
+    for entry in entries:
+        test_id = entry.get("id")
+        filename = entry.get("file")
+        if not isinstance(filename, str) or not filename.startswith("test_"):
+            fail(f"{test_id}: automated test filename must start with test_")
+            continue
+        path = ROOT / "tests" / filename
+        if not path.exists():
+            fail(f"Missing automated test file: tests/{filename}")
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "unittest" not in text:
+            fail(f"tests/{filename}: expected unittest-based automated test")
+
+    readme = ROOT / "tests" / "README.md"
+    if not readme.exists():
+        fail("tests/README.md must document the automated suite")
+    else:
+        text = readme.read_text(encoding="utf-8").lower()
+        if "automated" not in text or "unittest" not in text:
+            fail("tests/README.md must document automated unittest execution")
 
 
 def main() -> int:
@@ -907,6 +957,7 @@ def main() -> int:
     check_documentation_parity()
     check_documentation_deduplication()
     check_diagnostics_semantics()
+    check_automated_test_semantics()
 
     print("esp32-asyncio repository validation")
     print(f"Errors: {len(errors)}")
