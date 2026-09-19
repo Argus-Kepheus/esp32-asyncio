@@ -27,7 +27,7 @@
         "EN": "docs/EN/README.md",
         "PT": "docs/PT/README.md"
       },
-      "content_revision": 3,
+      "content_revision": 4,
       "required_sections": [
         "hardware-requirements",
         "software-requirements",
@@ -73,7 +73,7 @@
         "EN": "docs/EN/technical-specification.md",
         "PT": "docs/PT/technical-specification.md"
       },
-      "content_revision": 5,
+      "content_revision": 6,
       "required_sections": [
         "document-control",
         "objective",
