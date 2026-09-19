@@ -49,9 +49,9 @@ The complete current GPIO-to-header map is the generated table in [`hardware-ref
 | Driver | `ssd1306.py` (`SSD1306_I2C` class), shared by both | (same) |
 | Role in `main.py` | "CPU" resource graph (`update_cpu_graph()`) | "RAM" resource graph (`update_ram_graph()`) |
 
-Current isolated diagnostics: `tests/05_cpu_oled_basic.py` /
-`tests/06_cpu_oled_full_diagnostic.py` (CPU OLED0),
-`tests/11_ram_oled_basic.py` (RAM OLED1, tested alone — does not prove
+Current isolated diagnostics: `diagnostics/05_cpu_oled_basic.py` /
+`diagnostics/06_cpu_oled_full_diagnostic.py` (CPU OLED0),
+`diagnostics/11_ram_oled_basic.py` (RAM OLED1, tested alone — does not prove
 concurrent operation of both buses).
 
 ### 2.2 ILI9341 TFT
@@ -66,8 +66,8 @@ concurrent operation of both buses).
 | Driver | `ili9341.py` (custom, this project's own `ILI9341` class) |
 | Role in `main.py` | Scrolling colored activity log (`console_log()`) |
 
-Current isolated diagnostics: `tests/12_tft_basic.py` (SPI init, solid
-fills), `tests/13_tft_text_diagnostic.py` (text rendering, console
+Current isolated diagnostics: `diagnostics/12_tft_basic.py` (SPI init, solid
+fills), `diagnostics/13_tft_text_diagnostic.py` (text rendering, console
 colors).
 
 <!-- section: leds -->
