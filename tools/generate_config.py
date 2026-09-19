@@ -118,10 +118,20 @@ def build_constants(hardware: dict, runtime: dict) -> list[tuple[str, object]]:
 
 
 def python_literal(name: str, value: object) -> str:
-    if name == "OLED_I2C_ADDRESS" or name.startswith("CONSOLE_"):
-        if isinstance(value, int):
-            width = 4 if name.startswith("CONSOLE_") else 2
-            return f"0x{value:0{width}X}"
+    hex_names = {
+        "OLED_I2C_ADDRESS",
+        "CONSOLE_BLUE",
+        "CONSOLE_ORANGE",
+        "CONSOLE_YELLOW",
+        "CONSOLE_GREEN",
+        "CONSOLE_RED",
+        "CONSOLE_PURPLE",
+        "CONSOLE_WHITE",
+        "CONSOLE_BACKGROUND",
+    }
+    if name in hex_names and isinstance(value, int):
+        width = 2 if name == "OLED_I2C_ADDRESS" else 4
+        return f"0x{value:0{width}X}"
     return repr(value)
 
 
