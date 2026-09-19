@@ -1,11 +1,11 @@
-"""Test 10/13 — Orange and yellow status LEDs, basic wiring check.
+"""Diagnostic 10/13 — Orange and yellow status LEDs, basic wiring check.
 
 Isolates the two LEDs main.py drives as activity indicators rather than a
 fixed blink pattern: bus_idle_led (orange, GPIO 13, ON when the I2C/SPI
 bus is idle, OFF while a display write is in flight -- an inverted
 "busy" reading) and scheduler_idle_led (yellow, GPIO 2, scheduler
 throughput, not a literal idle/priority signal -- see main.py's
-scheduler_idle_task() docstring). See tests/README.md for how to run
+scheduler_idle_task() docstring). See diagnostics/README.md for how to run
 this on wokwi.com.
 
 This test only confirms the GPIO/resistor/LED wiring itself by
