@@ -1,6 +1,6 @@
 <!-- doc-id: technical-specification -->
 <!-- language: ES -->
-<!-- content-revision: 6 -->
+<!-- content-revision: 7 -->
 
 # Especificación técnica — esp32-asyncio
 
@@ -360,7 +360,7 @@ en la raíz y el paquete `lib/`, porque `main.py` importa
 | `diagram.json` | componentes y conexiones Wokwi |
 | `wokwi.toml` | configuración de simulación local |
 | `diagnostics/` | 13 diagnósticos manuales |
-| `tests/` | reservado para pruebas automatizadas futuras |
+| `tests/` | suite host-side automatizada con `unittest` para generación, documentación y contratos de código fuente |
 | `docs/` | documentación multilingüe y metadatos de paridad |
 | `tools/` | generación y validación |
 | `report/` | snapshot académico en portugués |
@@ -378,8 +378,9 @@ El proyecto se acepta cuando:
 - ambos OLED y TFT se actualizan según las limitaciones documentadas;
 - `main.py` no usa `time.sleep()` bloqueante;
 - las URL de Wokwi y GitHub son compartibles;
-- la documentación satisface el contrato multilingüe de
-  `docs/metadata.json`.
+- la documentación satisface el contrato multilingüe de `docs/metadata.json`;
+- la suite automatizada host-side de `tests/` pasa; y
+- el workflow de validación del repositorio pasa en GitHub Actions.
 
 <!-- section: decision-log -->
 ## 16. Registro de decisiones
