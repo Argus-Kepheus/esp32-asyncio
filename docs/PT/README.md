@@ -1,6 +1,6 @@
 <!-- doc-id: project-overview -->
 <!-- language: PT -->
-<!-- content-revision: 3 -->
+<!-- content-revision: 4 -->
 
 # esp32-asyncio
 
@@ -46,6 +46,7 @@ exatos de cada peça estão em
 ## Requisitos de software
 
 - MicroPython para ESP32.
+- O `main.py` importa os valores canônicos de execução de `lib/generated_config.py`; após mudanças em `config/`, regenere esse arquivo com `tools/generate_config.py`.
 - O `main.py` executa treze fluxos concorrentes de `asyncio` -- seis
   tarefas de LED piscante, o indicador de atividade do escalonador, as
   duas tarefas de gráfico OLED, uma tarefa de status serial e três
