@@ -77,9 +77,10 @@ Wave 2 adds:
    resistor values, bus settings, display addresses, button key bindings, and
    electrical connectivity.
 
-`main.py` does not import `lib/generated_config.py` yet. That integration is
-deliberately deferred to the firmware-modularization wave so Wave 2 does not
-change runtime behavior.
+Since Wave 6, `main.py` imports `lib/generated_config.py` through the
+explicit `lib` package. Canonical hardware/runtime values therefore enter the
+executable firmware through one generated boundary instead of being redefined
+inline.
 
 For changes to hardware or runtime policy, edit `config/` first, regenerate
 with `python tools/generate_config.py --write`, and run
@@ -116,3 +117,22 @@ maintaining separate pin maps.
 
 This means duplication for usability is allowed only when it is **derived or
 validated**, not independently authored.
+
+
+## Firmware consumption after Wave 6
+
+The runtime path is now:
+
+```text
+config/hardware.json ─┐
+                      ├─> tools/generate_config.py
+config/runtime.json ──┘             │
+                                    ▼
+                       lib/generated_config.py
+                                    │
+                                    ▼
+                               main.py
+```
+
+`main.py` owns application behavior and orchestration; it does not own the
+concrete configuration values imported from the generated module.
