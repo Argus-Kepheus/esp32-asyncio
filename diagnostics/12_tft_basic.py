@@ -1,14 +1,14 @@
-"""Test 12/13 — TFT basic check: SPI init + solid-color fills.
+"""Diagnostic 12/13 — TFT basic check: SPI init + solid-color fills.
 
 Isolates the ILI9341 TFT: hardware SPI on SCK=GPIO18, MOSI=GPIO23,
 CS=GPIO5, D/C=GPIO21, RST=GPIO19 -- the 4-wire SPI command interface (SCK,
-MOSI, CS, D/C) plus a hardware reset line. See tests/README.md for how to
+MOSI, CS, D/C) plus a hardware reset line. See diagnostics/README.md for how to
 run this on wokwi.com.
 
 Only exercises ili9341.py's init sequence and fill_rect()/fill() -- no
 text rendering. If this test fails (blank/garbled screen, or an
 exception during init), the fault is in the SPI wiring or the panel init
-sequence itself, before text rendering (test 13) becomes a relevant
+sequence itself, before text rendering (diagnostic 13) becomes a relevant
 variable at all.
 
 Expected: the screen cycles red, green, blue, white, black, each held for
