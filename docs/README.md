@@ -7,7 +7,7 @@ sources of truth.
 
 - **English (EN)** is the canonical language for narrative technical
   documentation.
-- **Portuguese (PT-BR)** is a maintained translation.
+- **Portuguese (PT-BR)** and **Spanish (ES)** are maintained translations.
 - Hardware/runtime facts are not owned by either language; their canonical
   sources are `config/hardware.json` and `config/runtime.json`.
 - `docs/metadata.json` defines document IDs, semantic section contracts, and
@@ -21,10 +21,9 @@ This avoids a translation becoming a competing technical specification.
 |---|---|---|---|
 | EN | English | canonical narrative | current |
 | PT | Português do Brasil | translation | current |
+| ES | Español | translation | current |
 
-A future third language (for example ES) should only be added after creating
-the same document IDs and semantic section set declared in
-`docs/metadata.json`.
+Spanish was added in Wave 8 using the same document IDs, revisions and semantic-section contract. Any additional language must follow the same rule.
 
 ## Revision rule
 
@@ -115,11 +114,11 @@ Wave 4 introduces `tools/generate_docs.py`. Generated regions are marked:
 
 Current generated views include:
 
-- EN/PT hardware inventories;
-- EN/PT board summaries;
-- EN/PT GPIO-to-header maps;
-- EN/PT GPIO-constraint tables;
-- EN/PT runtime-parameter summaries.
+- EN/PT/ES hardware inventories;
+- EN/PT/ES board summaries;
+- EN/PT/ES GPIO-to-header maps;
+- EN/PT/ES GPIO-constraint tables;
+- EN/PT/ES runtime-parameter summaries.
 
 Use:
 
@@ -141,3 +140,11 @@ Do not edit the contents between generated markers manually.
 Manual diagnostic evidence requires observation of simulator or physical
 hardware behavior. It is deliberately kept separate from any future host-side
 automated test suite.
+
+
+## Wave 8 status
+
+Spanish (`ES`, locale `es`) is a maintained translation with the same
+document IDs, content revisions and semantic-section requirements as EN/PT.
+Generated hardware/runtime blocks are produced from the same canonical
+`config/` sources, and CI rejects stale or incomplete ES documentation.
