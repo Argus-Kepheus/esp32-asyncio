@@ -39,17 +39,24 @@ console.
 | `tools/` | Configuration/document generation and repository validation |
 | `docs/EN/`, `docs/PT/`, `docs/ES/` | Multilingual technical documentation governed by `docs/metadata.json` |
 | `diagnostics/` | Manual Wokwi/physical-hardware diagnostic scripts |
-| `tests/` | Reserved for future automated tests |
+| `tests/` | Host-side automated `unittest` suite |
 | `report/` | Technical report in LaTeX and PDF |
 
 ## Validation
 
-The `diagnostics/` folder contains standalone scripts that isolate individual
-components (each LED, each button, each display) rather than exercising
-`main.py` as a whole. They are manual diagnostics for Wokwi or a physical
-board, not automated proof that `main.py` passes — see
-[`diagnostics/README.md`](diagnostics/README.md) for the recommended run order and
-recorded results.
+Validation has two deliberately separate layers:
+
+- `tests/` contains automated host-side CPython tests for configuration
+  generation, multilingual documentation contracts and static source
+  invariants. Run them with
+  `python -m unittest discover -s tests -p "test_*.py" -v`.
+- `diagnostics/` contains manual Wokwi/physical-hardware checks for
+  individual components. They require observed simulator/hardware behavior
+  and remain necessary because host-side tests do not execute MicroPython
+  peripherals.
+
+See [`tests/README.md`](tests/README.md) and
+[`diagnostics/README.md`](diagnostics/README.md).
 
 ## Limitations
 
