@@ -89,63 +89,18 @@ signal named GPIO25, not the 25th physical pin.
 | OLED / push-button supply | — | — | 3V3 | J2-1 |
 <!-- END GENERATED: gpio-map -->
 
-The six blinking LEDs are all physically blue (`#0000FF`) in `diagram.json`.
-They use the same 1–6 numbering in Wokwi IDs, Python variables and pin
-constants, so every identifier states both the component color and its position
-in the row.
+The six blinking LEDs are all physically blue (`#0000FF`) and use the same 1–6 numbering in Wokwi IDs and Python identifiers.
 
-```python
-BLUE_LED_1_PIN = 26
-BLUE_LED_2_PIN = 14
-BLUE_LED_3_PIN = 27
-BLUE_LED_4_PIN = 25
-BLUE_LED_5_PIN = 33
-BLUE_LED_6_PIN = 12
-GREEN_LED_PIN = 4
-BUTTON_PIN = 17
-DECREASE_SPEED_BUTTON_PIN = 34
-INCREASE_SPEED_BUTTON_PIN = 35
-BUS_IDLE_LED_PIN = 13
-SCHEDULER_IDLE_LED_PIN = 2
-OLED0_SCL_PIN = 32
-OLED0_SDA_PIN = 16
-OLED1_SCL_PIN = 15
-OLED1_SDA_PIN = 22
-TFT_SCK_PIN = 18
-TFT_MOSI_PIN = 23
-TFT_CS_PIN = 5
-TFT_DC_PIN = 21
-TFT_RST_PIN = 19
-```
-
-Wiring topology (see `component-specifications.md` for exact Wokwi part
-IDs and `diagram.json` for routed connections):
+Conceptual wiring topology:
 
 ```text
-GPIO26/14/27/25/33/12 ── 220 Ω resistor each ── blinking LED anode · cathode ── GND
-GPIO4  ── 220 Ω resistor ── green LED anode · green LED cathode ── GND
-GPIO13 ── 220 Ω resistor ── bus-idle LED anode (orange) · cathode ── GND
-GPIO2  ── 220 Ω resistor ── scheduler-idle LED anode (yellow) · cathode ── GND
-3V3    ── push-button ── GPIO17                       (active HIGH)
-3V3    ── decrease/increase-speed button ── GPIO34/35 (active HIGH, external 10 kΩ pull-down)
-GPIO32 = OLED1 SCL   GPIO16 = OLED1 SDA   (machine.I2C(0), address 0x3C)
-GPIO15 = OLED1 SCL   GPIO22 = OLED1 SDA   (machine.I2C(1), address 0x3C)
-GPIO18/23/5/21/19 = TFT SCK/MOSI/CS/D-C/RST (SPI(2))
+ESP32 output ── current-limiting resistor ── LED ── GND
+supply rail ── push-button ── ESP32 input
+ESP32 input ── external pull-down ── GND   (where required)
+ESP32 bus signals ── display interface
 ```
 
-All peripherals share a common ground. Power rails: the two OLEDs and the
-three push-buttons use the 3.3 V rail; the TFT is wired to 5 V — see §6
-for the caveat that implies for a physical build.
-
-- GPIO34/35 (the two speed buttons) are input-only and have no internal
-  pull resistors, unlike `BUTTON_PIN`'s `Pin.PULL_DOWN` — each needs its
-  own external 10 kΩ pull-down resistor to GND (already in
-  `diagram.json`; see `tests/09_blue_interval_buttons.py`).
-- RAM OLED1 uses a second, independent hardware I²C bus
-  (`machine.I2C(1)`), not a second address on the first bus, so it runs
-  concurrently with CPU OLED0 without contention.
-- GPIO0 (the flash-mode switch) is read by the ROM bootloader before any
-  MicroPython script runs; no `main.py` code interacts with it. See §7.
+Concrete GPIOs, resistor values, pull configuration, bus IDs, display addresses and supply rails are not repeated in prose. They are canonical in `config/hardware.json` and presented above in the generated GPIO map. `diagram.json` remains the authority for Wokwi routing geometry.
 
 <!-- section: module-compatibility -->
 ## 4. Module compatibility — WROOM vs. WROVER
@@ -174,83 +129,33 @@ predefined project requirements, that reassignment is out of scope here.
 | Primary UART | GPIO1, GPIO3 | Used for programming/diagnostic serial; not a project peripheral |
 <!-- END GENERATED: gpio-constraints -->
 
-Per-pin bootstrapping notes for this project (none force an external level
-against the pin's normal boot-time state, but the reasoning differs per
-pin — this is not one blanket justification for all five):
+The generated table above lists the restricted categories relevant to this project. Project-specific bootstrapping/input-only notes are maintained in `config/hardware.json` under `gpio_constraints.notes`, so changes in component roles do not require a second manually synchronized pin list here.
 
-- **GPIO0** — the flash-mode slide switch (§3). Not read by any
-  `main.py` code; the switch itself is the boot-mode selection mechanism,
-  used deliberately during an actual flashing attempt, not during normal
-  operation.
-- **GPIO2** — `scheduler_idle_led` output. A plain LED-plus-resistor
-  circuit to GND: it only ever sinks current once the firmware configures
-  it as an output, never forces an external HIGH before that.
-- **GPIO5** — the TFT's chip-select (CS) output. Wired only to the
-  ILI9341 controller's high-impedance CS input, with no external
-  resistor contesting the pin's level — nothing in the circuit fights the
-  ESP32's own default boot-time pull on this pin.
-- **GPIO12** — `blue_led_6` output. Same reasoning as GPIO2: a plain
-  LED-plus-resistor sink circuit.
-- **GPIO15** — RAM OLED1's I2C clock (SCL), a bidirectional signal.
-  An idle I2C bus sits HIGH (via pull-up resistors, internal or on the
-  OLED module itself), which tends to agree with, not fight, this pin's
-  default boot state — but that depends on the OLED module already being
-  powered at that exact moment. Treat this one as the least certain of
-  the five for a physical build; verify it directly if boot problems
-  appear after wiring OLED1.
-
-Note on GPIO1/GPIO3: even though `diagram.json` wires no LED or button to
-them, they are not "free" or unused. `diagram.json` connects `esp32:TX` /
-`esp32:RX` to `$serialMonitor` — the same UART0 channel MicroPython's REPL
-and every `print()` call use. Concretely, this is the channel
-`print_status()`'s periodic `"CPU: ...% | RAM: ...% | Blue LEDs interval:
-... ms"` line, and the OLED/TFT initialization-failure diagnostics, are
-printed to.
+For a physical build, treat any bootstrapping-pin use as a verification point: confirm that the attached circuit does not force an incompatible startup level. UART pins remain reserved for programming/REPL/serial diagnostics rather than normal project peripherals.
 
 <!-- section: electrical-characteristics -->
 ## 6. Electrical characteristics
 
-- **Logic level:** 3.3 V. Never apply 5 V to a GPIO.
-- **Common ground:** every component (LEDs, buttons, OLEDs, TFT) must
-  share the same GND reference, or GPIO/I²C/SPI signal levels are
-  undefined.
-- **LED current limiting:** each of the nine LEDs uses a 220 Ω series
-  resistor; do not omit it in a physical build.
-- **OLED interface:** I²C only, on GPIO32/GPIO16 (CPU OLED0) and
-  GPIO15/GPIO22 (RAM OLED1) — a predefined project requirement, not an
-  optimization; see `technical-specification.md` §6.3 for why I²C was
-  chosen for the OLEDs and SPI for the TFT, and
-  `component-specifications.md` §2 for the driver/bus details (hardware
-  `machine.I2C`).
-- **TFT power:** wired to the board's 5 V rail in `diagram.json`, not
-  3.3 V like the two OLEDs — safe for a TFT module with its own onboard
-  regulator/level-shifting, but a bare ILI9341 panel without that support
-  circuitry must be powered at 3.3 V instead. The five SPI data/control
-  lines (SCK, MOSI, CS, D/C, RST) stay at 3.3 V logic either way, since
-  they come straight from the ESP32's GPIOs, not the display's own VCC
-  rail.
+- Respect the board logic voltage shown in the generated board summary; never drive a GPIO from a higher supply rail.
+- All peripherals must share a common ground reference.
+- Every LED requires current limiting; the current resistor values are canonical in `config/hardware.json`.
+- OLED bus selection, pins, addresses and frequency are canonical in `config/hardware.json`; `technical-specification.md` explains why I2C was selected.
+- The TFT supply rail and SPI mapping are also canonical in `config/hardware.json`. For physical hardware, verify whether the specific ILI9341 module includes the regulator/level-shifting expected by its supply connection before applying power.
+- Button pull configuration is canonical in `config/hardware.json`; debounce behavior is a runtime/software concern documented in `technical-specification.md`.
 
 <!-- section: physical-checklist -->
 ## 7. Physical implementation checklist
 
-For a future real-hardware build (this project currently targets
-simulation only):
+For a future real-hardware build (the current project targets simulation):
 
-- board is an ESP32-DevKitC V4 (or verified-compatible equivalent) fitted
-  with a WROOM, not WROVER, module;
-- both OLEDs powered from 3.3 V; all grounds tied together;
-- each of the nine LEDs has its own 220 Ω series resistor;
-- the main push-button sits between GPIO17 and 3V3, no external pull-up;
-- the two speed buttons each have their own external 10 kΩ pull-down
-  resistor to GND (no internal one available on GPIO34/35);
-- CPU OLED0: SDA → GPIO16, SCL → GPIO32; RAM OLED1: SDA → GPIO22,
-  SCL → GPIO15, wired to its own bus, not shared with the first;
-- the TFT's RST line (GPIO19) is wired even though some Wokwi TFT parts
-  mark it non-functional in simulation -- a real panel needs it;
-- confirm which kind of ILI9341 module is on hand before wiring VCC (§6);
-- nothing connected to `CLK`, `D0`–`D3`, `CMD`;
-- no GPIO receives 5 V directly (the TFT's VCC is a display supply pin,
-  not a GPIO).
+- verify the exact board/module against the generated board summary and module-compatibility section;
+- reproduce every signal connection from the generated GPIO map rather than from prose examples;
+- reproduce resistor values, pull configuration and supply rails from `config/hardware.json`;
+- keep all grounds common;
+- review every bootstrapping/input-only/reserved-pin constraint before assembly;
+- verify the actual OLED and ILI9341 module electrical characteristics before applying power;
+- treat `diagram.json` as the simulation netlist/layout, not as proof that a physical module includes protection/regulation circuitry;
+- rerun the manual hardware diagnostics after assembly.
 
 <!-- section: references -->
 ## 8. References
