@@ -1,11 +1,11 @@
-"""Test 13/13 — TFT text-rendering diagnostic (the console mechanism).
+"""Diagnostic 13/13 — TFT text-rendering diagnostic (the console mechanism).
 
 Exercises ili9341.py's text() -- the same primitive main.py's TFT log
 console (console_log()) is built on -- across every color the console
 uses, plus the row-wrapping behavior once the screen fills. See
-tests/README.md for how to run this on wokwi.com.
+diagnostics/README.md for how to run this on wokwi.com.
 
-Run this only after test 12 (TFT basic fills) has passed: text() renders
+Run this only after diagnostic 12 (TFT basic fills) has passed: text() renders
 into an off-screen framebuf and blits the result, so it depends on
 fill_rect()/blit() already working correctly.
 
