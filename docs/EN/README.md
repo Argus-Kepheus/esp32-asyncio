@@ -1,3 +1,7 @@
+<!-- doc-id: project-overview -->
+<!-- language: EN -->
+<!-- content-revision: 2 -->
+
 # esp32-asyncio
 
 **Language / Idioma:** [English](README.md) | [Português](../PT/README.md)
@@ -11,6 +15,7 @@ console — all simulated in [Wokwi](https://wokwi.com).
 
 **Wokwi simulation:** <https://wokwi.com/projects/471528241540407297>
 
+<!-- section: hardware-requirements -->
 ## Hardware requirements
 
 | Component | Wokwi identifier | ESP32 pin |
@@ -33,6 +38,7 @@ Full electrical detail (headers, reserved pins, wiring checklist) is in
 identifiers are in
 [`component-specifications.md`](component-specifications.md).
 
+<!-- section: software-requirements -->
 ## Software requirements
 
 - MicroPython for ESP32.
@@ -50,6 +56,7 @@ identifiers are in
 Full requirements and design rationale are in
 [`technical-specification.md`](technical-specification.md).
 
+<!-- section: result -->
 ## Result
 
 Six LEDs blink independently on a shared, button-adjustable interval; the
@@ -58,6 +65,7 @@ console and the serial console; the two OLEDs plot live CPU- and
 RAM-usage graphs; and the two status-indicator LEDs reflect display-bus
 and scheduler activity in real time.
 
+<!-- section: license -->
 ## License
 
 This project is dedicated to the public domain under **CC0 1.0 Universal**.
