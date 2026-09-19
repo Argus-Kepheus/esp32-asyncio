@@ -271,6 +271,21 @@ incorrect assumption to the contrary.
   interrupt-like periodicity is not required here, and OLED transfers must
   not be performed from inside a timer callback.
 
+### Runtime parameter summary
+
+<!-- BEGIN GENERATED: runtime-summary -->
+| Runtime parameter | Configured value |
+|---|---:|
+| Blinking-LED base interval | 500 ms |
+| Blink speed step range | -2 … 3 |
+| Button sample interval | 5 ms |
+| Debounce stable window | 30 ms |
+| CPU graph sample floor | 250 ms |
+| RAM graph sample floor | 250 ms |
+| Serial status interval | 1000 ms |
+| Console log throttle | 4 |
+<!-- END GENERATED: runtime-summary -->
+
 <!-- section: debounce-strategy -->
 ## 8. Debounce strategy
 
