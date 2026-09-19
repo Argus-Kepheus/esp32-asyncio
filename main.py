@@ -475,9 +475,9 @@ async def update_cpu_graph():
     previously produced nonsense readings above 100%.
     """
     global bus_busy_time_us, cpu_usage_percent
-    # Throttled to roughly once a second, not every 250 ms sample -- the
-    # TFT is itself an I2C/SPI bus user, so logging every sample would
-    # make the console the dominant source of its own "busy" time.
+    # Throttled according to CONSOLE_LOG_THROTTLE rather than logged on every
+    # sample. The TFT is itself an I2C/SPI bus user, so logging each sample
+    # would make the console the dominant source of its own "busy" time.
     should_log = make_throttle(CONSOLE_LOG_THROTTLE)
     window_started_at_us = time.ticks_us()
     while True:
