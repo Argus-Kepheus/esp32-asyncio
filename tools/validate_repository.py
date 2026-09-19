@@ -250,46 +250,53 @@ def check_hardware_internal_consistency(hardware: dict) -> None:
         )
 
 
-def parse_main_numeric_constants(text: str) -> dict[str, int]:
-    constants: dict[str, int] = {}
-    pattern = re.compile(
-        r"^([A-Z][A-Z0-9_]*)\s*=\s*"
-        r"(0x[0-9A-Fa-f]+|-?\d[\d_]*)\s*(?:#.*)?$",
-        re.MULTILINE,
-    )
-    for match in pattern.finditer(text):
-        raw = match.group(2).replace("_", "")
-        constants[match.group(1)] = int(raw, 0)
-    return constants
-
-
 def check_main_sync(hardware: dict, runtime: dict) -> None:
     text = MAIN_PATH.read_text(encoding="utf-8")
-    actual = parse_main_numeric_constants(text)
-    expected = dict(build_constants(hardware, runtime))
 
-    required = [
+    match = re.search(
+        r"from\s+lib\.generated_config\s+import\s*\((.*?)\)",
+        text,
+        re.DOTALL,
+    )
+    if not match:
+        fail("main.py must import runtime configuration from lib.generated_config")
+        return
+
+    imported = {
+        name.strip().rstrip(",")
+        for name in match.group(1).splitlines()
+        if name.strip()
+    }
+
+    required_imports = {
         *(f"BLUE_LED_{index}_PIN" for index in range(1, 7)),
+        *(f"BLUE_LED_{index}_BLINK_INTERVAL_MS" for index in range(1, 7)),
+        "BASE_BLINK_INTERVALS_MS",
         "GREEN_LED_PIN",
         "BUTTON_PIN",
         "DECREASE_SPEED_BUTTON_PIN",
         "INCREASE_SPEED_BUTTON_PIN",
         "BUS_IDLE_LED_PIN",
         "SCHEDULER_IDLE_LED_PIN",
+        "OLED0_I2C_BUS_ID",
         "OLED0_SCL_PIN",
         "OLED0_SDA_PIN",
+        "OLED1_I2C_BUS_ID",
         "OLED1_SCL_PIN",
         "OLED1_SDA_PIN",
         "OLED_I2C_FREQUENCY_HZ",
         "OLED_WIDTH",
         "OLED_HEIGHT",
         "OLED_I2C_ADDRESS",
+        "TFT_SPI_BUS_ID",
+        "TFT_SPI_BAUDRATE_HZ",
         "TFT_SCK_PIN",
         "TFT_MOSI_PIN",
         "TFT_CS_PIN",
         "TFT_DC_PIN",
         "TFT_RST_PIN",
-        *(f"BLUE_LED_{index}_BLINK_INTERVAL_MS" for index in range(1, 7)),
+        "BLINK_SPEED_SCALE_BASE",
+        "BLINK_SPEED_INITIAL_STEP",
         "BLINK_SPEED_STEP_MIN",
         "BLINK_SPEED_STEP_MAX",
         "BUTTON_SAMPLE_INTERVAL_MS",
@@ -306,60 +313,53 @@ def check_main_sync(hardware: dict, runtime: dict) -> None:
         "CONSOLE_PURPLE",
         "CONSOLE_WHITE",
         "CONSOLE_BACKGROUND",
-    ]
+    }
 
-    for name in required:
-        if name not in actual:
-            fail(f"main.py is missing expected transitional constant: {name}")
-            continue
-        if actual[name] != expected[name]:
-            fail(
-                f"main.py drift for {name}: canonical={expected[name]!r}, "
-                f"main.py={actual[name]!r}"
-            )
+    missing = sorted(required_imports - imported)
+    if missing:
+        fail(f"main.py is missing generated-config imports: {missing}")
 
-    def extract_call(pattern: str, label: str) -> tuple[int, ...] | None:
-        match = re.search(pattern, text, re.DOTALL)
-        if not match:
-            fail(f"Could not locate {label} construction in main.py")
-            return None
-        return tuple(int(group.replace("_", ""), 0) for group in match.groups())
+    # Canonical runtime names must not be redefined in main.py. The import is
+    # the only ownership bridge from config/ into the executable application.
+    for name in sorted(required_imports):
+        if re.search(rf"^{re.escape(name)}\s*=", text, re.MULTILINE):
+            fail(f"main.py redefines generated configuration name: {name}")
 
-    oled0 = extract_call(
-        r"oled0_i2c\s*=\s*I2C\(\s*(\d+)",
-        "OLED0 I2C",
-    )
-    oled1 = extract_call(
-        r"oled1_i2c\s*=\s*I2C\(\s*(\d+)",
-        "OLED1 I2C",
-    )
-    spi = extract_call(
-        r"tft_spi\s*=\s*SPI\(\s*(\d+)\s*,\s*"
-        r"baudrate\s*=\s*(\d[\d_]*)",
-        "TFT SPI",
-    )
+    required_fragments = {
+        "OLED0 generated bus id":
+            r"oled0_i2c\s*=\s*I2C\(\s*OLED0_I2C_BUS_ID\s*,",
+        "OLED1 generated bus id":
+            r"oled1_i2c\s*=\s*I2C\(\s*OLED1_I2C_BUS_ID\s*,",
+        "TFT generated bus id":
+            r"tft_spi\s*=\s*SPI\(\s*TFT_SPI_BUS_ID\s*,",
+        "TFT generated baudrate":
+            r"baudrate\s*=\s*TFT_SPI_BAUDRATE_HZ",
+        "generated speed initial step":
+            r"blink_speed_step\s*=\s*BLINK_SPEED_INITIAL_STEP",
+        "generated speed scale base":
+            r"BLINK_SPEED_SCALE_BASE\s*\*\*\s*blink_speed_step",
+        "main button pull-down":
+            r"push_button\s*=\s*Pin\(BUTTON_PIN,\s*Pin\.IN,\s*Pin\.PULL_DOWN\)",
+        "decrease button input":
+            r"decrease_speed_button\s*=\s*Pin\(DECREASE_SPEED_BUTTON_PIN,\s*Pin\.IN\)",
+        "increase button input":
+            r"increase_speed_button\s*=\s*Pin\(INCREASE_SPEED_BUTTON_PIN,\s*Pin\.IN\)",
+    }
+    for label, pattern in required_fragments.items():
+        if not re.search(pattern, text, re.DOTALL):
+            fail(f"main.py does not consume canonical configuration for {label}")
 
-    if oled0 and oled0[0] != expected["OLED0_I2C_BUS_ID"]:
-        fail(
-            "main.py OLED0 bus id differs from canonical hardware: "
-            f"{oled0[0]} != {expected['OLED0_I2C_BUS_ID']}"
-        )
-    if oled1 and oled1[0] != expected["OLED1_I2C_BUS_ID"]:
-        fail(
-            "main.py OLED1 bus id differs from canonical hardware: "
-            f"{oled1[0]} != {expected['OLED1_I2C_BUS_ID']}"
-        )
-    if spi:
-        if spi[0] != expected["TFT_SPI_BUS_ID"]:
-            fail(
-                "main.py TFT SPI bus id differs from canonical hardware: "
-                f"{spi[0]} != {expected['TFT_SPI_BUS_ID']}"
-            )
-        if spi[1] != expected["TFT_SPI_BAUDRATE_HZ"]:
-            fail(
-                "main.py TFT SPI baudrate differs from canonical hardware: "
-                f"{spi[1]} != {expected['TFT_SPI_BAUDRATE_HZ']}"
-            )
+    if "from ssd1306 import SSD1306_I2C" not in text:
+        fail("main.py lost the established root ssd1306 driver import")
+    if "from ili9341 import ILI9341, CHAR_WIDTH, CHAR_HEIGHT" not in text:
+        fail("main.py lost the established root ili9341 driver import")
+
+    # Ensure the generated policy now includes the two speed fields that were
+    # previously implicit literals in main.py.
+    expected = dict(build_constants(hardware, runtime))
+    for name in ("BLINK_SPEED_SCALE_BASE", "BLINK_SPEED_INITIAL_STEP"):
+        if name not in expected:
+            fail(f"Generator does not expose required runtime policy: {name}")
 
 
 class NetGraph:
@@ -882,6 +882,7 @@ def main() -> int:
         DIAGNOSTICS_METADATA_PATH,
         ROOT / "tools" / "generate_config.py",
         ROOT / "tools" / "generate_docs.py",
+        ROOT / "lib" / "__init__.py",
         OUTPUT_PATH,
     ):
         if not required.exists():
