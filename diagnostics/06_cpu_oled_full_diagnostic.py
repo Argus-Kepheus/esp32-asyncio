@@ -1,9 +1,9 @@
-"""Test 6/13 — CPU OLED full diagnostic suite.
+"""Diagnostic 6/13 — CPU OLED full diagnostic suite.
 
 The most complete check: exercises full-screen pixel activation, pixel
 addressing, drawing primitives, text, inversion, contrast, display power
 control, and framebuffer scrolling on the 128x64 SSD1306 OLED. See
-tests/README.md for how to run this on wokwi.com.
+diagnostics/README.md for how to run this on wokwi.com.
 
 This is main.py's CPU OLED0 (I2C bus 0, GPIO 32/16).
 
