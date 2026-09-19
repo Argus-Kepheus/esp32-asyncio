@@ -111,3 +111,17 @@ usability, but their values are derived from one owner.
 The repository validator also checks these regions byte-for-byte against the
 generator output and rejects concrete wiring/passive-value duplication in the
 component specification sheets.
+
+
+## Manual diagnostics semantics
+
+Wave 5 separates manual hardware diagnostics from future automated tests:
+
+- `diagnostics/` contains the 13 ordered Wokwi/physical-hardware diagnostic
+  scripts and `diagnostics/metadata.json`;
+- `tests/` is reserved for future host-side automated tests;
+- a manual diagnostic requires an observed simulator/physical result and is
+  not automatically equivalent to a passing software test.
+
+The repository validator checks the diagnostic inventory, ordering, docstring
+identity, and stale references to the former manual-diagnostic paths.
