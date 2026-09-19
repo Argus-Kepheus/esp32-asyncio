@@ -16,16 +16,18 @@ estão em
 <!-- section: selected-board -->
 ## 1. Placa selecionada
 
+<!-- BEGIN GENERATED: board-summary -->
 | Propriedade | Definição do projeto |
 |---|---|
 | Fabricante | Espressif Systems |
 | Nome da placa | ESP32-DevKitC V4 |
-| Identificador no Wokwi | `board-esp32-devkit-c-v4`, com identificador `esp32` em `diagram.json` |
-| Disposição dos conectores | 38 terminais, 19 em cada lado, conectores J2 e J3 |
-| Família do microcontrolador | ESP32 original |
+| Identificador no Wokwi | `board-esp32-devkit-c-v4` (`diagram.json` id `esp32`) |
+| Disposição dos conectores | 38 terminais, 19 em cada lado (J2, J3) |
+| Família do microcontrolador | ESP32 |
 | Módulo físico recomendado | ESP32-WROOM-32E |
-| Firmware | MicroPython para ESP32 |
-| Tensão lógica | 3,3 V; os GPIOs não são tolerantes a 5 V |
+| Firmware | MicroPython for ESP32 |
+| Tensão lógica | 3,3 V (GPIOs não tolerantes a 5 V) |
+<!-- END GENERATED: board-summary -->
 
 ```json
 { "type": "board-esp32-devkit-c-v4", "id": "esp32" }
@@ -75,6 +77,7 @@ ESP32**, e não a posição física sequencial de um terminal no conector. Por
 exemplo, `GPIO25` significa o sinal denominado GPIO25, e não o vigésimo quinto
 terminal físico.
 
+<!-- BEGIN GENERATED: gpio-map -->
 | Função | Identificador no Wokwi | Variável/constante em Python | GPIO | Terminal do conector |
 |---|---|---|---:|---|
 | Saída do LED piscante 1 | `blue-led-1` | `blue_led_1` / `BLUE_LED_1_PIN` | GPIO26 | J2-10 |
@@ -98,8 +101,9 @@ terminal físico.
 | Seleção de chip da TFT | `tft-display` | `tft_display` / `TFT_CS_PIN` | GPIO5 | J3-10 |
 | Dado/comando da TFT | `tft-display` | `tft_display` / `TFT_DC_PIN` | GPIO21 | J3-6 |
 | Reset físico da TFT | `tft-display` | `tft_display` / `TFT_RST_PIN` | GPIO19 | J3-8 |
-| Chave deslizante de modo gravação | `flash-mode-switch` | — (só no `diagram.json`, nenhum código do `main.py` a lê) | GPIO0 | J3-14 |
+| Chave deslizante de modo de gravação | `flash-mode-switch` | — | GPIO0 | J3-14 |
 | Alimentação dos OLEDs e dos botões | — | — | 3V3 | J2-1 |
+<!-- END GENERATED: gpio-map -->
 
 Os seis LEDs piscantes são todos fisicamente azuis (`#0000FF`) em
 `diagram.json`. A mesma numeração de 1 a 6 é usada nos identificadores do
@@ -179,12 +183,14 @@ atribuições predefinidas do projeto, esse remapeamento está fora do escopo.
 <!-- section: restricted-gpios -->
 ## 5. GPIOs restritos ou reservados
 
+<!-- BEGIN GENERATED: gpio-constraints -->
 | Restrição | Terminais | Motivo |
 |---|---|---|
-| Reservados para a memória flash SPI | `CLK`, `D0`, `D1`, `D2`, `D3`, `CMD` | Comunicação interna com a memória flash; usá-los como GPIO pode impedir a inicialização do firmware |
-| Somente entrada | GPIO34 a GPIO39 | Não podem acionar saídas e não possuem resistores internos de elevação ou redução |
-| Configuração de inicialização | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | Amostrados durante a inicialização para selecionar o modo de boot -- ver abaixo o papel de cada um neste projeto e por que não interfere |
-| UART principal | GPIO1 e GPIO3 | Usados para programação, diagnóstico e monitor serial do Wokwi; não são usados pelos periféricos funcionais |
+| Reservados para a memória flash SPI | `CLK`, `D0`, `D1`, `D2`, `D3`, `CMD` | Comunicação interna com a flash; não usar como GPIO do projeto |
+| Somente entrada | GPIO34, GPIO35, GPIO36, GPIO37, GPIO38, GPIO39 | Não podem acionar saídas e não possuem pull-up/pull-down interno |
+| Configuração de inicialização | GPIO0, GPIO2, GPIO5, GPIO12, GPIO15 | Amostrados no boot; os usos do projeto são documentados e validados |
+| UART principal | GPIO1, GPIO3 | Usados para programação/serial de diagnóstico; não são periféricos do projeto |
+<!-- END GENERATED: gpio-constraints -->
 
 Notas por pino, específicas deste projeto (nenhum força um nível externo
 contra o estado normal de boot do pino, mas o raciocínio difere por pino
