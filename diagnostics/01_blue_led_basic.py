@@ -1,8 +1,8 @@
-"""Test 1/13 — First blue LED, basic on/off (GPIO 26).
+"""Diagnostic 1/13 — First blue LED, basic on/off (GPIO 26).
 
 The simplest possible check: prove the first blue LED circuit and GPIO 26 wiring
 work at all, with explicit on()/off() calls (no toggle logic, no state
-tracking). See tests/README.md for how to run this on wokwi.com.
+tracking). See diagnostics/README.md for how to run this on wokwi.com.
 
 Expected: the blue LED alternates ON/OFF every 500 ms; the serial monitor
 prints the pin value on every transition.
