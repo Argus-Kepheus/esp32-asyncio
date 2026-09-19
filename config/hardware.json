@@ -1,0 +1,359 @@
+{
+  "schema_version": "1.0",
+  "authority": {
+    "status": "canonical",
+    "scope": [
+      "board identity",
+      "component identity",
+      "GPIO assignments",
+      "bus assignments",
+      "display addresses and dimensions",
+      "electrical roles",
+      "resistor values",
+      "supply rails",
+      "Wokwi component identifiers"
+    ],
+    "baseline_commit": "2096a531e6386d44b52d936bbeb7589940cc2b17",
+    "provenance": [
+      "main.py",
+      "diagram.json",
+      "docs/EN/hardware-reference.md",
+      "docs/EN/component-specifications.md"
+    ],
+    "excludes": {
+      "visual Wokwi coordinates and wire routing": "diagram.json",
+      "local simulator process/ports": "wokwi.toml",
+      "runtime timing and application policy": "config/runtime.json"
+    }
+  },
+  "board": {
+    "id": "esp32",
+    "wokwi_type": "board-esp32-devkit-c-v4",
+    "manufacturer": "Espressif Systems",
+    "board_name": "ESP32-DevKitC V4",
+    "microcontroller_family": "ESP32",
+    "header_layout": {
+      "total_pins": 38,
+      "pins_per_side": 19,
+      "headers": [
+        "J2",
+        "J3"
+      ]
+    },
+    "recommended_physical_module": "ESP32-WROOM-32E",
+    "firmware_family": "MicroPython for ESP32",
+    "logic_voltage_v": 3.3,
+    "five_volt_tolerant": false,
+    "gpio_numbering": "ESP32 GPIO number"
+  },
+  "buses": {
+    "oled0_i2c": {
+      "interface": "I2C",
+      "micropython_bus_id": 0,
+      "frequency_hz": 400000,
+      "scl": {
+        "gpio": 32,
+        "header": "J2-7"
+      },
+      "sda": {
+        "gpio": 16,
+        "header": "J3-12"
+      }
+    },
+    "oled1_i2c": {
+      "interface": "I2C",
+      "micropython_bus_id": 1,
+      "frequency_hz": 400000,
+      "scl": {
+        "gpio": 15,
+        "header": "J3-16"
+      },
+      "sda": {
+        "gpio": 22,
+        "header": "J3-3"
+      }
+    },
+    "tft_spi": {
+      "interface": "SPI",
+      "micropython_bus_id": 2,
+      "baudrate_hz": 20000000,
+      "mode": "write-only",
+      "sck": {
+        "gpio": 18,
+        "header": "J3-9"
+      },
+      "mosi": {
+        "gpio": 23,
+        "header": "J3-2"
+      },
+      "miso": null,
+      "cs": {
+        "gpio": 5,
+        "header": "J3-10"
+      },
+      "dc": {
+        "gpio": 21,
+        "header": "J3-6"
+      },
+      "rst": {
+        "gpio": 19,
+        "header": "J3-8"
+      }
+    }
+  },
+  "components": {
+    "blinking_leds": [
+      {
+        "id": "blue-led-1",
+        "wokwi_type": "wokwi-led",
+        "color": "#0000FF",
+        "gpio": 26,
+        "header": "J2-10",
+        "resistor_id": "blue-led-1-resistor",
+        "resistor_ohm": 220
+      },
+      {
+        "id": "blue-led-2",
+        "wokwi_type": "wokwi-led",
+        "color": "#0000FF",
+        "gpio": 14,
+        "header": "J2-12",
+        "resistor_id": "blue-led-2-resistor",
+        "resistor_ohm": 220
+      },
+      {
+        "id": "blue-led-3",
+        "wokwi_type": "wokwi-led",
+        "color": "#0000FF",
+        "gpio": 27,
+        "header": "J2-11",
+        "resistor_id": "blue-led-3-resistor",
+        "resistor_ohm": 220
+      },
+      {
+        "id": "blue-led-4",
+        "wokwi_type": "wokwi-led",
+        "color": "#0000FF",
+        "gpio": 25,
+        "header": "J2-9",
+        "resistor_id": "blue-led-4-resistor",
+        "resistor_ohm": 220
+      },
+      {
+        "id": "blue-led-5",
+        "wokwi_type": "wokwi-led",
+        "color": "#0000FF",
+        "gpio": 33,
+        "header": "J2-8",
+        "resistor_id": "blue-led-5-resistor",
+        "resistor_ohm": 220
+      },
+      {
+        "id": "blue-led-6",
+        "wokwi_type": "wokwi-led",
+        "color": "#0000FF",
+        "gpio": 12,
+        "header": "J2-13",
+        "resistor_id": "blue-led-6-resistor",
+        "resistor_ohm": 220
+      }
+    ],
+    "green_led": {
+      "id": "green-led",
+      "wokwi_type": "wokwi-led",
+      "color": "green",
+      "gpio": 4,
+      "header": "J3-13",
+      "resistor_id": "green-led-resistor",
+      "resistor_ohm": 220,
+      "role": "mirrors debounced main-button state"
+    },
+    "status_leds": {
+      "bus_idle": {
+        "id": "bus-idle-led",
+        "wokwi_type": "wokwi-led",
+        "color": "orange",
+        "gpio": 13,
+        "header": "J2-15",
+        "resistor_id": "bus-idle-led-resistor",
+        "resistor_ohm": 220,
+        "role": "on when instrumented display buses are idle"
+      },
+      "scheduler_activity": {
+        "id": "scheduler-idle-led",
+        "wokwi_type": "wokwi-led",
+        "color": "yellow",
+        "gpio": 2,
+        "header": "J3-15",
+        "resistor_id": "scheduler-idle-led-resistor",
+        "resistor_ohm": 220,
+        "role": "coarse scheduler-throughput visualization"
+      }
+    },
+    "buttons": {
+      "main": {
+        "id": "push-button",
+        "wokwi_type": "wokwi-pushbutton",
+        "gpio": 17,
+        "header": "J3-11",
+        "active_level": "HIGH",
+        "normally_open": true,
+        "pull": {
+          "type": "internal",
+          "direction": "down"
+        },
+        "supply_rail": "3V3",
+        "wokwi_key": "space"
+      },
+      "decrease_interval": {
+        "id": "decrease-speed-button",
+        "wokwi_type": "wokwi-pushbutton",
+        "gpio": 34,
+        "header": "J2-5",
+        "active_level": "HIGH",
+        "normally_open": true,
+        "pull": {
+          "type": "external",
+          "direction": "down",
+          "resistor_id": "decrease-speed-button-pulldown",
+          "resistance_ohm": 10000
+        },
+        "supply_rail": "3V3",
+        "wokwi_key": "a"
+      },
+      "increase_interval": {
+        "id": "increase-speed-button",
+        "wokwi_type": "wokwi-pushbutton",
+        "gpio": 35,
+        "header": "J2-6",
+        "active_level": "HIGH",
+        "normally_open": true,
+        "pull": {
+          "type": "external",
+          "direction": "down",
+          "resistor_id": "increase-speed-button-pulldown",
+          "resistance_ohm": 10000
+        },
+        "supply_rail": "3V3",
+        "wokwi_key": "s"
+      }
+    },
+    "displays": {
+      "oled0_cpu": {
+        "id": "oled0-display",
+        "wokwi_type": "board-ssd1306",
+        "controller": "SSD1306",
+        "resolution": {
+          "width_px": 128,
+          "height_px": 64
+        },
+        "interface": "I2C",
+        "bus": "oled0_i2c",
+        "address_hex": "0x3C",
+        "supply_rail": "3V3",
+        "driver": "ssd1306.py",
+        "application_role": "CPU proxy graph"
+      },
+      "oled1_ram": {
+        "id": "oled1-display",
+        "wokwi_type": "board-ssd1306",
+        "controller": "SSD1306",
+        "resolution": {
+          "width_px": 128,
+          "height_px": 64
+        },
+        "interface": "I2C",
+        "bus": "oled1_i2c",
+        "address_hex": "0x3C",
+        "supply_rail": "3V3",
+        "driver": "ssd1306.py",
+        "application_role": "MicroPython heap-usage graph"
+      },
+      "tft_log": {
+        "id": "tft-display",
+        "wokwi_type": "wokwi-ili9341",
+        "controller": "ILI9341",
+        "resolution": {
+          "width_px": 240,
+          "height_px": 320
+        },
+        "color_depth_bits": 16,
+        "pixel_format": "RGB565",
+        "interface": "SPI",
+        "bus": "tft_spi",
+        "supply_rail": "5V",
+        "driver": "ili9341.py",
+        "application_role": "colored activity log"
+      }
+    },
+    "flash_mode_switch": {
+      "id": "flash-mode-switch",
+      "wokwi_type": "wokwi-slide-switch",
+      "gpio": 0,
+      "header": "J3-14",
+      "other_terminal": "GND",
+      "application_controlled": false,
+      "role": "ROM bootloader boot-mode selection"
+    }
+  },
+  "power": {
+    "rails": {
+      "3V3": {
+        "voltage_v": 3.3,
+        "consumers": [
+          "oled0-display",
+          "oled1-display",
+          "push-button",
+          "decrease-speed-button",
+          "increase-speed-button"
+        ]
+      },
+      "5V": {
+        "voltage_v": 5,
+        "consumers": [
+          "tft-display"
+        ],
+        "note": "Simulation supply assignment; physical-build electrical compatibility must be reviewed separately."
+      },
+      "GND": {
+        "role": "common ground"
+      }
+    }
+  },
+  "gpio_constraints": {
+    "input_only": [
+      34,
+      35,
+      36,
+      39
+    ],
+    "bootstrapping": [
+      0,
+      2,
+      5,
+      12,
+      15
+    ],
+    "primary_uart": [
+      1,
+      3
+    ],
+    "reserved_spi_flash_signals": [
+      "CLK",
+      "D0",
+      "D1",
+      "D2",
+      "D3",
+      "CMD"
+    ],
+    "notes": {
+      "0": "Used only by flash-mode switch, not application code.",
+      "2": "Bootstrapping pin; external LED circuit only sinks current through a resistor.",
+      "5": "Bootstrapping pin used as TFT chip-select.",
+      "12": "Bootstrapping pin used by blue LED 6; external LED circuit only sinks current through a resistor.",
+      "15": "Bootstrapping pin used as OLED1 I2C SCL.",
+      "34": "Input-only; no internal pull-up/pull-down.",
+      "35": "Input-only; no internal pull-up/pull-down."
+    }
+  }
+}
