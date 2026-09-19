@@ -87,4 +87,4 @@ ordered inventory is declared in `diagnostics/metadata.json`. A successful
 run requires a human-observed Wokwi or physical-hardware result; merely
 executing a host-side Python test command is not equivalent.
 
-The repository reserves `tests/` for future automated tests.
+The repository now uses `tests/` for host-side automated tests. Those tests do not replace these manual Wokwi/physical-hardware diagnostics.
