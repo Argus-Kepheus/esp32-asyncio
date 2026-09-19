@@ -20,7 +20,7 @@ console.
 1. Open the Wokwi link or import `diagram.json`, `main.py`, `ili9341.py`,
    `ssd1306.py` and `wokwi.toml` into a MicroPython ESP32 Wokwi project.
 2. Start the simulation.
-3. Press the main button to toggle the green LED; use the two speed buttons
+3. Press and hold the main button to turn the green LED on (release it to turn the LED off); use the two speed buttons
    to speed up or slow down all six blue LEDs together.
 4. Watch the live CPU/RAM graphs on the two OLEDs and the event log on the
    TFT; the serial console prints the same figures once a second.
@@ -57,3 +57,6 @@ contacts; a real mechanical button would need the debounce logic already
 described in the technical specification.
 
 **License:** CC0 1.0 Universal — see [`LICENSE`](LICENSE).
+
+
+Documentation governance and multilingual parity are defined in [`docs/README.md`](docs/README.md) and [`docs/metadata.json`](docs/metadata.json).
