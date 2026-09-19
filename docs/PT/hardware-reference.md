@@ -105,65 +105,18 @@ terminal físico.
 | Alimentação dos OLEDs e dos botões | — | — | 3V3 | J2-1 |
 <!-- END GENERATED: gpio-map -->
 
-Os seis LEDs piscantes são todos fisicamente azuis (`#0000FF`) em
-`diagram.json`. A mesma numeração de 1 a 6 é usada nos identificadores do
-Wokwi, nas variáveis Python e nas constantes de GPIO, de modo que cada nome
-indica a cor do componente e sua posição na fileira.
+Os seis LEDs piscantes são todos fisicamente azuis (`#0000FF`) e usam a mesma numeração de 1 a 6 nos identificadores do Wokwi e do Python.
 
-```python
-BLUE_LED_1_PIN = 26
-BLUE_LED_2_PIN = 14
-BLUE_LED_3_PIN = 27
-BLUE_LED_4_PIN = 25
-BLUE_LED_5_PIN = 33
-BLUE_LED_6_PIN = 12
-GREEN_LED_PIN = 4
-BUTTON_PIN = 17
-DECREASE_SPEED_BUTTON_PIN = 34
-INCREASE_SPEED_BUTTON_PIN = 35
-BUS_IDLE_LED_PIN = 13
-SCHEDULER_IDLE_LED_PIN = 2
-OLED0_SCL_PIN = 32
-OLED0_SDA_PIN = 16
-OLED1_SCL_PIN = 15
-OLED1_SDA_PIN = 22
-TFT_SCK_PIN = 18
-TFT_MOSI_PIN = 23
-TFT_CS_PIN = 5
-TFT_DC_PIN = 21
-TFT_RST_PIN = 19
-```
-
-Topologia de ligação:
+Topologia conceitual de ligação:
 
 ```text
-GPIO26/14/27/25/33/12 ── resistor de 220 Ω cada ── ânodo do LED piscante · cátodo ── GND
-GPIO4  ── resistor de 220 Ω ── ânodo do LED verde · cátodo ── GND
-GPIO13 ── resistor de 220 Ω ── ânodo do LED de barramento ocioso (laranja) · cátodo ── GND
-GPIO2  ── resistor de 220 Ω ── ânodo do LED de escalonador ocioso (amarelo) · cátodo ── GND
-3V3 ── botão principal ── GPIO17                      (ativo em nível alto)
-3V3 ── botão de velocidade ── GPIO34/35   (ativo em nível alto, pull-down externo de 10 kΩ)
-
-GPIO32 = SCL OLED1   GPIO16 = SDA OLED1   (machine.I2C(0), endereço 0x3C)
-GPIO15 = SCL OLED1   GPIO22 = SDA OLED1   (machine.I2C(1), endereço 0x3C)
-GPIO18/23/5/21/19 = SCK/MOSI/CS/D-C/RST da TFT (SPI(2))
+saída ESP32 ── resistor limitador ── LED ── GND
+alimentação ── botão ── entrada ESP32
+entrada ESP32 ── pull-down externo ── GND   (quando necessário)
+sinais de barramento ESP32 ── interface do mostrador
 ```
 
-Todos os periféricos compartilham o mesmo GND. Alimentação: os dois OLEDs e
-os três botões usam a régua de 3,3 V; a TFT está ligada aos 5 V — ver §6
-para a ressalva que isso implica numa montagem física.
-
-- GPIO34/35 (os dois botões de velocidade) são pinos somente entrada, sem
-  resistor de pull-down interno, diferente do `Pin.PULL_DOWN` do
-  `BUTTON_PIN` — cada um precisa do próprio resistor externo de 10 kΩ
-  até o GND (já presente no `diagram.json`; ver
-  `tests/09_blue_interval_buttons.py`).
-- O OLED1 de RAM usa um segundo barramento I2C de hardware, independente
-  (`machine.I2C(1)`), não um segundo endereço no primeiro barramento, para
-  rodar ao mesmo tempo que o OLED0 de CPU sem disputa.
-- O GPIO0 (chave de modo gravação) é lido pelo bootloader ROM antes de
-  qualquer script MicroPython rodar; nenhum código do `main.py` interage
-  com ele. Ver §7.
+GPIOs concretos, valores de resistores, configuração de pull, IDs de barramento, endereços dos mostradores e alimentações não são repetidos na narrativa. Eles são canônicos em `config/hardware.json` e apresentados acima no mapa GPIO gerado. `diagram.json` continua sendo a autoridade para a geometria de roteamento no Wokwi.
 
 <!-- section: module-compatibility -->
 ## 4. Compatibilidade dos módulos — WROOM e WROVER
@@ -192,87 +145,33 @@ atribuições predefinidas do projeto, esse remapeamento está fora do escopo.
 | UART principal | GPIO1, GPIO3 | Usados para programação/serial de diagnóstico; não são periféricos do projeto |
 <!-- END GENERATED: gpio-constraints -->
 
-Notas por pino, específicas deste projeto (nenhum força um nível externo
-contra o estado normal de boot do pino, mas o raciocínio difere por pino
--- não é uma única justificativa genérica para os cinco):
+A tabela gerada acima lista as categorias de restrição relevantes ao projeto. As observações específicas sobre pinos de inicialização e pinos somente de entrada são mantidas em `config/hardware.json`, em `gpio_constraints.notes`, evitando uma segunda lista manual que precisaria ser sincronizada quando um componente mudar de função.
 
-- **GPIO0** -- a chave deslizante de modo de gravação (§3). Não é lida
-  por nenhum código de `main.py`; a própria chave é o mecanismo de
-  seleção de modo de boot, usada deliberadamente durante uma gravação
-  real, não durante a operação normal.
-- **GPIO2** -- saída do `scheduler_idle_led`. Circuito simples de
-  LED-mais-resistor para GND: só drena corrente depois que o firmware o
-  configura como saída, nunca força um nível alto externo antes disso.
-- **GPIO5** -- saída de seleção de circuito (CS) da TFT. Ligado apenas à
-  entrada de alta impedância do controlador ILI9341, sem nenhum resistor
-  externo disputando o nível do pino -- nada no circuito contraria o
-  *pull* padrão do próprio ESP32 nesse pino durante o boot.
-- **GPIO12** -- saída do `blue_led_6`. Mesmo raciocínio do GPIO2: circuito
-  simples de LED-mais-resistor, só drena corrente.
-- **GPIO15** -- relógio I2C do OLED1 de RAM (SCL), sinal bidirecional. Um
-  barramento I2C em repouso fica em nível alto (via resistores de
-  *pull-up*, internos ou no próprio módulo OLED), o que tende a
-  concordar com, não contrariar, o estado padrão de boot deste pino --
-  mas isso depende de o módulo OLED específico já estar energizado
-  naquele instante exato. Trate este como o menos garantido dos cinco
-  para uma montagem física; verifique diretamente se houver problemas de
-  boot depois de ligar o OLED1.
-
-Nota sobre GPIO1/GPIO3: mesmo sem nenhum LED ou botão ligado a eles no
-`diagram.json`, esses pinos não estão "livres" ou ociosos. O `diagram.json`
-conecta `esp32:TX` / `esp32:RX` ao `$serialMonitor` — o mesmo canal UART0
-usado pelo REPL do MicroPython e por todo `print()` do código. Na prática,
-é esse canal que exibe a linha periódica `"CPU: ...% | RAM: ...% | Blue
-LEDs interval: ... ms"` do `print_status()` (e os diagnósticos de falha
-de inicialização do OLED/TFT).
+Em uma montagem física, qualquer uso de pino de inicialização deve ser tratado como ponto de verificação: confirme que o circuito conectado não força um nível incompatível durante o boot. Os pinos da UART permanecem reservados para programação/REPL/diagnóstico serial, e não para periféricos normais do projeto.
 
 <!-- section: electrical-characteristics -->
 ## 6. Características elétricas
 
-- **Nível lógico:** 3,3 V. Nunca aplique 5 V diretamente a um GPIO.
-- **Referência comum:** LEDs, botões, OLEDs e TFT devem compartilhar o
-  mesmo GND.
-- **Limitação de corrente:** cada um dos nove LEDs deve possuir resistor
-  de 220 Ω em série.
-- **Interface dos OLEDs:** I2C, em GPIO32/GPIO16 (OLED0 de CPU) e
-  GPIO15/GPIO22 (OLED1 de RAM). Essa atribuição é uma predefinição do
-  projeto, não uma otimização; ver `technical-specification.md`, §6.3,
-  para o porquê de I2C nos OLEDs e SPI na TFT.
-- **Alimentação da TFT:** ligada à régua de 5 V da placa em
-  `diagram.json`, não aos 3,3 V como os dois OLEDs -- seguro para um
-  módulo de TFT com regulador/conversão de nível próprios, mas um painel
-  ILI9341 "nu", sem esses circuitos de suporte, deve ser alimentado em
-  3,3 V. As cinco linhas de dados/controle SPI (SCK, MOSI, CS, D/C, RST)
-  permanecem em lógica de 3,3 V em ambos os casos, pois partem
-  diretamente dos GPIOs do ESP32, não da alimentação da própria tela.
-- **Botão principal:** ligado entre GPIO17 e 3V3; o nível em repouso é
-  definido pelo `Pin.PULL_DOWN` interno.
-- **Filtro de entrada:** não há filtro RC externo em nenhum dos três
-  botões; o repique é tratado por software.
+- Respeite a tensão lógica da placa mostrada no resumo gerado; nunca alimente um GPIO a partir de uma régua de tensão superior.
+- Todos os periféricos devem compartilhar a mesma referência de GND.
+- Todo LED exige limitação de corrente; os valores atuais dos resistores são canônicos em `config/hardware.json`.
+- Seleção de barramento, pinos, endereços e frequência dos OLEDs são canônicos em `config/hardware.json`; `technical-specification.md` explica por que I2C foi escolhido.
+- A alimentação da TFT e o mapeamento SPI também são canônicos em `config/hardware.json`. Em hardware físico, confirme se o módulo ILI9341 específico possui o regulador/conversão de nível esperados pela ligação de alimentação antes de energizá-lo.
+- A configuração de pull dos botões é canônica em `config/hardware.json`; o antirrepique é uma questão de runtime/software documentada em `technical-specification.md`.
 
 <!-- section: physical-checklist -->
 ## 7. Lista de verificação para implementação física
 
-Para uma futura montagem real:
+Para uma futura montagem real (o projeto atual tem como alvo a simulação):
 
-- usar uma ESP32-DevKitC V4, ou equivalente comprovadamente compatível, com
-  módulo WROOM e não WROVER;
-- alimentar os dois OLEDs em 3,3 V; interligar todos os GNDs;
-- instalar um resistor de 220 Ω em série com cada um dos nove LEDs;
-- ligar o botão principal entre GPIO17 e 3V3, sem resistor externo de
-  elevação;
-- ligar cada botão de velocidade com seu próprio resistor externo de
-  10 kΩ até o GND (não há resistor interno disponível no GPIO34/35);
-- OLED0 de CPU: SDA no GPIO16, SCL no GPIO32; OLED1 de RAM: SDA no
-  GPIO22, SCL no GPIO15, em barramento próprio, não compartilhado com o
-  primeiro;
-- a linha RST da TFT (GPIO19) é fiada mesmo que algumas peças de TFT do
-  Wokwi a marquem como inerte na simulação — um painel real precisa dela;
-- confirme qual tipo de módulo ILI9341 está em mãos antes de ligar o VCC
-  (§6);
-- não conectar periféricos a `CLK`, `D0`, `D1`, `D2`, `D3` ou `CMD`;
-- não aplicar 5 V diretamente a nenhum GPIO (o VCC da TFT é um pino de
-  alimentação do display, não um GPIO).
+- confirme a placa/módulo exatos usando o resumo gerado e a seção de compatibilidade de módulos;
+- reproduza todas as conexões de sinal a partir do mapa GPIO gerado, e não de exemplos narrativos;
+- reproduza valores de resistores, configuração de pull e alimentações a partir de `config/hardware.json`;
+- mantenha todos os GNDs comuns;
+- revise todas as restrições de pinos de inicialização, somente entrada e reservados antes da montagem;
+- confirme as características elétricas dos módulos OLED e ILI9341 realmente utilizados antes de energizar;
+- trate `diagram.json` como netlist/layout da simulação, não como prova de que um módulo físico inclui circuitos de proteção/regulação;
+- execute novamente os diagnósticos manuais após a montagem.
 
 <!-- section: references -->
 ## 8. Referências
