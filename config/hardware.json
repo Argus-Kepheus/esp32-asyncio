@@ -321,12 +321,26 @@
     }
   },
   "gpio_constraints": {
-    "input_only": [
-      34,
-      35,
-      36,
-      39
-    ],
+    "input_only": {
+      "esp32_silicon": [
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "devkitc_v4_exposed": [
+        34,
+        35,
+        36,
+        39
+      ],
+      "used_by_project": [
+        34,
+        35
+      ]
+    },
     "bootstrapping": [
       0,
       2,
