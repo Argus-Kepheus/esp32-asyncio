@@ -854,14 +854,17 @@ def check_diagnostics_semantics() -> None:
                 if path.is_file() and path.suffix in {".md", ".py", ".json"}
             )
 
+    stale_manual_path = re.compile(
+        r"tests/(?:README\.md|(?:0[1-9]|1[0-3])_[A-Za-z0-9_]+\.py)"
+    )
     for path in scan_paths:
         if path in {ROOT / "tests" / "README.md", DIAGNOSTICS_METADATA_PATH}:
             continue
         text = path.read_text(encoding="utf-8")
-        if "tests/" in text:
+        if stale_manual_path.search(text):
             fail(
-                f"{path.relative_to(ROOT)}: stale operational reference to "
-                "former manual-diagnostic path tests/"
+                f"{path.relative_to(ROOT)}: stale reference to a manual "
+                "diagnostic under the former tests/ path"
             )
 
 
