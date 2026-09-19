@@ -150,8 +150,33 @@ def check_hardware_internal_consistency(hardware: dict) -> None:
         fail("Unsupported config/hardware.json schema_version")
 
     expected_parts = collect_expected_part_types(hardware)
-    if len(expected_parts) != len(set(expected_parts)):
-        fail("Duplicate canonical component IDs detected")
+
+    components = hardware["components"]
+    canonical_ids = [
+        hardware["board"]["id"],
+        components["green_led"]["id"],
+        components["green_led"]["resistor_id"],
+        components["status_leds"]["bus_idle"]["id"],
+        components["status_leds"]["bus_idle"]["resistor_id"],
+        components["status_leds"]["scheduler_activity"]["id"],
+        components["status_leds"]["scheduler_activity"]["resistor_id"],
+        components["flash_mode_switch"]["id"],
+    ]
+    for led in components["blinking_leds"]:
+        canonical_ids.extend([led["id"], led["resistor_id"]])
+    for button in components["buttons"].values():
+        canonical_ids.append(button["id"])
+        pull = button["pull"]
+        if pull["type"] == "external":
+            canonical_ids.append(pull["resistor_id"])
+    for display in components["displays"].values():
+        canonical_ids.append(display["id"])
+
+    duplicate_ids = sorted(
+        {item for item in canonical_ids if canonical_ids.count(item) > 1}
+    )
+    if duplicate_ids:
+        fail(f"Duplicate canonical component IDs detected: {duplicate_ids}")
 
     roles = collect_gpio_roles(hardware)
     duplicates = {gpio: names for gpio, names in roles.items() if len(names) > 1}
