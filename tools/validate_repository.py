@@ -859,7 +859,7 @@ def check_diagnostics_semantics() -> None:
             )
 
     stale_manual_path = re.compile(
-        r"tests/(?:README\.md|(?:0[1-9]|1[0-3])_[A-Za-z0-9_]+\.py)"
+        r"tests/(?:0[1-9]|1[0-3])_[A-Za-z0-9_]+\.py"
     )
     for path in scan_paths:
         if path in {
