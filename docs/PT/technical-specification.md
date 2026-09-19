@@ -101,15 +101,14 @@ GPIO17 podem estar reservados à PSRAM.
 
 - identificadores no Wokwi: `blue-led-1` a `blue-led-6`;
 - variáveis em Python: `blue_led_1` a `blue_led_6`;
-- constantes: `BLUE_LED_1_PIN` (GPIO 26), `BLUE_LED_2_PIN` (14),
-  `BLUE_LED_3_PIN` (27), `BLUE_LED_4_PIN` (25), `BLUE_LED_5_PIN` (33) e
-  `BLUE_LED_6_PIN` (12);
+- o mapeamento canônico de GPIOs/conectores está na tabela gerada de
+  `hardware-reference.md`, §3;
 - todos fisicamente azuis (`#0000FF`) em `diagram.json`, com a mesma numeração
   de 1 a 6 usada de forma consistente no circuito e no código Python;
 - cada um em sua própria tarefa `asyncio` independente (`blink_led()`,
   a partir da lista `BLINKING_LEDS`);
-- alternância em um intervalo-base de 500 ms, compartilhado e ajustável
-  (RF-03);
+- alternância no intervalo-base compartilhado definido em
+  `config/runtime.json`, ajustável conforme RF-03;
 - logicamente independentes entre si -- nenhum chama ou espera outro --,
   embora todos compartilhem o mesmo escalonador cooperativo (nota de
   engenharia da §5.3).
@@ -118,7 +117,8 @@ GPIO17 podem estar reservados à PSRAM.
 
 - Identificadores no Wokwi: `push-button`, `green-led`;
 - variáveis em Python: `push_button`, `green_led`;
-- constantes: `BUTTON_PIN` (GPIO 17), `GREEN_LED_PIN` (GPIO 4);
+- a ligação atual é definida em `config/hardware.json` e exibida em
+  `hardware-reference.md`, §3;
 - botão: normalmente aberto e momentâneo, `Pin.IN` com `Pin.PULL_DOWN`
   interno; solto = LOW, pressionado = HIGH;
 - LED verde: botão solto → apagado, botão pressionado → aceso;
@@ -130,35 +130,30 @@ GPIO17 podem estar reservados à PSRAM.
 - Identificadores no Wokwi: `decrease-speed-button`,
   `increase-speed-button`;
 - variáveis em Python: `decrease_speed_button`, `increase_speed_button`;
-- constantes: `DECREASE_SPEED_BUTTON_PIN` (GPIO 34),
-  `INCREASE_SPEED_BUTTON_PIN` (GPIO 35);
-- pinos somente de entrada, sem resistor interno de redução -- cada um
-  precisa de seu próprio resistor externo de 10 kΩ até o GND (já em
-  `diagram.json`);
-- cada pressão escala o intervalo de todos os LEDs piscantes pelo mesmo
-  fator de potência de dois, limitado a [125 ms, 4 s]
-  (`BLINK_SPEED_STEP_MIN`/`_MAX`).
+- GPIOs e configuração de pull são canônicos em `config/hardware.json` e
+  exibidos em `hardware-reference.md`, §3;
+- cada pressão escala o intervalo de todos os LEDs piscantes pelo passo de
+  potência de dois configurado, sujeito aos limites de `config/runtime.json`.
 
 ### RF-04 — Dois gráficos de uso de recursos nos OLEDs
 
 - Identificadores no Wokwi: `oled0-display`, `oled1-display`;
 - variáveis em Python: `oled0_display`, `oled1_display`;
-- controlador: SSD1306 · resolução: 128 × 64 pixels · endereço `0x3C` em
-  ambos;
-- OLED0 de CPU: `machine.I2C(0)`, SCL GPIO 32, SDA GPIO 16 -- plota o
-  gráfico de "CPU" (§17.2);
-- OLED1 de RAM: `machine.I2C(1)`, SCL GPIO 15, SDA GPIO 22 -- barramento
-  I2C de hardware próprio, independente; plota o gráfico de "RAM";
-- ambos redesenhados a cada 250 ms no mínimo
-  (`CPU_GRAPH_SAMPLE_INTERVAL_MS` / `RAM_GRAPH_SAMPLE_INTERVAL_MS`, um piso,
-  não um período exato — §9).
+- ambos usam controladores SSD1306 em barramentos I2C de hardware
+  independentes; endereços, IDs de barramento e pinos atuais são canônicos em
+  `config/hardware.json` e exibidos em `hardware-reference.md`, §3;
+- o OLED0 plota o gráfico aproximado de "CPU" e o OLED1 plota o gráfico de
+  "RAM" (§17.2);
+- a cadência de amostragem é definida em `config/runtime.json`; o atraso
+  configurado é um piso, não um período exato (§9).
 
 ### RF-05 — Console de registro na TFT
 
 - Identificador no Wokwi: `tft-display`;
 - variável em Python: `tft_display`;
-- controlador: ILI9341 · SPI genuíno de 4 fios: SCK GPIO 18, MOSI GPIO 23,
-  CS GPIO 5, D/C GPIO 21, RST GPIO 19;
+- controlador: ILI9341 em SPI de 4 fios; o ID do barramento e o mapeamento
+  atual de sinais são canônicos em `config/hardware.json` e exibidos em
+  `hardware-reference.md`, §3;
 - `console_log()` escreve uma linha colorida por evento do sistema (uma
   cor por subsistema), voltando ao topo da tela ao preenchê-la, e sempre
   espelha cada linha no console serial também, independente da presença
@@ -168,8 +163,8 @@ GPIO17 podem estar reservados à PSRAM.
 
 - Identificadores no Wokwi: `bus-idle-led`, `scheduler-idle-led`;
 - variáveis em Python: `bus_idle_led`, `scheduler_idle_led`;
-- constantes: `BUS_IDLE_LED_PIN` (GPIO 13), `SCHEDULER_IDLE_LED_PIN`
-  (GPIO 2);
+- a ligação atual é definida em `config/hardware.json` e exibida em
+  `hardware-reference.md`, §3;
 - laranja (`bus_idle_led`): aceso por padrão, apaga apenas durante uma
   escrita instrumentada em algum mostrador -- leitura invertida de
   "barramento ocupado";
@@ -334,41 +329,15 @@ Os nomes dos terminais do botão em `diagram.json` devem respeitar exatamente:
 
 ### 6.3 Por que I2C nos dois OLEDs, e SPI na TFT
 
-O projeto determina, para o OLED0 de CPU:
-
-```text
-GPIO32 = SCL
-GPIO16 = SDA
-```
-
-e, para o OLED1 de RAM, em um barramento `machine.I2C(1)` independente:
-
-```text
-GPIO15 = SCL
-GPIO22 = SDA
-```
-
-Essa atribuição não foi escolhida por ser o mapeamento padrão do ESP32 nem
-por um estudo de desempenho; é declarada explicitamente no código, no
-circuito e na documentação, e repetida da mesma forma nos dois barramentos.
-
-A versão consolidada utiliza `machine.I2C` (barramento de hardware), que
-declara os sinais de forma explícita:
-
-```python
-oled0_i2c = I2C(
-    0,
-    scl=Pin(OLED0_SCL_PIN),
-    sda=Pin(OLED0_SDA_PIN),
-    freq=400_000,
-)
-```
+Os dois OLEDs usam barramentos `machine.I2C` de hardware independentes. O
+mapeamento atual de barramentos, GPIOs e frequência é canônico em
+`config/hardware.json` e apresentado na tabela gerada de
+`hardware-reference.md`, §3.
 
 Uma revisão anterior utilizava `machine.SoftI2C` de forma defensiva, sem
 confirmação de que fosse necessário. Os diagnósticos vigentes,
-`tests/05_cpu_oled_basic.py` e `tests/06_cpu_oled_full_diagnostic.py`, usam
-GPIO32 (SCL) e GPIO16 (SDA) e foram aprovados no Wokwi web em 18/08/2026;
-consulte a §16.
+`tests/05_cpu_oled_basic.py` e `tests/06_cpu_oled_full_diagnostic.py`,
+foram aprovados no Wokwi web em 18/08/2026; consulte a §16.
 
 Os dois displays também necessitam de VCC e GND. Esses terminais são conexões
 de alimentação, e não sinais de comunicação.
@@ -379,8 +348,8 @@ I2C foi mantido para os dois OLEDs porque:
   mesmo com dois displays;
 - o componente `board-ssd1306` do Wokwi utiliza a variante I2C;
 - o conteúdo de cada um -- um gráfico de barras redesenhado periodicamente
-  -- não precisa da maior taxa de transferência do SPI para se manter
-  responsivo num piso de atualização de 250 ms (§9).
+  -- não precisa da maior taxa de transferência do SPI na cadência de
+  atualização configurada (§9).
 
 O console da TFT (RF-05) é um caso à parte: usa SPI genuíno de 4 fios (SCK,
 MOSI, CS, D/C, mais RST), porque o controlador ILI9341 usado aqui é uma
@@ -765,12 +734,11 @@ cada decisão abaixo.
 
 ### 17.1 Dois barramentos I2C independentes para os OLEDs
 
-O OLED0 de CPU (`oled0-display` / `oled0_display`) roda em
-`machine.I2C(0)`, GPIO32 (SCL) / GPIO16 (SDA). O OLED1 de RAM
-(`oled1-display` / `oled1_display`) roda em seu próprio barramento I2C
-de hardware, independente: `machine.I2C(1)`, GPIO15 (SCL) / GPIO22 (SDA)
-— não um segundo endereço no primeiro barramento. Os dois são endereçados
-ao mesmo tempo, sem disputa de barramento.
+O OLED0 de CPU (`oled0-display` / `oled0_display`) e o OLED1 de RAM
+(`oled1-display` / `oled1_display`) usam barramentos I2C de hardware
+separados, e não dois endereços no mesmo barramento. IDs de barramento,
+GPIOs e endereços atuais são canônicos em `config/hardware.json` e
+apresentados em `hardware-reference.md`, §3.
 
 ### 17.2 O que os dois gráficos OLED plotam
 
@@ -819,8 +787,9 @@ compartilhado.
 
 ### 17.4 Console de registro na TFT, SPI somente de escrita, e a decisão de espelhar no serial
 
-A TFT ILI9341 usa SPI genuíno de 4 fios (SCK, MOSI, CS, D/C, mais uma
-linha de reinicialização — GPIO~18/23/5/21/19). Diferentemente dos
+A TFT ILI9341 usa SPI genuíno de 4 fios (SCK, MOSI, CS, D/C, mais reset);
+o mapeamento concreto é gerado a partir de `config/hardware.json` em
+`hardware-reference.md`, §3. Diferentemente dos
 gráficos dos dois OLEDs, a TFT
 (`tft_display`, controlada por `ili9341.py`) funciona como um registro de
 atividade colorido e rolante: `console_log()` escreve uma linha por
