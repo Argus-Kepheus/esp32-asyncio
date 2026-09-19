@@ -215,8 +215,9 @@
         "pull": {
           "type": "external",
           "direction": "down",
-          "resistor_id": "decrease-speed-button-pulldown",
-          "resistance_ohm": 10000
+          "resistor_id": "increase-speed-button-pulldown",
+          "resistance_ohm": 10000,
+          "naming_note": "The current diagram.json uses the opposite semantic resistor ID on this signal; electrical value/connectivity are correct."
         },
         "supply_rail": "3V3",
         "wokwi_key": "a"
@@ -231,8 +232,9 @@
         "pull": {
           "type": "external",
           "direction": "down",
-          "resistor_id": "increase-speed-button-pulldown",
-          "resistance_ohm": 10000
+          "resistor_id": "decrease-speed-button-pulldown",
+          "resistance_ohm": 10000,
+          "naming_note": "The current diagram.json uses the opposite semantic resistor ID on this signal; electrical value/connectivity are correct."
         },
         "supply_rail": "3V3",
         "wokwi_key": "s"
