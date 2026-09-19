@@ -1,6 +1,6 @@
 <!-- doc-id: technical-specification -->
 <!-- language: EN -->
-<!-- content-revision: 5 -->
+<!-- content-revision: 6 -->
 
 # Technical Specification — esp32-asyncio
 
@@ -41,8 +41,9 @@ Develop and simulate an ESP32 MicroPython application that concurrently:
 6. lights two status-indicator LEDs reflecting display-bus and scheduler
    activity.
 
-The deliverables are a complete executable `main.py` (with its `ssd1306.py`
-and `ili9341.py` drivers), this repository published on GitHub, and a
+The deliverables are a complete executable `main.py`, its `ssd1306.py` and
+`ili9341.py` drivers, the generated runtime package (`lib/__init__.py` and
+`lib/generated_config.py`), this repository published on GitHub, and a
 shareable Wokwi platform link showing the simulated circuit.
 
 <!-- section: simulation-platform -->
@@ -152,8 +153,7 @@ checklist are kept in
 
 ### FR-07 — Deliverables
 
-- Complete executable `main.py` and the `ssd1306.py` / `ili9341.py`
-  drivers it depends on
+- Complete executable `main.py`, the `ssd1306.py` / `ili9341.py` drivers it depends on, and the generated runtime package `lib/__init__.py` + `lib/generated_config.py`
 - Wokwi circuit definition in `diagram.json`
 - Wokwi VS Code configuration in `wokwi.toml`
 - This `README.md` and this technical specification
@@ -500,7 +500,7 @@ provides two execution surfaces:
    (`firmware.bin`, obtained separately per the download steps in
    `wokwi.toml`'s own header comment, and never committed — see
    `.gitignore`), and RFC2217 file transfer
-   through `mpremote`.
+   through `mpremote`. Local deployment must include `main.py`, both root display drivers, and the `lib/` package because `main.py` now imports `lib.generated_config`.
 
 Both links are required in the README because they serve different
 purposes: GitHub exposes source, documentation and history; Wokwi runs the
