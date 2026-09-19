@@ -18,7 +18,8 @@ console.
 ## Quick start
 
 1. Open the Wokwi link or import `diagram.json`, `main.py`, `ili9341.py`,
-   `ssd1306.py` and `wokwi.toml` into a MicroPython ESP32 Wokwi project.
+   `ssd1306.py`, `lib/__init__.py`, `lib/generated_config.py` and
+   `wokwi.toml` into a MicroPython ESP32 Wokwi project.
 2. Start the simulation.
 3. Press and hold the main button to turn the green LED on (release it to turn the LED off); use the two speed buttons
    to speed up or slow down all six blue LEDs together.
@@ -29,12 +30,12 @@ console.
 
 | Path | Content |
 |---|---|
-| `main.py` | Main MicroPython/`asyncio` firmware |
-| `ili9341.py`, `ssd1306.py` | Display drivers |
+| `main.py` | Main MicroPython/`asyncio` orchestrator; consumes generated configuration |
+| `ili9341.py`, `ssd1306.py` | Display drivers kept at root for the established Wokwi/mpremote workflow |
 | `diagram.json` | Circuit and layout for Wokwi |
 | `wokwi.toml` | Local Wokwi-for-VS-Code simulator config |
 | `config/` | Canonical hardware/runtime configuration |
-| `lib/generated_config.py` | Generated MicroPython-safe configuration artifact |
+| `lib/` | Explicit MicroPython support package; contains generated runtime configuration |
 | `tools/` | Configuration/document generation and repository validation |
 | `docs/PT/` and `docs/EN/` | Multilingual technical documentation governed by `docs/metadata.json` |
 | `diagnostics/` | Manual Wokwi/physical-hardware diagnostic scripts |
