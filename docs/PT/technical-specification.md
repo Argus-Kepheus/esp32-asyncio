@@ -288,6 +288,21 @@ o circuito externo (LED + resistor até o GND) só drena corrente, nunca
 impõe um nível externo durante a energização (ver `docs/PT/hardware-reference.md`,
 §5, para a tabela completa dos pinos de *bootstrapping*).
 
+### Resumo dos parâmetros de execução
+
+<!-- BEGIN GENERATED: runtime-summary -->
+| Parâmetro de execução | Valor configurado |
+|---|---:|
+| Intervalo-base dos LEDs piscantes | 500 ms |
+| Faixa de passos da velocidade | -2 … 3 |
+| Intervalo de amostragem dos botões | 5 ms |
+| Janela estável de antirrepique | 30 ms |
+| Piso de amostragem do gráfico de CPU | 250 ms |
+| Piso de amostragem do gráfico de RAM | 250 ms |
+| Intervalo do status serial | 1000 ms |
+| Throttling do registro no console | 4 |
+<!-- END GENERATED: runtime-summary -->
+
 <!-- section: debounce-strategy -->
 ### 6.2 Botão, resistor interno e antirrepique
 
