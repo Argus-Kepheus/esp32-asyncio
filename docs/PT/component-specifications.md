@@ -91,7 +91,7 @@ de 1 a 6 no circuito e no código Python.
 | Campo | Resistores dos LEDs | Pull-downs dos botões de velocidade |
 |---|---|---|
 | Identificador no Wokwi | `wokwi-resistor` | `wokwi-resistor` |
-| Finalidade | Limitação da corrente de cada LED no nível lógico de 3,3 V | Pull-down externo para GPIO34/35, que não têm um interno |
+| Finalidade | Limitação da corrente de cada LED no nível lógico de 3,3 V | Pull-down externo para os pinos somente de entrada dos botões de velocidade |
 
 <!-- section: push-buttons -->
 ## 5. Botões pulsadores
