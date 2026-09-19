@@ -189,8 +189,8 @@ def _bus_busy_end(started_at_us):
 scheduler_idle_led = Pin(SCHEDULER_IDLE_LED_PIN, Pin.OUT, value=0)
 
 # Hardware I2C bus 0, on the mandatory OLED pins. The current isolated
-# diagnostics are tests/05_cpu_oled_basic.py and
-# tests/06_cpu_oled_full_diagnostic.py (see tests/README.md). An earlier
+# diagnostics are diagnostics/05_cpu_oled_basic.py and
+# diagnostics/06_cpu_oled_full_diagnostic.py (see diagnostics/README.md). An earlier
 # revision used machine.SoftI2C as an unconfirmed defensive compatibility
 # choice; that is no longer needed.
 oled0_i2c = I2C(
