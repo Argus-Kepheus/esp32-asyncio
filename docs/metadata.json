@@ -9,6 +9,10 @@
     "PT": {
       "locale": "pt-BR",
       "role": "translation"
+    },
+    "ES": {
+      "locale": "es",
+      "role": "translation"
     }
   },
   "policy": {
@@ -25,7 +29,8 @@
     "project-overview": {
       "paths": {
         "EN": "docs/EN/README.md",
-        "PT": "docs/PT/README.md"
+        "PT": "docs/PT/README.md",
+        "ES": "docs/ES/README.md"
       },
       "content_revision": 4,
       "required_sections": [
@@ -38,7 +43,8 @@
     "component-specifications": {
       "paths": {
         "EN": "docs/EN/component-specifications.md",
-        "PT": "docs/PT/component-specifications.md"
+        "PT": "docs/PT/component-specifications.md",
+        "ES": "docs/ES/component-specifications.md"
       },
       "content_revision": 4,
       "required_sections": [
@@ -53,7 +59,8 @@
     "hardware-reference": {
       "paths": {
         "EN": "docs/EN/hardware-reference.md",
-        "PT": "docs/PT/hardware-reference.md"
+        "PT": "docs/PT/hardware-reference.md",
+        "ES": "docs/ES/hardware-reference.md"
       },
       "content_revision": 3,
       "required_sections": [
@@ -71,7 +78,8 @@
     "technical-specification": {
       "paths": {
         "EN": "docs/EN/technical-specification.md",
-        "PT": "docs/PT/technical-specification.md"
+        "PT": "docs/PT/technical-specification.md",
+        "ES": "docs/ES/technical-specification.md"
       },
       "content_revision": 6,
       "required_sections": [
