@@ -1,6 +1,6 @@
 <!-- doc-id: project-overview -->
 <!-- language: EN -->
-<!-- content-revision: 3 -->
+<!-- content-revision: 4 -->
 
 # esp32-asyncio
 
@@ -44,6 +44,7 @@ identifiers are in
 ## Software requirements
 
 - MicroPython for ESP32.
+- `main.py` imports canonical runtime values from `lib/generated_config.py`; regenerate that file from `config/` with `tools/generate_config.py` after configuration changes.
 - `main.py` runs thirteen concurrent `asyncio` flows — six blinking-LED
   tasks, the scheduler-activity indicator, both OLED graph tasks, a
   serial status task, and three button monitors — so no LED's blink is
