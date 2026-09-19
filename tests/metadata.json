@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "mode": "automated",
+  "runner": "python -m unittest discover -s tests -p 'test_*.py' -v",
+  "target": "host-side CPython",
+  "scope": [
+    "canonical configuration generation",
+    "multilingual documentation contract and generated regions",
+    "static firmware source contracts"
+  ],
+  "limitations": [
+    "does not execute MicroPython-only machine/framebuf hardware APIs",
+    "does not run the Wokwi simulator",
+    "does not prove physical ESP32 electrical or timing behavior"
+  ],
+  "tests": [
+    {
+      "id": "TEST-01",
+      "file": "test_config_generation.py",
+      "purpose": "canonical config generation"
+    },
+    {
+      "id": "TEST-02",
+      "file": "test_documentation_contract.py",
+      "purpose": "multilingual documentation contract"
+    },
+    {
+      "id": "TEST-03",
+      "file": "test_source_contracts.py",
+      "purpose": "host-side firmware source contracts"
+    }
+  ]
+}
