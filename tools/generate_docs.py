@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 HARDWARE_PATH = ROOT / "config" / "hardware.json"
 RUNTIME_PATH = ROOT / "config" / "runtime.json"
 
-TARGET_LANGUAGES = ("EN", "PT")
+TARGET_LANGUAGES = ("EN", "PT", "ES")
 
 LABELS = {
     "EN": {
@@ -150,7 +150,71 @@ LABELS = {
         "ram_sample": "Piso de amostragem do gráfico de RAM",
         "serial_interval": "Intervalo do status serial",
         "console_throttle": "Throttling do registro no console",
+    },    "ES": {
+        "component": "Componente",
+        "wokwi_id": "Identificador de Wokwi",
+        "esp32_pin": "Pin del ESP32",
+        "board": "Placa",
+        "blinking_leds": "Seis LED intermitentes",
+        "green_led": "LED verde",
+        "main_button": "Pulsador principal",
+        "speed_buttons": "Dos pulsadores de velocidad",
+        "status_leds": "Dos LED indicadores de estado",
+        "cpu_oled": "OLED0 de CPU",
+        "ram_oled": "OLED1 de RAM",
+        "tft": "Pantalla TFT de registro",
+        "property": "Propiedad",
+        "definition": "Definición del proyecto",
+        "manufacturer": "Fabricante",
+        "board_name": "Nombre de la placa",
+        "header_layout": "Disposición de conectores",
+        "mcu_family": "Familia del microcontrolador",
+        "physical_module": "Módulo físico recomendado",
+        "firmware": "Firmware",
+        "logic_voltage": "Tensión lógica",
+        "function": "Función",
+        "python_name": "Variable/constante de Python",
+        "gpio": "GPIO",
+        "header_pin": "Pin del conector",
+        "restriction": "Restricción",
+        "pins": "Pines",
+        "why": "Motivo",
+        "input_only": "Solo entrada",
+        "bootstrapping": "Arranque (bootstrapping)",
+        "primary_uart": "UART principal",
+        "reserved_flash": "Reservados para la memoria flash SPI",
+        "input_only_why": "No pueden accionar salidas y no tienen pull-up/pull-down interno",
+        "boot_why": "Se muestrean durante el arranque; los usos del proyecto están documentados y validados",
+        "uart_why": "Usados para programación/diagnóstico serial; no son periféricos del proyecto",
+        "flash_why": "Comunicación interna con la flash; no usar como GPIO del proyecto",
+        "flash_switch": "Interruptor deslizante de modo de grabación",
+        "supply": "Alimentación de OLED/pulsadores",
+        "blue_led_output": "Salida del LED intermitente {n}",
+        "green_led_output": "Salida del LED verde",
+        "main_button_input": "Entrada del pulsador principal",
+        "decrease_button": "Pulsador para disminuir velocidad",
+        "increase_button": "Pulsador para aumentar velocidad",
+        "bus_idle": "LED de bus inactivo (naranja)",
+        "scheduler_idle": "LED de actividad del planificador (amarillo)",
+        "oled_clock": "Reloj I2C de {name}",
+        "oled_data": "Datos I2C de {name}",
+        "tft_clock": "Reloj SPI de la TFT",
+        "tft_data": "Datos de salida SPI de la TFT",
+        "tft_cs": "Selección de chip de la TFT",
+        "tft_dc": "Dato/comando de la TFT",
+        "tft_rst": "Reset físico de la TFT",
+        "parameter": "Parámetro de ejecución",
+        "value": "Valor configurado",
+        "blink_base": "Intervalo base de los LED intermitentes",
+        "speed_steps": "Rango de pasos de velocidad",
+        "button_sample": "Intervalo de muestreo de pulsadores",
+        "debounce": "Ventana estable de antirrebote",
+        "cpu_sample": "Piso de muestreo del gráfico de CPU",
+        "ram_sample": "Piso de muestreo del gráfico de RAM",
+        "serial_interval": "Intervalo del estado serial",
+        "console_throttle": "Limitación del registro de consola",
     },
+
 }
 
 
@@ -194,7 +258,11 @@ def overview_table(hardware: dict, language: str) -> str:
             (
                 f"{l['speed_buttons']} (+ external {c['buttons']['decrease_interval']['pull']['resistance_ohm']} Ω pull-down each)"
                 if language == "EN"
-                else f"{l['speed_buttons']} (+ pull-down externo de {c['buttons']['decrease_interval']['pull']['resistance_ohm']} Ω cada)"
+                else (
+                    f"{l['speed_buttons']} (+ pull-down externo de {c['buttons']['decrease_interval']['pull']['resistance_ohm']} Ω cada)"
+                    if language == "PT"
+                    else f"{l['speed_buttons']} (+ pull-down externo de {c['buttons']['decrease_interval']['pull']['resistance_ohm']} Ω cada uno)"
+                )
             ),
             f"`{c['buttons']['decrease_interval']['id']}`, `{c['buttons']['increase_interval']['id']}`",
             f"GPIO {c['buttons']['decrease_interval']['gpio']}, {c['buttons']['increase_interval']['gpio']}",
@@ -203,7 +271,11 @@ def overview_table(hardware: dict, language: str) -> str:
             (
                 f"{l['status_leds']} (+ {c['status_leds']['bus_idle']['resistor_ohm']} Ω each)"
                 if language == "EN"
-                else f"{l['status_leds']} (+ {c['status_leds']['bus_idle']['resistor_ohm']} Ω cada)"
+                else (
+                    f"{l['status_leds']} (+ {c['status_leds']['bus_idle']['resistor_ohm']} Ω cada)"
+                    if language == "PT"
+                    else f"{l['status_leds']} (+ {c['status_leds']['bus_idle']['resistor_ohm']} Ω cada uno)"
+                )
             ),
             f"`{c['status_leds']['bus_idle']['id']}`, `{c['status_leds']['scheduler_activity']['id']}`",
             f"GPIO {c['status_leds']['bus_idle']['gpio']}, {c['status_leds']['scheduler_activity']['gpio']}",
@@ -248,18 +320,30 @@ def board_summary_table(hardware: dict, language: str) -> str:
         (l["wokwi_id"], f"`{b['wokwi_type']}` (`diagram.json` id `{b['id']}`)"),
         (
             l["header_layout"],
-            f"{b['header_layout']['total_pins']} pins, {b['header_layout']['pins_per_side']} per side ({', '.join(b['header_layout']['headers'])})"
-            if language == "EN"
-            else f"{b['header_layout']['total_pins']} terminais, {b['header_layout']['pins_per_side']} em cada lado ({', '.join(b['header_layout']['headers'])})",
+            (
+                f"{b['header_layout']['total_pins']} pins, {b['header_layout']['pins_per_side']} per side ({', '.join(b['header_layout']['headers'])})"
+                if language == "EN"
+                else (
+                    f"{b['header_layout']['total_pins']} terminais, {b['header_layout']['pins_per_side']} em cada lado ({', '.join(b['header_layout']['headers'])})"
+                    if language == "PT"
+                    else f"{b['header_layout']['total_pins']} pines, {b['header_layout']['pins_per_side']} por lado ({', '.join(b['header_layout']['headers'])})"
+                )
+            ),
         ),
         (l["mcu_family"], b["microcontroller_family"]),
         (l["physical_module"], b["recommended_physical_module"]),
         (l["firmware"], b["firmware_family"]),
         (
             l["logic_voltage"],
-            f"{b['logic_voltage_v']} V (not 5 V tolerant)"
-            if language == "EN"
-            else f"{str(b['logic_voltage_v']).replace('.', ',')} V (GPIOs não tolerantes a 5 V)",
+            (
+                f"{b['logic_voltage_v']} V (not 5 V tolerant)"
+                if language == "EN"
+                else (
+                    f"{str(b['logic_voltage_v']).replace('.', ',')} V (GPIOs não tolerantes a 5 V)"
+                    if language == "PT"
+                    else f"{b['logic_voltage_v']} V (GPIO no tolerantes a 5 V)"
+                )
+            ),
         ),
     ]
     lines = [f"| {l['property']} | {l['definition']} |", "|---|---|"]
@@ -384,10 +468,13 @@ def target_files() -> list[tuple[str, str, tuple[str, ...]]]:
     return [
         ("docs/EN/README.md", "EN", ("hardware-overview",)),
         ("docs/PT/README.md", "PT", ("hardware-overview",)),
+        ("docs/ES/README.md", "ES", ("hardware-overview",)),
         ("docs/EN/hardware-reference.md", "EN", ("board-summary", "gpio-map", "gpio-constraints")),
         ("docs/PT/hardware-reference.md", "PT", ("board-summary", "gpio-map", "gpio-constraints")),
+        ("docs/ES/hardware-reference.md", "ES", ("board-summary", "gpio-map", "gpio-constraints")),
         ("docs/EN/technical-specification.md", "EN", ("runtime-summary",)),
         ("docs/PT/technical-specification.md", "PT", ("runtime-summary",)),
+        ("docs/ES/technical-specification.md", "ES", ("runtime-summary",)),
     ]
 
 
