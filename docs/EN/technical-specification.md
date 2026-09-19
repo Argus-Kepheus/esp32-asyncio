@@ -438,13 +438,12 @@ for a pinned `env` value first.
 
 ### TC-08 — Speed-button interval limits (clamping)
 
-**Action:** press the decrease-speed button (GPIO 34) repeatedly, well
-past the point where the blinking LEDs' interval should stop shrinking;
-then do the same with the increase-speed button (GPIO 35) in the other
-direction.
-**Expected:** the interval stops changing once it reaches 125 ms
-(fastest, `BLINK_SPEED_STEP_MIN`) or 4 s (slowest,
-`BLINK_SPEED_STEP_MAX`) — further presses in the same direction have no
+**Action:** press the decrease-speed button repeatedly past the point where
+the blinking LEDs' interval should stop shrinking; then do the same with the
+increase-speed button in the other direction.
+**Expected:** the interval stops changing at the configured
+`BLINK_SPEED_STEP_MIN` / `BLINK_SPEED_STEP_MAX` limits from
+`config/runtime.json`; further presses in the same direction have no
 additional effect, confirmed by `print_status()`'s serial line.
 **Executed and passed on 2026-08-18 in Wokwi web.** The project author
 confirmed that both interval limits and the corresponding serial values
