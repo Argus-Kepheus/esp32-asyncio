@@ -1,6 +1,6 @@
 <!-- doc-id: technical-specification -->
 <!-- language: PT -->
-<!-- content-revision: 5 -->
+<!-- content-revision: 6 -->
 
 # Especificação técnica — esp32-asyncio
 
@@ -14,7 +14,7 @@
 | Plataforma-alvo | ESP32 com MicroPython |
 | Plataforma de simulação | Wokwi |
 | Placa virtual | Espressif ESP32-DevKitC V4 |
-| Executável principal | `main.py` |
+| Executável principal | `main.py` (orquestração; consome `lib/generated_config.py`) |
 | Controlador do OLED | `ssd1306.py` |
 | Definição do circuito | `diagram.json` |
 | Configuração do Wokwi para VS Code | `wokwi.toml` |
@@ -176,7 +176,7 @@ GPIO17 podem estar reservados à PSRAM.
 
 ### RF-07 — Entregáveis
 
-- `main.py` completo e executável, com os controladores `ssd1306.py` e `ili9341.py` de que depende;
+- `main.py` completo e executável, com os controladores `ssd1306.py` e `ili9341.py` e o pacote gerado `lib/__init__.py` + `lib/generated_config.py` de que depende;
 - circuito Wokwi em `diagram.json`;
 - configuração local do Wokwi em `wokwi.toml`;
 - README e documentação técnica multilíngue;
@@ -454,6 +454,9 @@ esp32-asyncio/
 ├── main.py
 ├── ssd1306.py
 ├── ili9341.py
+├── lib/
+│   ├── __init__.py
+│   └── generated_config.py
 ├── diagram.json
 ├── wokwi.toml
 ├── README.md
@@ -513,7 +516,7 @@ No VS Code:
 
 - `wokwi.toml` define o firmware e a porta serial simulada;
 - `firmware.bin` é obtido separadamente e não deve ser registrado no Git;
-- `mpremote` envia `main.py`, `ssd1306.py` e `ili9341.py` ao sistema de arquivos simulado;
+- `mpremote` envia `main.py`, `ssd1306.py`, `ili9341.py` e o diretório `lib/` ao sistema de arquivos simulado;
 - o sistema de arquivos da simulação pode ser recriado a cada sessão.
 
 Os endereços do GitHub e do Wokwi devem ser apresentados separadamente.
@@ -525,6 +528,7 @@ Os endereços do GitHub e do Wokwi devem ser apresentados separadamente.
 | Código-fonte | `main.py` completo e executável |
 | Controlador dos OLEDs | `ssd1306.py` |
 | Controlador da TFT | `ili9341.py` |
+| Configuração gerada | `lib/generated_config.py` |
 | Circuito | `diagram.json` |
 | Configuração local | `wokwi.toml` |
 | Diagnósticos manuais | `diagnostics/` (treze scripts; não são testes automatizados e não fazem parte do entregável) |
