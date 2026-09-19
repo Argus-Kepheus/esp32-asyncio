@@ -1,17 +1,17 @@
-"""Test 11/13 — RAM OLED basic check: its own I2C bus and text.
+"""Diagnostic 11/13 — RAM OLED basic check: its own I2C bus and text.
 
 Isolates the current RAM OLED1 on its independent hardware I2C bus,
 machine.I2C(1), on GPIO 15 (SCL) / GPIO 22 (SDA). This is deliberately a
-different bus instance from CPU OLED0's I2C(0) (test 5, GPIO 32/16), so
+different bus instance from CPU OLED0's I2C(0) (diagnostic 5, GPIO 32/16), so
 both can be wired and addressed at the same time without contention. See
-tests/README.md for how to run this on wokwi.com.
+diagnostics/README.md for how to run this on wokwi.com.
 
-Run this independently of test 5 -- a failure here says nothing about the
+Run this independently of diagnostic 5 -- a failure here says nothing about the
 CPU OLED0, and vice versa, since they are on entirely separate buses.
 This script only initializes I2C(1) alone, though: it does not open
 I2C(0) at the same time, so passing this test does not confirm the two
 buses actually work concurrently, the way main.py runs them together --
-only that this bus works in isolation, same as test 5 for the other one.
+only that this bus works in isolation, same as diagnostic 5 for the other one.
 
 Expected: the serial monitor lists 0x3C among the detected I2C devices on
 bus 1, and this OLED shows "RAM OLED OK".
