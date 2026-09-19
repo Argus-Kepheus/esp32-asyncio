@@ -135,11 +135,9 @@ Do not edit the contents between generated markers manually.
 | Path | Role |
 |---|---|
 | `diagnostics/` | ordered manual checks for Wokwi or physical ESP32 hardware |
-| `tests/` | reserved for future automated software tests |
+| `tests/` | host-side automated `unittest` suite |
 
-Manual diagnostic evidence requires observation of simulator or physical
-hardware behavior. It is deliberately kept separate from any future host-side
-automated test suite.
+Manual diagnostic evidence requires observation of simulator or physical hardware behavior. It remains deliberately separate from the host-side automated suite in `tests/`, which cannot execute MicroPython peripherals.
 
 
 ## Wave 8 status
