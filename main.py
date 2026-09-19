@@ -135,9 +135,9 @@ def apply_blink_speed_step(step_delta):
 # as required by the specification. No external resistor is used.
 push_button = Pin(BUTTON_PIN, Pin.IN, Pin.PULL_DOWN)
 
-# GPIO 34/35 have no internal pull resistors, so an external physical
-# pull-down (diagram.json) gives the same released=LOW/pressed=HIGH
-# behavior as push_button's internal one.
+# The two speed-button inputs use the external pull-downs defined in the
+# canonical hardware configuration and diagram.json, giving the same
+# released=LOW/pressed=HIGH behavior as the main button.
 decrease_speed_button = Pin(DECREASE_SPEED_BUTTON_PIN, Pin.IN)
 increase_speed_button = Pin(INCREASE_SPEED_BUTTON_PIN, Pin.IN)
 
@@ -211,8 +211,8 @@ def create_oled_display(i2c_bus, label):
 
 oled0_display = create_oled_display(oled0_i2c, "OLED0")
 
-# Second, independent hardware I2C bus (I2C(1)) driving a second SSD1306 --
-# runs alongside CPU OLED0's I2C(0) bus without contention.
+# Second, independent hardware I2C bus driving the RAM SSD1306; its bus ID
+# comes from generated configuration and remains independent of OLED0.
 oled1_i2c = I2C(
     OLED1_I2C_BUS_ID,
     scl=Pin(OLED1_SCL_PIN),
