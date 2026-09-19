@@ -22,7 +22,12 @@ The file is committed intentionally because MicroPython/Wokwi should receive a
 plain Python module and should not need to parse the development-time JSON
 configuration.
 
-During Wave 2 the existing `main.py` still uses its historical inline
-constants. The generated module is therefore a verified **derived artifact**,
-not yet a runtime dependency. A later firmware wave may switch `main.py` to
-import it after the configuration pipeline has already proven stable.
+Since Wave 6, `main.py` imports this module directly through
+`lib.generated_config`. Pin assignments, bus IDs/frequencies, application
+runtime timings, blink-speed policy and console colors therefore no longer
+have competing inline definitions in `main.py`.
+
+`lib/__init__.py` makes this directory an explicit MicroPython package. The
+display drivers remain at repository root during Wave 6 to preserve the
+established Wokwi/mpremote workflow and avoid moving code without a concrete
+maintenance benefit.
