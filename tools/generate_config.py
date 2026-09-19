@@ -95,6 +95,8 @@ def build_constants(hardware: dict, runtime: dict) -> list[tuple[str, object]]:
 
     constants.extend(
         [
+            ("BLINK_SPEED_SCALE_BASE", speed["scale_base"]),
+            ("BLINK_SPEED_INITIAL_STEP", speed["initial_step"]),
             ("BLINK_SPEED_STEP_MIN", speed["step_min"]),
             ("BLINK_SPEED_STEP_MAX", speed["step_max"]),
             ("BUTTON_SAMPLE_INTERVAL_MS", buttons["sample_interval_ms"]),
