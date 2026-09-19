@@ -90,7 +90,7 @@ the circuit and Python source.
 | Field | LED resistors | Speed-button pull-downs |
 |---|---|---|
 | Wokwi part identifier | `wokwi-resistor` | `wokwi-resistor` |
-| Purpose | Current-limiting for each LED at 3.3 V logic level | External pull-down for GPIO34/35, which have no internal one |
+| Purpose | Current-limiting for each LED at 3.3 V logic level | External pull-down for the speed-button input-only pins |
 
 <!-- section: push-buttons -->
 ## 5. Push-buttons
