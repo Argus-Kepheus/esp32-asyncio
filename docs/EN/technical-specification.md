@@ -183,11 +183,9 @@ maintaining the same pin table in two places.
 
 ### 6.2 Button input conditioning
 
-The button input uses the ESP32's internal pull-down resistor:
-
-- an open button produces a defined LOW state;
-- a pressed button connects GPIO 17 to 3.3 V and produces HIGH;
-- no external pull-down resistor is required.
+The main-button wiring and pull configuration are canonical in
+`config/hardware.json` and shown in `hardware-reference.md`, §3. At the
+software level, an open button produces LOW and a pressed button produces HIGH.
 
 **Simulated vs. real bounce.** Wokwi's `wokwi-pushbutton` component behaves
 as an ideal, bounce-free switch — it does not model mechanical contact
@@ -293,32 +291,34 @@ Although the simulated `wokwi-pushbutton` does not bounce (§6.2), the
 button coroutine still implements a non-blocking software debounce so the
 behavior is correct on real hardware without any code change:
 
-1. sample GPIO 17 every 5 ms;
+1. sample the button at `BUTTON_SAMPLE_INTERVAL_MS`, whose current value is
+   generated from `config/runtime.json` in the runtime-parameter table above;
 2. when a different raw level appears, mark it as a candidate state and
    record the time;
 3. restart the candidate timestamp if the raw level changes again before
    being accepted;
-4. accept the candidate only once it has remained unchanged for 30 ms;
+4. accept the candidate only after it remains unchanged for
+   `BUTTON_DEBOUNCE_MS`;
 5. invoke output updates (`apply_button_state()`) only after acceptance.
 
 This avoids a blocking debounce delay and prevents false LED/OLED
-transitions, while the 30 ms acceptance window stays imperceptible during
-normal manual operation.
+transitions, while the configured acceptance window remains short for normal
+manual operation.
 
 <!-- section: oled-update-strategy -->
 ## 9. OLED graph update strategy
 
-Both OLEDs redraw on a fixed sampling window — `CPU_GRAPH_SAMPLE_INTERVAL_MS`
-/ `RAM_GRAPH_SAMPLE_INTERVAL_MS`, currently 250 ms each — not on a
+Both OLEDs redraw on fixed sampling windows —
+`CPU_GRAPH_SAMPLE_INTERVAL_MS` / `RAM_GRAPH_SAMPLE_INTERVAL_MS` — whose
+current values are generated from `config/runtime.json` above, not on a
 button-state or other event edge:
 
 - `update_cpu_graph()` and `update_ram_graph()` each run their own
-  `while True` loop, redrawing every iteration and then
-  `await asyncio.sleep_ms(250)`;
+  `while True` loop, redrawing every iteration and then sleep for the corresponding configured sampling interval;
 - `asyncio.sleep_ms()` guarantees only a minimum delay, so the sampling
   window is measured with `time.ticks_us()` rather than assumed exact — a
   slower iteration (e.g. a concurrent `console_log()` write) pushes the real
-  gap past 250 ms, and `update_cpu_graph()` accounts for that explicitly
+  gap past the configured floor, and `update_cpu_graph()` accounts for that explicitly
   when computing its percentage (§19.2);
 - every redraw does a full `fill()` and re-plots the whole scrolling
   history, not just the newest column, even though `framebuf` does have a
@@ -353,7 +353,7 @@ At module-load time, before `main()` runs, the application:
    status-indicator LEDs as outputs, all off;
 2. configures the button pins (`Pin.PULL_DOWN` on `BUTTON_PIN`; external
    pull-downs on the two speed-button pins, per `diagram.json`);
-3. creates both OLED I2C buses and scans each for address `0x3C`,
+3. creates both OLED I2C buses and scans each for its configured canonical address,
    initializing `oled0_display` / `oled1_display` only where detected;
 4. creates the TFT SPI object and attempts `ILI9341(...)` construction,
    catching `OSError` into `tft_display = None` on failure.
@@ -563,8 +563,8 @@ a row, keep the reasoning short and explicit.
 | Internal pull-down on the button (`Pin.PULL_DOWN`) | Satisfies "HIGH when pressed" without an external resistor. | External 10 kΩ pull-down drawn explicitly in the schematic |
 | Software debounce kept despite the simulated button not bouncing | Correct behavior for a future real, physical button (§6.2, §8); zero cost in simulation. | No debounce at all (would need to be added later for real hardware) |
 | *(Superseded — see the OLED-graph row below)* OLED redrawn only on button state change | Original rationale: avoided visible flicker and redundant I2C writes for a static button-state message. No longer how either OLED behaves (§9). | Unconditional redraw every loop iteration (this is what both OLEDs do now, deliberately, since they graph a continuously-changing value) |
-| Button sampled every 5 ms, accepted after 30 ms stable | Fast enough to feel instantaneous; the 30 ms window is the actual debounce guard, sampling itself is not the filter. | Coarser polling (e.g. 50 ms) with no separate acceptance window — simpler but couples sampling rate to debounce time |
-| `machine.I2C` (hardware), not `machine.SoftI2C` | The current CPU OLED diagnostics, `tests/05_cpu_oled_basic.py` and `tests/06_cpu_oled_full_diagnostic.py`, use GPIO32 (SCL) and GPIO16 (SDA) and passed on Wokwi web on 2026-08-18. | `machine.SoftI2C` (previously adopted defensively, now confirmed unnecessary; kept only as a documented fallback if a future hardware-I2C regression appears) |
+| Button sampling and debounce windows are configuration-driven | Current values come from `config/runtime.json`; sampling and acceptance remain separate concepts, so the filter is not coupled to one hard-coded polling interval. | A single coarse polling interval with no separate acceptance window — simpler but couples sampling rate to debounce time |
+| `machine.I2C` (hardware), not `machine.SoftI2C` | The current CPU OLED diagnostics use the canonical OLED0 mapping and passed on Wokwi web on 2026-08-18. | `machine.SoftI2C` (previously adopted defensively, now confirmed unnecessary; kept only as a documented fallback if a future hardware-I2C regression appears) |
 | `push-button` wired with pin names `1.l` / `2.l` | These are the actual pin names exposed by the Wokwi `wokwi-pushbutton` part. One of the three original drafts used `1.R` / `2.R` (wrong case, wrong side), which Wokwi cannot resolve — the connection silently fails and the button never registers a press in that simulation. | `1.R` / `2.R` naming (rejected: invalid pin reference) |
 | `esp32` board part uses `"attrs": {}` (no pinned firmware `env`) | **Confirmed root cause of a live wokwi.com failure**: pinning `"env": "micropython-20240602-v1.23.0"` (carried over from the `p/` draft) caused an infinite boot loop — the console showed repeated `POWERON_RESET` / `SW_RESET` cycles and MicroPython never started, so *nothing* ran, not even a trivial one-GPIO test script (see TC-07). Removing the pin and letting Wokwi select its default/current MicroPython build resolved it. This also retroactively confirms this exact line was very likely the original issue reported against the `p/` draft before consolidation. | Pinning a specific firmware `env` string for reproducibility (rejected: the specific string used was invalid/unsupported and silently broke boot, with no error surfaced other than the reset loop) |
 | Both OLEDs plot live resource-usage graphs, not button-state text (§19.2) | User-requested change, after the button-state OLED message (the project's earlier behavior) was already validated. The "CPU" value is real measured time inside the displays' instrumented draw/transfer calls (drawing plus I2C/SPI transfer, not bus transfer alone), a partial approximation kept because bare-metal MicroPython on the ESP32 exposes no OS-level scheduler load metric to read instead — see §19.2 for what it does and doesn't cover. | A synthetic/simulated waveform for "CPU usage" (rejected: would not reflect anything real about the running program); reusing the earlier text message alongside a graph (rejected: no space on a 128×64 monochrome panel without shrinking the graph) |
@@ -619,7 +619,7 @@ sampling window:
 - **OLED0 — labeled "CPU."** MicroPython on bare ESP32 exposes no
   OS-level scheduler load metric, so the plotted value is a partial,
   approximate stand-in, not a full CPU utilization metric: the fraction
-  of each ≥250 ms sampling window (a floor, not an exact period — see
+  of each configured sampling window (a floor, not an exact period — see
   `update_cpu_graph()`'s own timing comment) spent inside the three
   displays' instrumented synchronous calls, timed end-to-end by
   `_bus_busy_begin()` / `_bus_busy_end()`. That span covers both the
@@ -636,7 +636,7 @@ sampling window:
   `update_cpu_graph()` docstring for the full caveat.
 - **OLED1 — labeled "RAM."** A real measured value, not a
   simulated one, but scoped to MicroPython's own garbage-collector heap
-  statistics (`gc.mem_alloc()` / `gc.mem_free()`), sampled every ≥250 ms
+  statistics (`gc.mem_alloc()` / `gc.mem_free()`), sampled on the configured RAM window
   — not total physical RAM on the ESP32. The execution stack, native/C
   allocations internal to the firmware, and anything outside the
   gc-managed heap are not included. See `update_ram_graph()`.
