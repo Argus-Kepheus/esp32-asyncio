@@ -1,6 +1,6 @@
 <!-- doc-id: hardware-reference -->
 <!-- language: EN -->
-<!-- content-revision: 2 -->
+<!-- content-revision: 3 -->
 
 # ESP32-DevKitC V4 Hardware Reference
 
