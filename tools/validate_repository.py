@@ -663,6 +663,7 @@ def check_documentation_deduplication() -> None:
     for relative in (
         "docs/EN/component-specifications.md",
         "docs/PT/component-specifications.md",
+        "docs/ES/component-specifications.md",
     ):
         text = (ROOT / relative).read_text(encoding="utf-8")
         for label, pattern in forbidden_component_patterns.items():
@@ -761,13 +762,15 @@ def check_documentation_parity() -> None:
     stale_patterns = {
         "historical mixed-color blinking LED description":
             r"(red, blue, yellow, white, orange, and a second red|"
-            r"vermelho, azul, amarelo, branco, laranja e um segundo\s+vermelho)",
+            r"vermelho, azul, amarelo, branco, laranja e um segundo\s+vermelho|"
+            r"rojo, azul, amarillo, blanco, naranja y un segundo\s+rojo)",
         "English-only documentation claim":
             r"All source code, comments and documentation are written in English",
     }
     for relative in (
         "docs/EN/technical-specification.md",
         "docs/PT/technical-specification.md",
+        "docs/ES/technical-specification.md",
     ):
         text = (ROOT / relative).read_text(encoding="utf-8")
         for label, pattern in stale_patterns.items():
