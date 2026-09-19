@@ -542,8 +542,8 @@ Os endereços do GitHub e do Wokwi devem ser apresentados separadamente.
 Critérios:
 
 - monitor serial indica alternância entre 0 e 1;
-- LED acende e apaga a cada aproximadamente 500 ms;
-- ligação GPIO26 → resistor → ânodo → cátodo → GND.
+- LED acende e apaga segundo o intervalo-base configurado em `config/runtime.json`;
+- a ligação corresponde ao mapa GPIO canônico em `hardware-reference.md`, §3.
 
 Atraso bloqueante pode ser usado somente neste teste temporário, pois o objetivo
 é isolar o hardware. Ver `tests/01_blue_led_basic.py` a
@@ -592,13 +592,9 @@ Critérios:
 
 Critérios:
 
-- pressionar repetidamente o botão de diminuir intervalo (GPIO~34) faz o
-  intervalo dos LEDs piscantes parar de encolher ao atingir 125~ms
-  (`BLINK_SPEED_STEP_MIN`);
-- pressionar repetidamente o botão de aumentar intervalo (GPIO~35) faz o
-  intervalo parar de crescer ao atingir 4~s (`BLINK_SPEED_STEP_MAX`);
-- a linha serial de `print_status()` confirma o valor travado em ambos os
-  extremos.
+- pressionar repetidamente o botão de diminuir intervalo faz o valor parar de encolher no limite `BLINK_SPEED_STEP_MIN` configurado;
+- pressionar repetidamente o botão de aumentar intervalo faz o valor parar de crescer no limite `BLINK_SPEED_STEP_MAX` configurado;
+- a linha serial de `print_status()` confirma os valores limites derivados de `config/runtime.json`.
 
 **Executado e aprovado em 18/08/2026 no Wokwi web.** O autor do projeto
 confirmou os dois limites de intervalo e os valores correspondentes no
@@ -709,7 +705,7 @@ Como trabalho futuro, uma montagem física deve manter o antirrepique de softwar
 | Idioma do código | Inglês |
 | Mensagens do OLED | Português, exatamente `Boa sorte!` e `Consegui` (substituídas pelos gráficos do §17 nos dois OLEDs) |
 | Gráficos de uso de recursos nos dois OLEDs | Extensão pedida pelo usuário (§17.2). O valor de "CPU" é tempo real medido dentro das chamadas instrumentadas de desenho/transferência dos mostradores (desenho mais transferência I2C/SPI, não só o barramento), um substituto parcial e aproximado mantido porque o MicroPython no ESP32 bare-metal não expõe métrica de carga do escalonador do SO — ver §17.2 para o que ele cobre e o que não cobre |
-| LEDs azuis com mesmo intervalo, seis tarefas separadas | Extensão pedida pelo usuário (§17.3). Cada LED continua sendo uma task `asyncio` independente, mesmo com todos no mesmo intervalo de 500 ms |
+| LEDs azuis com mesmo intervalo, seis tarefas separadas | Extensão pedida pelo usuário (§17.3). Cada LED continua sendo uma task `asyncio` independente, compartilhando o intervalo configurado em `config/runtime.json` |
 
 <!-- section: implementation-notes -->
 ## 17. Notas de implementação
