@@ -1,8 +1,8 @@
-"""Test 7/13 — Five additional blue LEDs, checked one at a time.
+"""Diagnostic 7/13 — Five additional blue LEDs, checked one at a time.
 
 Isolates blue LEDs 2-6 on GPIO 14, 27, 25, 33 and 12. All six blinking
 LEDs in the current circuit are physically blue; the first one, on GPIO
-26, is checked by tests 1-3. See tests/README.md for how to run this on
+26, is checked by diagnostics 1-3. See diagnostics/README.md for how to run this on
 wokwi.com.
 
 Deliberately lights exactly one LED at a time, in a plain blocking loop
