@@ -38,6 +38,9 @@ jobs:
       - name: Validate repository consistency
         run: python tools/validate_repository.py
 
+      - name: Run host-side automated tests
+        run: python -m unittest discover -s tests -p "test_*.py" -v
+
       - name: Compile Python sources
         shell: bash
         run: |
@@ -48,4 +51,5 @@ jobs:
             lib/__init__.py \
             lib/generated_config.py \
             diagnostics/*.py \
+            tests/test_*.py \
             tools/*.py
