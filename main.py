@@ -173,8 +173,8 @@ def _bus_busy_end(started_at_us):
 # often this task gets scheduled, not a literal RTOS idle task.
 scheduler_idle_led = Pin(SCHEDULER_IDLE_LED_PIN, Pin.OUT, value=0)
 
-# Hardware I2C bus 0, on the mandatory OLED pins. The current isolated
-# diagnostics are diagnostics/05_cpu_oled_basic.py and
+# Hardware I2C bus for OLED0, using generated bus/pin configuration. The
+# current isolated diagnostics are diagnostics/05_cpu_oled_basic.py and
 # diagnostics/06_cpu_oled_full_diagnostic.py (see diagnostics/README.md). An earlier
 # revision used machine.SoftI2C as an unconfirmed defensive compatibility
 # choice; that is no longer needed.
