@@ -35,9 +35,9 @@ The Wave 2 validator checks:
 
 - internal consistency of canonical GPIO assignments;
 - unsafe use of ESP32 input-only pins as outputs;
-- canonical configuration versus the constants currently duplicated in
-  `main.py`;
-- I2C/SPI bus IDs and TFT SPI baudrate in `main.py`;
+- exact generated configuration consumed by `main.py`;
+- absence of canonical configuration redefinitions inside `main.py`;
+- use of generated I2C/SPI bus IDs, TFT baudrate and blink-speed policy;
 - component IDs and Wokwi part types in `diagram.json`;
 - LED colors and resistor values;
 - OLED I2C addresses;
@@ -125,3 +125,14 @@ Wave 5 separates manual hardware diagnostics from future automated tests:
 
 The repository validator checks the diagnostic inventory, ordering, docstring
 identity, and stale references to the former manual-diagnostic paths.
+
+
+## Firmware configuration boundary
+
+Wave 6 makes `lib/generated_config.py` a runtime dependency of `main.py`.
+The validator therefore checks that the generated names are imported and used,
+and rejects reintroduction of competing inline definitions.
+
+The display drivers remain at repository root in this wave. Moving them is not
+required to establish a single configuration owner and would change the
+existing Wokwi/mpremote deployment shape without a demonstrated benefit.
