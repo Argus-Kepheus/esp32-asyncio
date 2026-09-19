@@ -1,6 +1,6 @@
 <!-- doc-id: technical-specification -->
 <!-- language: EN -->
-<!-- content-revision: 6 -->
+<!-- content-revision: 7 -->
 
 # Technical Specification — esp32-asyncio
 
@@ -524,7 +524,7 @@ submitted behavior interactively with no installation.
 | `docs/component-specifications.md` | Per-component specification sheets (board, display, LEDs, resistors, push-button) |
 | `docs/hardware-reference.md` | Board/module identification, GPIO-to-header map, reserved pins, electrical characteristics, wiring checklist |
 | `diagnostics/` | Thirteen manual current-hardware diagnostic scripts, `01_blue_led_basic.py` through `13_tft_text_diagnostic.py` (not automated tests; not part of the deliverable) — see `diagnostics/README.md` |
-| `tests/` | Reserved for future automated tests |
+| `tests/` | Host-side automated `unittest` suite for generation, documentation and source contracts |
 | `report/` | LaTeX source (`relatorio.tex`), compiled PDF, build script and circuit figure for the (Portuguese-language) technical report — see `report/README.md` |
 
 <!-- section: acceptance-criteria -->
@@ -543,8 +543,9 @@ The project is accepted when:
 - both OLED graphs and the TFT console update per §9 and FR-05;
 - no `time.sleep()` blocking delay is used anywhere in `main.py`;
 - the Wokwi simulation is saved and shareable by URL; and
-- the repository is published on GitHub with both project links in the
-  README.
+- the repository is published on GitHub with both project links in the README;
+- the host-side automated `unittest` suite passes; and
+- the repository validation workflow passes in GitHub Actions.
 
 <!-- section: decision-log -->
 ## 16. Design decision log
