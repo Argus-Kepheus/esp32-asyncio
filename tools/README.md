@@ -91,3 +91,23 @@ remaining normatively equivalent.
 A future language such as ES can be added by registering it in
 `docs/metadata.json` and satisfying the same document/revision/section
 contract.
+
+
+## Generate documentation blocks
+
+```text
+python tools/generate_docs.py --check
+python tools/generate_docs.py --write
+```
+
+The documentation generator reads the canonical `config/hardware.json` and
+`config/runtime.json` files and maintains the explicitly marked generated
+regions in EN/PT documentation.
+
+This allows several human-facing views of the same fact without creating
+several independent sources of truth: the representations are duplicated for
+usability, but their values are derived from one owner.
+
+The repository validator also checks these regions byte-for-byte against the
+generator output and rejects concrete wiring/passive-value duplication in the
+component specification sheets.
