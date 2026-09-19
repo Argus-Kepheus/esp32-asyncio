@@ -62,16 +62,6 @@ the canonical configuration. It does **not** prove:
 
 Those remain separate simulation/hardware validation activities.
 
-## Current transitional state
-
-During Wave 2, `main.py` still defines its own constants and does not import
-`lib/generated_config.py`. This is intentional: Wave 2 establishes the
-generation/validation mechanism without changing firmware behavior.
-
-A later firmware wave can switch `main.py` to consume the generated module
-after the new configuration pipeline is already verifiable.
-
-
 ## Documentation parity
 
 Wave 3 adds a semantic parity contract for EN/PT/ES documentation.
@@ -119,7 +109,7 @@ Wave 5 separates manual hardware diagnostics from future automated tests:
 
 - `diagnostics/` contains the 13 ordered Wokwi/physical-hardware diagnostic
   scripts and `diagnostics/metadata.json`;
-- `tests/` is reserved for future host-side automated tests;
+- `tests/` contains the Wave 9 host-side automated `unittest` suite;
 - a manual diagnostic requires an observed simulator/physical result and is
   not automatically equivalent to a passing software test.
 
@@ -148,6 +138,7 @@ On pushes to `main`, pull requests, and manual dispatch, GitHub Actions runs:
 python tools/generate_config.py --check
 python tools/generate_docs.py --check
 python tools/validate_repository.py
+python -m unittest discover -s tests -p "test_*.py" -v
 python -m py_compile ...
 ```
 
@@ -158,3 +149,21 @@ or Python syntax is invalid.
 
 Passing CI is **not** evidence that the Wokwi simulation or physical ESP32 has
 executed successfully. Manual diagnostics remain a separate validation layer.
+
+
+## Host-side automated tests
+
+Wave 9 activates the `tests/` namespace that Wave 5 reserved.
+
+Run:
+
+```text
+python -m unittest discover -s tests -p "test_*.py" -v
+```
+
+The suite covers deterministic config generation, the EN/PT/ES documentation
+contract and generated regions, plus static source invariants in `main.py`.
+Its inventory and limitations are declared in `tests/metadata.json`.
+
+These tests are intentionally host-side. They do not emulate MicroPython
+peripheral APIs, Wokwi timing or physical ESP32 electrical behavior.
