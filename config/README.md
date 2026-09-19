@@ -102,3 +102,17 @@ The primary evidence used was:
 Where historical documentation conflicted with the current circuit or firmware,
 the current `main.py` + `diagram.json` state took precedence for the Wave 1
 configuration. No historical documentation was corrected in this wave.
+
+
+## Documentation after Wave 4
+
+Human-readable documentation may show the same canonical fact in more than one
+place, but high-risk repeated tables are now generated from `config/`.
+
+`tools/generate_docs.py` currently derives hardware/runtime views in EN/PT.
+Component sheets deliberately avoid duplicating concrete wiring/passive values,
+and functional specifications reference generated hardware views instead of
+maintaining separate pin maps.
+
+This means duplication for usability is allowed only when it is **derived or
+validated**, not independently authored.
