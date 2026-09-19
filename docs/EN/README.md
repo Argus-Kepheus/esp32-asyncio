@@ -4,7 +4,7 @@
 
 # esp32-asyncio
 
-**Language / Idioma:** [English](README.md) | [Português](../PT/README.md)
+**Language / Idioma:** [English](README.md) | [Português](../PT/README.md) | [Español](../ES/README.md)
 
 ESP32 (MicroPython) personal project exploring asynchronous (`asyncio`)
 processing, originally a practical assessment for the Instrumentation,
