@@ -191,12 +191,20 @@ def overview_table(hardware: dict, language: str) -> str:
             f"GPIO {c['buttons']['main']['gpio']}",
         ),
         (
-            l["speed_buttons"],
+            (
+                f"{l['speed_buttons']} (+ external {c['buttons']['decrease_interval']['pull']['resistance_ohm']} Ω pull-down each)"
+                if language == "EN"
+                else f"{l['speed_buttons']} (+ pull-down externo de {c['buttons']['decrease_interval']['pull']['resistance_ohm']} Ω cada)"
+            ),
             f"`{c['buttons']['decrease_interval']['id']}`, `{c['buttons']['increase_interval']['id']}`",
             f"GPIO {c['buttons']['decrease_interval']['gpio']}, {c['buttons']['increase_interval']['gpio']}",
         ),
         (
-            l["status_leds"],
+            (
+                f"{l['status_leds']} (+ {c['status_leds']['bus_idle']['resistor_ohm']} Ω each)"
+                if language == "EN"
+                else f"{l['status_leds']} (+ {c['status_leds']['bus_idle']['resistor_ohm']} Ω cada)"
+            ),
             f"`{c['status_leds']['bus_idle']['id']}`, `{c['status_leds']['scheduler_activity']['id']}`",
             f"GPIO {c['status_leds']['bus_idle']['gpio']}, {c['status_leds']['scheduler_activity']['gpio']}",
         ),
