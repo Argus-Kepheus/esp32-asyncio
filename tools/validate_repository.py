@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Validate canonical configuration against derived and operational artifacts.
 
-Wave 2 deliberately performs static consistency checks only. It does not
-claim that a passing result proves correct behavior in Wokwi or on hardware.
+The validator performs static consistency checks only. It does not claim that
+a passing result proves correct behavior in Wokwi or on physical hardware.
 
 Usage:
     python tools/validate_repository.py
@@ -31,6 +31,7 @@ from generate_docs import (
 MAIN_PATH = ROOT / "main.py"
 DIAGRAM_PATH = ROOT / "diagram.json"
 DOC_METADATA_PATH = ROOT / "docs" / "metadata.json"
+DIAGNOSTICS_METADATA_PATH = ROOT / "diagnostics" / "metadata.json"
 
 errors: list[str] = []
 warnings: list[str] = []
@@ -778,6 +779,92 @@ def check_documentation_parity() -> None:
         fail("README.md still describes the main button as a green-LED toggle")
 
 
+
+def check_diagnostics_semantics() -> None:
+    metadata = load_json(DIAGNOSTICS_METADATA_PATH)
+    if not metadata:
+        return
+
+    if metadata.get("mode") != "manual":
+        fail("diagnostics/metadata.json must declare mode=manual")
+
+    entries = metadata.get("diagnostics", [])
+    if len(entries) != 13:
+        fail(f"Expected 13 manual diagnostics, found {len(entries)}")
+
+    orders = [entry.get("order") for entry in entries]
+    if orders != list(range(1, 14)):
+        fail(f"Diagnostic order must be exactly 1..13, found {orders}")
+
+    filenames = [entry.get("file") for entry in entries]
+    if len(filenames) != len(set(filenames)):
+        fail("Duplicate diagnostic filenames in diagnostics/metadata.json")
+
+    for entry in entries:
+        order = entry.get("order")
+        filename = entry.get("file")
+        if not isinstance(filename, str):
+            fail(f"Diagnostic {order} has no valid file")
+            continue
+
+        path = ROOT / "diagnostics" / filename
+        if not path.exists():
+            fail(f"Missing diagnostic script: diagnostics/{filename}")
+            continue
+
+        text = path.read_text(encoding="utf-8")
+        if f"Diagnostic {order}/13" not in text:
+            fail(
+                f"diagnostics/{filename}: module docstring does not identify "
+                f"Diagnostic {order}/13"
+            )
+        if "diagnostics/README.md" not in text:
+            fail(
+                f"diagnostics/{filename}: missing diagnostics/README.md reference"
+            )
+
+    tests_readme = ROOT / "tests" / "README.md"
+    if not tests_readme.exists():
+        fail("tests/README.md must reserve tests/ for future automated tests")
+    else:
+        text = tests_readme.read_text(encoding="utf-8").lower()
+        if "automated" not in text:
+            fail("tests/README.md must explicitly describe automated-test purpose")
+
+    manual_names = {name for name in filenames if isinstance(name, str)}
+    tests_dir = ROOT / "tests"
+    if tests_dir.exists():
+        for path in tests_dir.iterdir():
+            if path.name in manual_names:
+                fail(f"Manual diagnostic still present under tests/: {path.name}")
+
+    # report/ is deliberately excluded: it is a historical snapshot of a
+    # revision in which tests/ was the actual diagnostics directory name.
+    scan_paths = [ROOT / "README.md", ROOT / "main.py"]
+    for base in (
+        ROOT / "docs",
+        ROOT / "diagnostics",
+        ROOT / "tools",
+        ROOT / "config",
+    ):
+        if base.exists():
+            scan_paths.extend(
+                path
+                for path in base.rglob("*")
+                if path.is_file() and path.suffix in {".md", ".py", ".json"}
+            )
+
+    for path in scan_paths:
+        if path in {ROOT / "tests" / "README.md", DIAGNOSTICS_METADATA_PATH}:
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "tests/" in text:
+            fail(
+                f"{path.relative_to(ROOT)}: stale operational reference to "
+                "former manual-diagnostic path tests/"
+            )
+
+
 def main() -> int:
     for required in (
         HARDWARE_PATH,
@@ -785,6 +872,7 @@ def main() -> int:
         MAIN_PATH,
         DIAGRAM_PATH,
         DOC_METADATA_PATH,
+        DIAGNOSTICS_METADATA_PATH,
         ROOT / "tools" / "generate_config.py",
         ROOT / "tools" / "generate_docs.py",
         OUTPUT_PATH,
@@ -807,6 +895,7 @@ def main() -> int:
 
     check_documentation_parity()
     check_documentation_deduplication()
+    check_diagnostics_semantics()
 
     print("esp32-asyncio repository validation")
     print(f"Errors: {len(errors)}")
