@@ -50,9 +50,9 @@ O mapa completo e atual de GPIOs nos conectores é a tabela gerada em [`hardware
 | Controlador de software | `ssd1306.py`, classe `SSD1306_I2C`, compartilhada pelos dois | (idem) |
 | Papel em `main.py` | Gráfico de uso de "CPU" (`update_cpu_graph()`) | Gráfico de uso de "RAM" (`update_ram_graph()`) |
 
-Diagnósticos isolados atuais: `tests/05_cpu_oled_basic.py` /
-`tests/06_cpu_oled_full_diagnostic.py` (OLED0 de CPU),
-`tests/11_ram_oled_basic.py` (OLED1 de RAM, testado isoladamente — não
+Diagnósticos isolados atuais: `diagnostics/05_cpu_oled_basic.py` /
+`diagnostics/06_cpu_oled_full_diagnostic.py` (OLED0 de CPU),
+`diagnostics/11_ram_oled_basic.py` (OLED1 de RAM, testado isoladamente — não
 prova operação simultânea dos dois barramentos).
 
 ### 2.2 TFT ILI9341
@@ -67,8 +67,8 @@ prova operação simultânea dos dois barramentos).
 | Controlador de software | `ili9341.py` (classe `ILI9341` própria deste projeto) |
 | Papel em `main.py` | Console de registro de atividade colorido e rolante (`console_log()`) |
 
-Diagnósticos isolados atuais: `tests/12_tft_basic.py` (inicialização SPI,
-preenchimentos sólidos), `tests/13_tft_text_diagnostic.py` (renderização
+Diagnósticos isolados atuais: `diagnostics/12_tft_basic.py` (inicialização SPI,
+preenchimentos sólidos), `diagnostics/13_tft_text_diagnostic.py` (renderização
 de texto, cores do console).
 
 <!-- section: leds -->
