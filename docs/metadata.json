@@ -40,7 +40,7 @@
         "EN": "docs/EN/component-specifications.md",
         "PT": "docs/PT/component-specifications.md"
       },
-      "content_revision": 3,
+      "content_revision": 4,
       "required_sections": [
         "microcontroller-board",
         "displays",
@@ -73,7 +73,7 @@
         "EN": "docs/EN/technical-specification.md",
         "PT": "docs/PT/technical-specification.md"
       },
-      "content_revision": 4,
+      "content_revision": 5,
       "required_sections": [
         "document-control",
         "objective",
