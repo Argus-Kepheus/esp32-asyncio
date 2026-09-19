@@ -1,5 +1,10 @@
+<!-- doc-id: technical-specification -->
+<!-- language: PT -->
+<!-- content-revision: 3 -->
+
 # Especificação técnica — esp32-asyncio
 
+<!-- section: document-control -->
 ## 1. Controle do documento
 
 | Campo | Valor |
@@ -22,6 +27,7 @@ projeto. Comentários de outros projetistas podem ser incorporados em revisões 
 desde que o comportamento obrigatório e a rastreabilidade das decisões sejam
 preservados. Consulte a §7.
 
+<!-- section: objective -->
 ## 2. Objetivo
 
 Desenvolver e simular uma aplicação MicroPython para ESP32 que execute
@@ -47,6 +53,7 @@ Os entregáveis são:
 - um endereço compartilhável do projeto no Wokwi, contendo o circuito
   executável.
 
+<!-- section: simulation-platform -->
 ## 3. Decisão sobre a plataforma de simulação
 
 O Wokwi é a plataforma oficial deste projeto.
@@ -87,6 +94,7 @@ Para uma futura implementação física, recomenda-se uma ESP32-DevKitC V4 com
 módulo ESP32-WROOM-32E. Variantes WROVER não são recomendadas porque GPIO16 e
 GPIO17 podem estar reservados à PSRAM.
 
+<!-- section: functional-requirements -->
 ## 4. Requisitos funcionais
 
 ### RF-01 — Seis LEDs piscantes
@@ -168,6 +176,17 @@ GPIO17 podem estar reservados à PSRAM.
 - amarelo (`scheduler_idle_led`): alterna a cada iteração de
   `scheduler_idle_task()` -- uma visualização grosseira de vazão do
   escalonador, não um sinal literal de ociosidade/prioridade (§17).
+
+<!-- section: software-architecture -->
+
+### RF-07 — Entregáveis
+
+- `main.py` completo e executável, com os controladores `ssd1306.py` e `ili9341.py` de que depende;
+- circuito Wokwi em `diagram.json`;
+- configuração local do Wokwi em `wokwi.toml`;
+- README e documentação técnica multilíngue;
+- endereço público do repositório GitHub; e
+- endereço compartilhável da simulação no Wokwi.
 
 ## 5. Arquitetura de software
 
@@ -253,6 +272,7 @@ tolerância temporal da aplicação é compatível com `asyncio`, e a adoção d
 interrupções ou funções de retorno de temporizador acrescentaria complexidade
 sem benefício funcional relevante.
 
+<!-- section: electrical-design -->
 ## 6. Projeto do circuito
 
 ### 6.1 LEDs e resistores
@@ -273,6 +293,7 @@ o circuito externo (LED + resistor até o GND) só drena corrente, nunca
 impõe um nível externo durante a energização (ver `docs/PT/hardware-reference.md`,
 §5, para a tabela completa dos pinos de *bootstrapping*).
 
+<!-- section: debounce-strategy -->
 ### 6.2 Botão, resistor interno e antirrepique
 
 O botão é ligado entre 3V3 e GPIO17:
@@ -367,6 +388,7 @@ peça SPI e porque o quadro colorido maior (240×320) da tela se beneficia da
 maior taxa de transferência do SPI. São duas decisões independentes para
 dois displays diferentes, não uma única restrição de projeto.
 
+<!-- section: revision-guidance -->
 ## 7. Integração de comentários e revisões
 
 Comentários complementares de outros projetistas podem ser integrados quando:
@@ -389,6 +411,7 @@ Uma alteração funcional deve atualizar, no mínimo:
 - `technical-specification.md`;
 - testes e critérios de aceitação.
 
+<!-- section: naming-conventions -->
 ## 8. Convenções de nomes
 
 ### 8.1 Identificadores no Wokwi
@@ -421,6 +444,7 @@ OLED0_SCL_PIN
 
 Identificadores Python não podem conter hífen; por isso, usam sublinhado.
 
+<!-- section: oled-update-strategy -->
 ## 9. Estratégia de atualização dos gráficos OLED
 
 Os dois OLEDs redesenham em uma janela de amostragem fixa --
@@ -447,6 +471,26 @@ Isto é redesenho periódico incondicional, não uma atualização orientada por
 eventos: os dois OLEDs são, eles próprios, parte do que mantém o
 processador ocupado (a medição de "CPU" do §17.2), então redesenhar
 continuamente é intencional aqui, não algo a minimizar.
+
+<!-- section: repository-contents -->
+<!-- section: state-model -->
+## Modelo de estados
+
+O estado estável do botão principal determina diretamente o LED verde:
+
+| Estado estável | GPIO 17 | LED verde | Registro no console |
+|---|---:|---|---|
+| Solto | LOW | apagado | `Button released -> Green LED OFF` |
+| Pressionado | HIGH | aceso | `Button pressed -> Green LED ON` |
+
+As tarefas dos seis LEDs piscantes, dos dois gráficos OLED e do console TFT são ortogonais a esse estado: não são pausadas nem reiniciadas por uma transição do botão.
+
+<!-- section: startup-failure -->
+## Comportamento de inicialização e falhas
+
+Antes de `main()` iniciar o laço assíncrono, a aplicação configura as saídas, entradas e barramentos; verifica os dois OLEDs pelo endereço `0x3C`; e tenta criar o objeto da TFT. A ausência de um OLED detectável mantém esse display indisponível sem impedir a inicialização dos demais subsistemas.
+
+A TFT usa SPI somente de escrita. Por isso, uma tela fisicamente ausente pode não produzir erro detectável; `console_log()` espelha incondicionalmente todas as mensagens no serial para que os eventos não sejam perdidos nesse caso. As limitações e caminhos de falha detalhados permanecem documentados nas notas de implementação e no plano de validação.
 
 ## 10. Estrutura do repositório
 
@@ -486,6 +530,7 @@ esp32-asyncio/
 
 A licença é CC0 1.0 Universal.
 
+<!-- section: workflow -->
 ## 11. Simulação no Wokwi pelo navegador
 
 O circuito é montado no arquivo `diagram.json`. Esse arquivo contém:
@@ -513,7 +558,7 @@ No VS Code:
 
 - `wokwi.toml` define o firmware e a porta serial simulada;
 - `firmware.bin` é obtido separadamente e não deve ser registrado no Git;
-- `mpremote` envia `main.py` e `ssd1306.py` ao sistema de arquivos simulado;
+- `mpremote` envia `main.py`, `ssd1306.py` e `ili9341.py` ao sistema de arquivos simulado;
 - o sistema de arquivos da simulação pode ser recriado a cada sessão.
 
 Os endereços do GitHub e do Wokwi devem ser apresentados separadamente.
@@ -534,6 +579,7 @@ Os endereços do GitHub e do Wokwi devem ser apresentados separadamente.
 | Documentação | README e documentos técnicos em `docs/EN/` e `docs/PT/` |
 | Licença | `LICENSE`, CC0 1.0 Universal |
 
+<!-- section: verification-plan -->
 ## 14. Plano de validação
 
 ### 14.1 Teste isolado de um LED piscante
@@ -650,6 +696,7 @@ Critérios:
 confirmou a defasagem gradual dos LEDs e a latência do botão previstas nos
 critérios acima.
 
+<!-- section: future-work -->
 ## 15. Limitações e implementação física
 
 A simulação valida lógica, pinagem e comportamento, mas não substitui todas as
@@ -665,6 +712,23 @@ Em uma montagem física devem ser considerados:
 - disponibilidade real de GPIO16 e GPIO17 no módulo instalado;
 - comportamento de inicialização do GPIO2;
 - diferenças entre clones de placas ESP32.
+
+<!-- section: decision-log -->
+<!-- section: acceptance-criteria -->
+## Critérios de aceitação
+
+O projeto é considerado coerente com esta especificação quando:
+
+- a pinagem e os componentes correspondem à configuração canônica em `config/hardware.json`;
+- `main.py` inicia sem erro no ambiente MicroPython/Wokwi previsto;
+- os seis LEDs azuis piscam com intervalo compartilhado ajustável, mantendo tarefas independentes;
+- o LED verde acompanha o estado estável do botão principal;
+- os dois botões de velocidade respeitam os limites configurados;
+- os dois OLEDs e o console TFT permanecem operacionais conforme suas limitações documentadas;
+- o console serial preserva os registros mesmo quando a TFT não fornece confirmação de presença; e
+- a documentação EN/PT satisfaz o contrato de paridade de `docs/metadata.json`.
+
+Como trabalho futuro, uma montagem física deve manter o antirrepique de software para botões mecânicos (com filtro RC opcional) e pode reavaliar I2C versus SPI caso existam GPIOs disponíveis e uma taxa de atualização maior se torne requisito.
 
 ## 16. Registro de decisões técnicas
 
@@ -692,6 +756,7 @@ Em uma montagem física devem ser considerados:
 | Gráficos de uso de recursos nos dois OLEDs | Extensão pedida pelo usuário (§17.2). O valor de "CPU" é tempo real medido dentro das chamadas instrumentadas de desenho/transferência dos mostradores (desenho mais transferência I2C/SPI, não só o barramento), um substituto parcial e aproximado mantido porque o MicroPython no ESP32 bare-metal não expõe métrica de carga do escalonador do SO — ver §17.2 para o que ele cobre e o que não cobre |
 | LEDs azuis com mesmo intervalo, seis tarefas separadas | Extensão pedida pelo usuário (§17.3). Cada LED continua sendo uma task `asyncio` independente, mesmo com todos no mesmo intervalo de 500 ms |
 
+<!-- section: implementation-notes -->
 ## 17. Notas de implementação
 
 Esta seção detalha a implementação dos requisitos do §4, além do que cabe
@@ -746,10 +811,8 @@ num painel monocromático de 128×64.
 
 ### 17.3 Seis LEDs, um intervalo compartilhado, seis tarefas independentes
 
-Os seis LEDs (vermelho, azul, amarelo, branco, laranja e um segundo
-vermelho) são todos pintados da mesma cor
-na placa (`#0000FF`), mesmo que o `main.py` continue rastreando cada um
-individualmente (ver `BLINKING_LEDS`). Cada um roda como sua própria task
+Os seis LEDs piscantes são azuis no circuito atual (`#0000FF`) e o
+`main.py` continua rastreando cada um individualmente (ver `BLINKING_LEDS`). Cada um roda como sua própria task
 `asyncio` independente (`blink_led()`) -- mais um LED sempre significa
 mais uma task concorrente, nunca mais lógica adicionada a um laço
 compartilhado.
