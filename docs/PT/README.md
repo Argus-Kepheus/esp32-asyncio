@@ -19,17 +19,19 @@ uma tela TFT ILI9341 -- tudo simulado no [Wokwi](https://wokwi.com).
 <!-- section: hardware-requirements -->
 ## Requisitos de hardware
 
+<!-- BEGIN GENERATED: hardware-overview -->
 | Componente | Identificador no Wokwi | Pino no ESP32 |
 |---|---|---:|
-| Placa — Espressif ESP32-DevKitC V4 | `board-esp32-devkit-c-v4` | — |
-| Seis LEDs piscantes (+ resistor de 220 Ω cada) | `blue-led-1` a `blue-led-6` | GPIO 26, 14, 27, 25, 33, 12 |
-| LED verde (+ resistor de 220 Ω) | `green-led` | GPIO 4 |
-| Botão pulsador principal, normalmente aberto | `push-button` | GPIO 17 |
-| Dois botões de velocidade (+ pull-down externo de 10 kΩ cada) | `decrease-speed-button`, `increase-speed-button` | GPIO 34, 35 |
-| Dois LEDs indicadores de estado (+ resistor de 220 Ω cada) | `bus-idle-led` (laranja), `scheduler-idle-led` (amarelo) | GPIO 13, 2 |
+| Placa — ESP32-DevKitC V4 | board-esp32-devkit-c-v4 | — |
+| Seis LEDs piscantes (+ 220 Ω) | `blue-led-1` … `blue-led-6` | GPIO 26, 14, 27, 25, 33, 12 |
+| LED verde (+ 220 Ω) | `green-led` | GPIO 4 |
+| Botão pulsador principal | `push-button` | GPIO 17 |
+| Dois botões de velocidade | `decrease-speed-button`, `increase-speed-button` | GPIO 34, 35 |
+| Dois LEDs indicadores de estado | `bus-idle-led`, `scheduler-idle-led` | GPIO 13, 2 |
 | OLED0 de CPU, SSD1306 128×64, I2C(0) | `oled0-display` | SCL = GPIO 32, SDA = GPIO 16 |
 | OLED1 de RAM, SSD1306 128×64, I2C(1) | `oled1-display` | SCL = GPIO 15, SDA = GPIO 22 |
-| TFT, ILI9341 240×320, SPI | `tft-display` | SCK 18, MOSI 23, CS 5, D/C 21, RST 19 |
+| TFT de registro, ILI9341 240×320, SPI | `tft-display` | SCK 18, MOSI 23, CS 5, D/C 21, RST 19 |
+<!-- END GENERATED: hardware-overview -->
 
 Os dois OLEDs e os três botões operam no barramento de 3,3 V da placa; a
 TFT opera em 5 V (ver `hardware-reference.md`, §6, para a ressalva que
