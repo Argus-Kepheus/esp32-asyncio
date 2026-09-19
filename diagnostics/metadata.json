@@ -1,0 +1,101 @@
+{
+  "schema_version": "1.0",
+  "mode": "manual",
+  "authority": {
+    "role": "Ordered inventory of current Wokwi/physical-hardware diagnostics",
+    "not_equivalent_to": "Automated software test suite"
+  },
+  "diagnostics": [
+    {
+      "order": 1,
+      "id": "DIAG-01",
+      "file": "01_blue_led_basic.py",
+      "execution": "manual",
+      "target": "Wokwi or compatible physical ESP32 hardware"
+    },
+    {
+      "order": 2,
+      "id": "DIAG-02",
+      "file": "02_blue_led_blink.py",
+      "execution": "manual",
+      "target": "Wokwi or compatible physical ESP32 hardware"
+    },
+    {
+      "order": 3,
+      "id": "DIAG-03",
+      "file": "03_blue_led_asyncio.py",
+      "execution": "manual",
+      "target": "Wokwi or compatible physical ESP32 hardware"
+    },
+    {
+      "order": 4,
+      "id": "DIAG-04",
+      "file": "04_green_button_led.py",
+      "execution": "manual",
+      "target": "Wokwi or compatible physical ESP32 hardware"
+    },
+    {
+      "order": 5,
+      "id": "DIAG-05",
+      "file": "05_cpu_oled_basic.py",
+      "execution": "manual",
+      "target": "Wokwi or compatible physical ESP32 hardware"
+    },
+    {
+      "order": 6,
+      "id": "DIAG-06",
+      "file": "06_cpu_oled_full_diagnostic.py",
+      "execution": "manual",
+      "target": "Wokwi or compatible physical ESP32 hardware"
+    },
+    {
+      "order": 7,
+      "id": "DIAG-07",
+      "file": "07_additional_blue_leds_basic.py",
+      "execution": "manual",
+      "target": "Wokwi or compatible physical ESP32 hardware"
+    },
+    {
+      "order": 8,
+      "id": "DIAG-08",
+      "file": "08_blue_leds_asyncio.py",
+      "execution": "manual",
+      "target": "Wokwi or compatible physical ESP32 hardware"
+    },
+    {
+      "order": 9,
+      "id": "DIAG-09",
+      "file": "09_blue_interval_buttons.py",
+      "execution": "manual",
+      "target": "Wokwi or compatible physical ESP32 hardware"
+    },
+    {
+      "order": 10,
+      "id": "DIAG-10",
+      "file": "10_status_leds_basic.py",
+      "execution": "manual",
+      "target": "Wokwi or compatible physical ESP32 hardware"
+    },
+    {
+      "order": 11,
+      "id": "DIAG-11",
+      "file": "11_ram_oled_basic.py",
+      "execution": "manual",
+      "target": "Wokwi or compatible physical ESP32 hardware"
+    },
+    {
+      "order": 12,
+      "id": "DIAG-12",
+      "file": "12_tft_basic.py",
+      "execution": "manual",
+      "target": "Wokwi or compatible physical ESP32 hardware"
+    },
+    {
+      "order": 13,
+      "id": "DIAG-13",
+      "file": "13_tft_text_diagnostic.py",
+      "execution": "manual",
+      "target": "Wokwi or compatible physical ESP32 hardware"
+    }
+  ]
+}
