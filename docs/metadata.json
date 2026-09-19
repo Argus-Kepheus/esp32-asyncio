@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "canonical_language": "EN",
+  "languages": {
+    "EN": {
+      "locale": "en",
+      "role": "canonical"
+    },
+    "PT": {
+      "locale": "pt-BR",
+      "role": "translation"
+    }
+  },
+  "policy": {
+    "narrative_authority": "EN",
+    "technical_data_authority": [
+      "config/hardware.json",
+      "config/runtime.json"
+    ],
+    "translation_rule": "Translations may differ stylistically but must preserve normative technical meaning and the semantic section contract.",
+    "stale_rule": "A translation is stale when its content_revision differs from the canonical document revision.",
+    "new_language_rule": "A new language must implement the same document IDs, content revisions, and semantic section IDs before being marked current."
+  },
+  "documents": {
+    "project-overview": {
+      "paths": {
+        "EN": "docs/EN/README.md",
+        "PT": "docs/PT/README.md"
+      },
+      "content_revision": 2,
+      "required_sections": [
+        "hardware-requirements",
+        "software-requirements",
+        "result",
+        "license"
+      ]
+    },
+    "component-specifications": {
+      "paths": {
+        "EN": "docs/EN/component-specifications.md",
+        "PT": "docs/PT/component-specifications.md"
+      },
+      "content_revision": 2,
+      "required_sections": [
+        "microcontroller-board",
+        "displays",
+        "leds",
+        "series-resistors",
+        "push-buttons",
+        "flash-mode-switch"
+      ]
+    },
+    "hardware-reference": {
+      "paths": {
+        "EN": "docs/EN/hardware-reference.md",
+        "PT": "docs/PT/hardware-reference.md"
+      },
+      "content_revision": 2,
+      "required_sections": [
+        "selected-board",
+        "board-rationale",
+        "gpio-header-mapping",
+        "module-compatibility",
+        "restricted-gpios",
+        "electrical-characteristics",
+        "physical-checklist",
+        "references",
+        "board-identification"
+      ]
+    },
+    "technical-specification": {
+      "paths": {
+        "EN": "docs/EN/technical-specification.md",
+        "PT": "docs/PT/technical-specification.md"
+      },
+      "content_revision": 3,
+      "required_sections": [
+        "document-control",
+        "objective",
+        "simulation-platform",
+        "functional-requirements",
+        "naming-conventions",
+        "electrical-design",
+        "software-architecture",
+        "debounce-strategy",
+        "oled-update-strategy",
+        "state-model",
+        "startup-failure",
+        "verification-plan",
+        "workflow",
+        "repository-contents",
+        "acceptance-criteria",
+        "decision-log",
+        "future-work",
+        "revision-guidance",
+        "implementation-notes"
+      ]
+    }
+  }
+}
