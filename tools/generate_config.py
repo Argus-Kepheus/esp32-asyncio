@@ -140,8 +140,8 @@ def render_generated_config(hardware: dict | None = None, runtime: dict | None =
         "Regenerate with: python tools/generate_config.py --write",
         '"""',
         "",
-        f'HARDWARE_SCHEMA_VERSION = {hardware["schema_version"]!r}',
-        f'RUNTIME_SCHEMA_VERSION = {runtime["schema_version"]!r}',
+        f'HARDWARE_SCHEMA_VERSION = {json.dumps(hardware["schema_version"])}',
+        f'RUNTIME_SCHEMA_VERSION = {json.dumps(runtime["schema_version"])}',
         "",
     ]
 
