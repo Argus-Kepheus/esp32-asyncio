@@ -2,7 +2,8 @@
 """Generate the MicroPython-safe configuration module from canonical JSON.
 
 This script is a development-time tool. The ESP32 does not parse the JSON
-files at runtime; instead, future firmware may import lib/generated_config.py.
+files at runtime; `main.py` imports the generated `lib/generated_config.py`
+module instead.
 
 Usage:
     python tools/generate_config.py          # print generated content
