@@ -76,6 +76,16 @@ LABELS = {
         "tft_cs": "TFT chip select",
         "tft_dc": "TFT data/command",
         "tft_rst": "TFT hardware reset",
+        "parameter": "Runtime parameter",
+        "value": "Configured value",
+        "blink_base": "Blinking-LED base interval",
+        "speed_steps": "Blink speed step range",
+        "button_sample": "Button sample interval",
+        "debounce": "Debounce stable window",
+        "cpu_sample": "CPU graph sample floor",
+        "ram_sample": "RAM graph sample floor",
+        "serial_interval": "Serial status interval",
+        "console_throttle": "Console log throttle",
     },
     "PT": {
         "component": "Componente",
@@ -130,6 +140,16 @@ LABELS = {
         "tft_cs": "Seleção de chip da TFT",
         "tft_dc": "Dado/comando da TFT",
         "tft_rst": "Reset físico da TFT",
+        "parameter": "Parâmetro de execução",
+        "value": "Valor configurado",
+        "blink_base": "Intervalo-base dos LEDs piscantes",
+        "speed_steps": "Faixa de passos da velocidade",
+        "button_sample": "Intervalo de amostragem dos botões",
+        "debounce": "Janela estável de antirrepique",
+        "cpu_sample": "Piso de amostragem do gráfico de CPU",
+        "ram_sample": "Piso de amostragem do gráfico de RAM",
+        "serial_interval": "Intervalo do status serial",
+        "console_throttle": "Throttling do registro no console",
     },
 }
 
@@ -181,12 +201,12 @@ def overview_table(hardware: dict, language: str) -> str:
             f"GPIO {c['status_leds']['bus_idle']['gpio']}, {c['status_leds']['scheduler_activity']['gpio']}",
         ),
         (
-            f"{l['cpu_oled']}, SSD1306 {c['displays']['oled0_cpu']['resolution']['width_px']}×{c['displays']['oled0_cpu']['resolution']['height_px']}, I2C({buses['oled0_i2c']['micropython_bus_id']})",
+            f"{l['cpu_oled']}, SSD1306 {c['displays']['oled0_cpu']['resolution']['width_px']}×{c['displays']['oled0_cpu']['resolution']['height_px']}, I2C({buses['oled0_i2c']['micropython_bus_id']}) @ {c['displays']['oled0_cpu']['address_hex']}",
             f"`{c['displays']['oled0_cpu']['id']}`",
             f"SCL = GPIO {buses['oled0_i2c']['scl']['gpio']}, SDA = GPIO {buses['oled0_i2c']['sda']['gpio']}",
         ),
         (
-            f"{l['ram_oled']}, SSD1306 {c['displays']['oled1_ram']['resolution']['width_px']}×{c['displays']['oled1_ram']['resolution']['height_px']}, I2C({buses['oled1_i2c']['micropython_bus_id']})",
+            f"{l['ram_oled']}, SSD1306 {c['displays']['oled1_ram']['resolution']['width_px']}×{c['displays']['oled1_ram']['resolution']['height_px']}, I2C({buses['oled1_i2c']['micropython_bus_id']}) @ {c['displays']['oled1_ram']['address_hex']}",
             f"`{c['displays']['oled1_ram']['id']}`",
             f"SCL = GPIO {buses['oled1_i2c']['scl']['gpio']}, SDA = GPIO {buses['oled1_i2c']['sda']['gpio']}",
         ),
@@ -306,13 +326,37 @@ def gpio_constraints_table(hardware: dict, language: str) -> str:
     return "\n".join(lines)
 
 
+def runtime_summary_table(runtime: dict, language: str) -> str:
+    l = LABELS[language]
+    blink = runtime["blinking_leds"]
+    speed = blink["speed_control"]
+    buttons = runtime["buttons"]
+    graphs = runtime["resource_graphs"]
+    serial = runtime["serial_status"]
+    console = runtime["console"]
+
+    rows = [
+        (l["blink_base"], f'{blink["shared_base_interval_ms"]} ms'),
+        (l["speed_steps"], f'{speed["step_min"]} … {speed["step_max"]}'),
+        (l["button_sample"], f'{buttons["sample_interval_ms"]} ms'),
+        (l["debounce"], f'{buttons["debounce_ms"]} ms'),
+        (l["cpu_sample"], f'{graphs["cpu_sample_interval_ms"]} ms'),
+        (l["ram_sample"], f'{graphs["ram_sample_interval_ms"]} ms'),
+        (l["serial_interval"], f'{serial["print_interval_ms"]} ms'),
+        (l["console_throttle"], str(console["log_throttle"])),
+    ]
+    lines = [f'| {l["parameter"]} | {l["value"]} |', "|---|---:|"]
+    lines.extend(f"| {name} | {value} |" for name, value in rows)
+    return "\n".join(lines)
+
+
 def expected_blocks(language: str, hardware: dict, runtime: dict) -> dict[str, str]:
-    del runtime  # reserved for later generated documentation blocks
     return {
         "hardware-overview": overview_table(hardware, language),
         "board-summary": board_summary_table(hardware, language),
         "gpio-map": gpio_map_table(hardware, language),
         "gpio-constraints": gpio_constraints_table(hardware, language),
+        "runtime-summary": runtime_summary_table(runtime, language),
     }
 
 
@@ -334,6 +378,8 @@ def target_files() -> list[tuple[str, str, tuple[str, ...]]]:
         ("docs/PT/README.md", "PT", ("hardware-overview",)),
         ("docs/EN/hardware-reference.md", "EN", ("board-summary", "gpio-map", "gpio-constraints")),
         ("docs/PT/hardware-reference.md", "PT", ("board-summary", "gpio-map", "gpio-constraints")),
+        ("docs/EN/technical-specification.md", "EN", ("runtime-summary",)),
+        ("docs/PT/technical-specification.md", "PT", ("runtime-summary",)),
     ]
 
 
