@@ -1,3 +1,7 @@
+<!-- doc-id: hardware-reference -->
+<!-- language: EN -->
+<!-- content-revision: 2 -->
+
 # ESP32-DevKitC V4 Hardware Reference
 
 The single source of truth for the physical board, module, GPIO-to-header
@@ -7,6 +11,7 @@ in [`technical-specification.md`](technical-specification.md) and is not
 repeated here. Per-part Wokwi identifiers live in
 [`component-specifications.md`](component-specifications.md).
 
+<!-- section: selected-board -->
 ## 1. Selected board
 
 | Property | Project definition |
@@ -28,6 +33,7 @@ Must not be replaced with another board type without reviewing the
 complete pin mapping in §3 — see also the decision log in
 `technical-specification.md`, §16.
 
+<!-- section: board-rationale -->
 ## 2. Why this board, and why "ESP32" alone is not enough
 
 The assignment only requires "MicroPython for ESP32," not a specific
@@ -46,6 +52,7 @@ the carrier PCB (USB, regulator, headers); the module is the
 metal-shielded part with the actual chip, flash, and antenna. A DevKitC
 V4 can be fitted with different modules — see §4.
 
+<!-- section: gpio-header-mapping -->
 ## 3. GPIO-to-header mapping
 
 All source and circuit references use the **ESP32 GPIO number**, not the
@@ -136,6 +143,7 @@ for the caveat that implies for a physical build.
 - GPIO0 (the flash-mode switch) is read by the ROM bootloader before any
   MicroPython script runs; no `main.py` code interacts with it. See §7.
 
+<!-- section: module-compatibility -->
 ## 4. Module compatibility — WROOM vs. WROVER
 
 This project requires GPIO16 and GPIO17 (OLED SDA and the push-button).
@@ -150,6 +158,7 @@ A WROVER-based board would need a pin reassignment across `main.py`,
 `diagram.json`, the wiring, and this documentation. Since GPIO16/17 are
 predefined project requirements, that reassignment is out of scope here.
 
+<!-- section: restricted-gpios -->
 ## 5. Restricted / reserved GPIOs
 
 | Restriction | Pins | Why |
@@ -192,6 +201,7 @@ and every `print()` call use. Concretely, this is the channel
 ... ms"` line, and the OLED/TFT initialization-failure diagnostics, are
 printed to.
 
+<!-- section: electrical-characteristics -->
 ## 6. Electrical characteristics
 
 - **Logic level:** 3.3 V. Never apply 5 V to a GPIO.
@@ -214,6 +224,7 @@ printed to.
   they come straight from the ESP32's GPIOs, not the display's own VCC
   rail.
 
+<!-- section: physical-checklist -->
 ## 7. Physical implementation checklist
 
 For a future real-hardware build (this project currently targets
@@ -235,6 +246,7 @@ simulation only):
 - no GPIO receives 5 V directly (the TFT's VCC is a display supply pin,
   not a GPIO).
 
+<!-- section: references -->
 ## 8. References
 
 **Espressif / MicroPython:**
@@ -248,6 +260,7 @@ simulation only):
 - [`board-esp32-devkit-c-v4` component](https://docs.wokwi.com/parts/board-esp32-devkit-c-v4)
 - [`diagram.json` format](https://docs.wokwi.com/diagram-format)
 
+<!-- section: board-identification -->
 ## 9. Board identification statement
 
 For use in reports and submission documentation:
