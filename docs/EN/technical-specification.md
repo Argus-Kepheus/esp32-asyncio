@@ -1,6 +1,6 @@
 <!-- doc-id: technical-specification -->
 <!-- language: EN -->
-<!-- content-revision: 3 -->
+<!-- content-revision: 4 -->
 
 # Technical Specification — esp32-asyncio
 
