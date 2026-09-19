@@ -9,7 +9,7 @@ LEDs, a push-button driving a green LED, two activity-indicator LEDs,
 two SSD1306 OLEDs plotting live CPU/RAM graphs, and an ILI9341 TFT log
 console.
 
-**Full documentation:** [English](docs/EN/README.md) · [Português](docs/PT/README.md)
+**Full documentation:** [English](docs/EN/README.md) · [Português](docs/PT/README.md) · [Español](docs/ES/README.md)
 
 **Technical report (Portuguese):** [`report/relatorio.pdf`](report/relatorio.pdf)
 
@@ -37,7 +37,7 @@ console.
 | `config/` | Canonical hardware/runtime configuration |
 | `lib/` | Explicit MicroPython support package; contains generated runtime configuration |
 | `tools/` | Configuration/document generation and repository validation |
-| `docs/PT/` and `docs/EN/` | Multilingual technical documentation governed by `docs/metadata.json` |
+| `docs/EN/`, `docs/PT/`, `docs/ES/` | Multilingual technical documentation governed by `docs/metadata.json` |
 | `diagnostics/` | Manual Wokwi/physical-hardware diagnostic scripts |
 | `tests/` | Reserved for future automated tests |
 | `report/` | Technical report in LaTeX and PDF |
