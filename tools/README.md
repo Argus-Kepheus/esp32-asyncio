@@ -136,3 +136,25 @@ and rejects reintroduction of competing inline definitions.
 The display drivers remain at repository root in this wave. Moving them is not
 required to establish a single configuration owner and would change the
 existing Wokwi/mpremote deployment shape without a demonstrated benefit.
+
+
+## Continuous integration
+
+Wave 7 adds `.github/workflows/repository-validation.yml`.
+
+On pushes to `main`, pull requests, and manual dispatch, GitHub Actions runs:
+
+```text
+python tools/generate_config.py --check
+python tools/generate_docs.py --check
+python tools/validate_repository.py
+python -m py_compile ...
+```
+
+The workflow uses only CPython's standard library and does not modify the
+repository. A failure means a generated artifact is stale, repository
+representations disagree, documentation/diagnostic governance has regressed,
+or Python syntax is invalid.
+
+Passing CI is **not** evidence that the Wokwi simulation or physical ESP32 has
+executed successfully. Manual diagnostics remain a separate validation layer.
