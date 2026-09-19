@@ -44,7 +44,10 @@ The Wave 2 validator checks:
 - key bindings for buttons;
 - electrical connectivity of LEDs, buttons, pull-down resistors, displays,
   and the flash-mode switch;
-- exact reproducibility of `lib/generated_config.py`.
+- exact reproducibility of `lib/generated_config.py`;
+- multilingual documentation parity from `docs/metadata.json`;
+- document IDs, languages, shared content revisions, and required semantic sections;
+- reappearance of known stale documentation statements found during Wave 0/3.
 
 ## Boundary of the validator
 
@@ -67,3 +70,24 @@ generation/validation mechanism without changing firmware behavior.
 
 A later firmware wave can switch `main.py` to consume the generated module
 after the new configuration pipeline is already verifiable.
+
+
+## Documentation parity
+
+Wave 3 adds a semantic parity contract for EN/PT documentation.
+
+The validator reads `docs/metadata.json` and verifies that each maintained
+language:
+
+- contains every registered document;
+- uses the correct stable document ID;
+- declares the same content revision as the canonical EN document;
+- implements all required language-neutral semantic section markers.
+
+This is intentionally not a sentence-by-sentence translation comparison.
+Translations may use natural language-specific structure and wording while
+remaining normatively equivalent.
+
+A future language such as ES can be added by registering it in
+`docs/metadata.json` and satisfying the same document/revision/section
+contract.
