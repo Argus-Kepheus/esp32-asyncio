@@ -84,24 +84,24 @@ checklist are kept in
 
 ### FR-01 — Six blinking LEDs
 
-- Component IDs: `blue-led-1` through `blue-led-6` · Python variables:
-  `blue_led_1` through `blue_led_6` · Pin constants: `BLUE_LED_1_PIN`
-  (GPIO 26), `BLUE_LED_2_PIN` (14), `BLUE_LED_3_PIN` (27),
-  `BLUE_LED_4_PIN` (25), `BLUE_LED_5_PIN` (33), `BLUE_LED_6_PIN` (12)
+- Component IDs: `blue-led-1` through `blue-led-6`; Python variables:
+  `blue_led_1` through `blue_led_6`. The canonical GPIO/header mapping is
+  the generated table in `hardware-reference.md`, §3.
 - All six are physically blue (`#0000FF`) in `diagram.json`, and the same
   1–6 numbering is used consistently in the circuit and Python source
 - Direction: digital output, each its own independent `asyncio` task
   (`blink_led()`, driven by the `BLINKING_LEDS` list)
-- Behavior: toggle on a shared 500 ms base interval, adjustable per FR-03
+- Behavior: toggle on the shared base interval defined in
+  `config/runtime.json`, adjustable per FR-03
 - Constraint: logically independent of every other task — none calls or
   waits on another — though all still share the single cooperative
   scheduler (§7.2 engineering note)
 
 ### FR-02 — Push-button and green LED
 
-- Component IDs: `push-button`, `green-led` · Python variables:
-  `push_button`, `green_led` · Pin constants: `BUTTON_PIN` (GPIO 17),
-  `GREEN_LED_PIN` (GPIO 4)
+- Component IDs: `push-button`, `green-led`; Python variables:
+  `push_button`, `green_led`. Current wiring is defined in
+  `config/hardware.json` and shown in `hardware-reference.md`, §3.
 - Button: normally-open momentary, `Pin.IN` with internal `Pin.PULL_DOWN`;
   released electrical state LOW, pressed HIGH
 - Green LED: digital output; button released → OFF, button pressed → ON
@@ -110,32 +110,30 @@ checklist are kept in
 
 ### FR-03 — Speed buttons
 
-- Component IDs: `decrease-speed-button`, `increase-speed-button` · Python
-  variables: `decrease_speed_button`, `increase_speed_button` · Pin
-  constants: `DECREASE_SPEED_BUTTON_PIN` (GPIO 34),
-  `INCREASE_SPEED_BUTTON_PIN` (GPIO 35)
-- Input-only pins with no internal pull resistor — each needs its own
-  external 10 kΩ pull-down to GND (already in `diagram.json`)
-- Each press scales every blinking LED's interval by the same power-of-two
-  factor at once, clamped to [125 ms, 4 s] (`BLINK_SPEED_STEP_MIN`/`_MAX`)
+- Component IDs: `decrease-speed-button`, `increase-speed-button`; Python
+  variables: `decrease_speed_button`, `increase_speed_button`.
+- Their canonical GPIO/pull configuration is defined in
+  `config/hardware.json` and shown in `hardware-reference.md`, §3.
+- Each press scales every blinking LED's interval by the configured
+  power-of-two step, subject to the limits in `config/runtime.json`.
 
 ### FR-04 — Two OLED resource graphs
 
 - Component IDs: `oled0-display`, `oled1-display` · Python variables:
   `oled0_display`, `oled1_display`
-- Controller: SSD1306 · Resolution: 128 × 64 · Address: `0x3C` on both
-- CPU OLED0: `machine.I2C(0)`, SCL GPIO 32, SDA GPIO 16 — plots the "CPU"
-  graph (§19.2)
-- RAM OLED1: `machine.I2C(1)`, SCL GPIO 15, SDA GPIO 22 — its own
-  independent hardware I2C bus, plots the "RAM" graph
-- Both redrawn at least every 250 ms (`CPU_GRAPH_SAMPLE_INTERVAL_MS` /
-  `RAM_GRAPH_SAMPLE_INTERVAL_MS`, a floor not an exact period — §9)
+- Both use SSD1306 controllers on independent hardware I2C buses; their
+  current addresses, bus IDs and pins are canonical in `config/hardware.json`
+  and shown in `hardware-reference.md`, §3.
+- OLED0 plots the "CPU" proxy graph and OLED1 plots the "RAM" graph (§19.2).
+- Their sampling cadence is defined in `config/runtime.json`; the configured
+  delay is a floor, not an exact period (§9).
 
 ### FR-05 — TFT log console
 
 - Component ID: `tft-display` · Python variable: `tft_display`
-- Controller: ILI9341 · genuine 4-wire SPI: SCK GPIO 18, MOSI GPIO 23, CS
-  GPIO 5, D/C GPIO 21, RST GPIO 19
+- Controller: ILI9341 over 4-wire SPI; the current bus ID and signal mapping
+  are canonical in `config/hardware.json` and shown in
+  `hardware-reference.md`, §3.
 - `console_log()` writes one colored line per system event (one color per
   subsystem), wrapping back to the top of the screen once full, and always
   mirrors every line to the serial console too, regardless of whether the
@@ -143,9 +141,9 @@ checklist are kept in
 
 ### FR-06 — Status-indicator LEDs
 
-- Component IDs: `bus-idle-led`, `scheduler-idle-led` · Python variables:
-  `bus_idle_led`, `scheduler_idle_led` · Pin constants: `BUS_IDLE_LED_PIN`
-  (GPIO 13), `SCHEDULER_IDLE_LED_PIN` (GPIO 2)
+- Component IDs: `bus-idle-led`, `scheduler-idle-led`; Python variables:
+  `bus_idle_led`, `scheduler_idle_led`. Their current wiring is defined in
+  `config/hardware.json` and shown in `hardware-reference.md`, §3.
 - Orange (`bus_idle_led`): ON by default, OFF only while an instrumented
   display write is in flight — an inverted "bus busy" reading
 - Yellow (`scheduler_idle_led`): toggled every `scheduler_idle_task()`
@@ -203,14 +201,14 @@ does not reproduce.
 ### 6.3 Why I2C for the OLEDs, and SPI for the TFT
 
 An SSD1306 can exist in I2C or SPI module variants. I2C was fixed for both
-OLEDs (SCL GPIO 32 / SDA GPIO 16 on the first, SCL GPIO 15 / SDA GPIO 22 on
-the second — one independent hardware bus per OLED, FR-04) because:
+OLEDs, one independent hardware bus per display (FR-04); the current bus and
+pin assignments are generated in `hardware-reference.md`, §3, because:
 
 1. it uses only two signals per bus, keeping the pin budget low across two
    displays;
 2. the Wokwi `board-ssd1306` part used here is the I2C 128 × 64 variant; and
-3. their content — two periodically-redrawn bar graphs — does not need SPI's
-   higher throughput to stay responsive at a 250 ms refresh floor.
+3. their content — two periodically-redrawn bar graphs — does not require
+   SPI's higher throughput at the configured sampling cadence.
 
 The TFT console (FR-05) is a separate case: it uses genuine 4-wire SPI (SCK,
 MOSI, CS, D/C, plus RST), because the ILI9341 controller used here is an SPI
@@ -591,12 +589,11 @@ rationale behind each choice described here.
 
 ### 19.1 Two independent OLED I2C buses
 
-The CPU OLED0 (`oled0-display` / `oled0_display`) runs on
-`machine.I2C(0)`, GPIO32 (SCL) / GPIO16 (SDA). The RAM OLED1
-(`oled1-display` / `oled1_display`) runs on its own independent hardware
-I2C bus, `machine.I2C(1)`, GPIO15 (SCL) / GPIO22 (SDA) — not a second
-address on the first bus — so both are addressed concurrently without bus
-contention.
+The CPU OLED0 (`oled0-display` / `oled0_display`) and RAM OLED1
+(`oled1-display` / `oled1_display`) run on separate hardware I2C buses,
+not as two addresses on one bus, so they can be addressed independently.
+Current bus IDs, GPIO assignments and addresses are canonical in
+`config/hardware.json` and shown in `hardware-reference.md`, §3.
 
 ### 19.2 What the two OLED graphs plot
 
@@ -642,8 +639,9 @@ one more concurrent task, never more logic added to a shared loop.
 
 ### 19.4 TFT log console, write-only SPI, and the serial-mirroring decision
 
-The ILI9341 TFT uses genuine 4-wire SPI (SCK, MOSI, CS, D/C, plus a reset
-line — GPIO 18/23/5/21/19). Unlike the two
+The ILI9341 TFT uses genuine 4-wire SPI (SCK, MOSI, CS, D/C, plus reset);
+the concrete mapping is generated from `config/hardware.json` in
+`hardware-reference.md`, §3. Unlike the two
 OLEDs' graphs, the TFT (`tft_display`, driven by `ili9341.py`) works as a
 scrolling, colored activity log: `console_log()` writes one line per
 system event, one color per subsystem, wrapping back to the top of the
