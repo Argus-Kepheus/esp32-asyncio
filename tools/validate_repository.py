@@ -26,6 +26,7 @@ from generate_config import (
 
 MAIN_PATH = ROOT / "main.py"
 DIAGRAM_PATH = ROOT / "diagram.json"
+DOC_METADATA_PATH = ROOT / "docs" / "metadata.json"
 
 errors: list[str] = []
 warnings: list[str] = []
@@ -600,12 +601,141 @@ def check_runtime_schema(runtime: dict) -> None:
             fail(f"Invalid positive integer for {label}: {value!r}")
 
 
+
+def parse_document_header(text: str) -> dict[str, str]:
+    values: dict[str, str] = {}
+    patterns = {
+        "doc_id": r"<!--\s*doc-id:\s*([^>]+?)\s*-->",
+        "language": r"<!--\s*language:\s*([^>]+?)\s*-->",
+        "content_revision": r"<!--\s*content-revision:\s*([^>]+?)\s*-->",
+    }
+    for key, pattern in patterns.items():
+        match = re.search(pattern, text)
+        if match:
+            values[key] = match.group(1).strip()
+    return values
+
+
+def semantic_sections(text: str) -> list[str]:
+    return [
+        match.strip()
+        for match in re.findall(r"<!--\s*section:\s*([^>]+?)\s*-->", text)
+    ]
+
+
+def check_documentation_parity() -> None:
+    metadata = load_json(DOC_METADATA_PATH)
+    if not metadata:
+        return
+
+    canonical = metadata.get("canonical_language")
+    languages = metadata.get("languages", {})
+    documents = metadata.get("documents", {})
+
+    if canonical not in languages:
+        fail("docs/metadata.json canonical_language is not registered")
+    elif languages[canonical].get("role") != "canonical":
+        fail("Canonical documentation language must have role=canonical")
+
+    if not documents:
+        fail("docs/metadata.json contains no documents")
+        return
+
+    for doc_id, spec in documents.items():
+        revision = str(spec.get("content_revision"))
+        required_sections = spec.get("required_sections", [])
+        paths = spec.get("paths", {})
+
+        if canonical not in paths:
+            fail(f"Documentation {doc_id} has no canonical-language path")
+
+        for language in languages:
+            path_value = paths.get(language)
+            if not path_value:
+                fail(f"Documentation {doc_id} missing language {language}")
+                continue
+
+            path = ROOT / path_value
+            if not path.exists():
+                fail(f"Documentation file missing: {path_value}")
+                continue
+
+            text = path.read_text(encoding="utf-8")
+            header = parse_document_header(text)
+
+            if header.get("doc_id") != doc_id:
+                fail(
+                    f"{path_value}: doc-id mismatch "
+                    f"({header.get('doc_id')!r} != {doc_id!r})"
+                )
+            if header.get("language") != language:
+                fail(
+                    f"{path_value}: language mismatch "
+                    f"({header.get('language')!r} != {language!r})"
+                )
+            if header.get("content_revision") != revision:
+                fail(
+                    f"{path_value}: stale content revision "
+                    f"({header.get('content_revision')!r} != {revision!r})"
+                )
+
+            sections = semantic_sections(text)
+            duplicate_sections = sorted(
+                {section for section in sections if sections.count(section) > 1}
+            )
+            if duplicate_sections:
+                fail(
+                    f"{path_value}: duplicate semantic section markers: "
+                    f"{duplicate_sections}"
+                )
+
+            missing = [
+                section for section in required_sections if section not in sections
+            ]
+            if missing:
+                fail(
+                    f"{path_value}: missing semantic sections for {doc_id}: "
+                    f"{missing}"
+                )
+
+            undeclared = sorted(
+                set(sections) - set(required_sections)
+            )
+            if undeclared:
+                warn(
+                    f"{path_value}: semantic sections not declared in metadata: "
+                    f"{undeclared}"
+                )
+
+    # Known stale statements discovered during Wave 0/3 must not reappear.
+    stale_patterns = {
+        "historical mixed-color blinking LED description":
+            r"(red, blue, yellow, white, orange, and a second red|"
+            r"vermelho, azul, amarelo, branco, laranja e um segundo\s+vermelho)",
+        "English-only documentation claim":
+            r"All source code, comments and documentation are written in English",
+    }
+    for relative in (
+        "docs/EN/technical-specification.md",
+        "docs/PT/technical-specification.md",
+    ):
+        text = (ROOT / relative).read_text(encoding="utf-8")
+        for label, pattern in stale_patterns.items():
+            if re.search(pattern, text, re.IGNORECASE):
+                fail(f"{relative}: stale documentation returned: {label}")
+
+    root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    if "toggle the green LED" in root_readme:
+        fail("README.md still describes the main button as a green-LED toggle")
+
+
 def main() -> int:
     for required in (
         HARDWARE_PATH,
         RUNTIME_PATH,
         MAIN_PATH,
         DIAGRAM_PATH,
+        DOC_METADATA_PATH,
         ROOT / "tools" / "generate_config.py",
         OUTPUT_PATH,
     ):
@@ -623,6 +753,8 @@ def main() -> int:
         check_generated_file(hardware, runtime)
         check_main_sync(hardware, runtime)
         check_diagram_sync(hardware)
+
+    check_documentation_parity()
 
     print("esp32-asyncio repository validation")
     print(f"Errors: {len(errors)}")
