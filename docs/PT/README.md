@@ -26,10 +26,10 @@ uma tela TFT ILI9341 -- tudo simulado no [Wokwi](https://wokwi.com).
 | Seis LEDs piscantes (+ 220 Ω) | `blue-led-1` … `blue-led-6` | GPIO 26, 14, 27, 25, 33, 12 |
 | LED verde (+ 220 Ω) | `green-led` | GPIO 4 |
 | Botão pulsador principal | `push-button` | GPIO 17 |
-| Dois botões de velocidade | `decrease-speed-button`, `increase-speed-button` | GPIO 34, 35 |
-| Dois LEDs indicadores de estado | `bus-idle-led`, `scheduler-idle-led` | GPIO 13, 2 |
-| OLED0 de CPU, SSD1306 128×64, I2C(0) | `oled0-display` | SCL = GPIO 32, SDA = GPIO 16 |
-| OLED1 de RAM, SSD1306 128×64, I2C(1) | `oled1-display` | SCL = GPIO 15, SDA = GPIO 22 |
+| Dois botões de velocidade (+ pull-down externo de 10000 Ω cada) | `decrease-speed-button`, `increase-speed-button` | GPIO 34, 35 |
+| Dois LEDs indicadores de estado (+ 220 Ω cada) | `bus-idle-led`, `scheduler-idle-led` | GPIO 13, 2 |
+| OLED0 de CPU, SSD1306 128×64, I2C(0) @ 0x3C | `oled0-display` | SCL = GPIO 32, SDA = GPIO 16 |
+| OLED1 de RAM, SSD1306 128×64, I2C(1) @ 0x3C | `oled1-display` | SCL = GPIO 15, SDA = GPIO 22 |
 | TFT de registro, ILI9341 240×320, SPI | `tft-display` | SCK 18, MOSI 23, CS 5, D/C 21, RST 19 |
 <!-- END GENERATED: hardware-overview -->
 
