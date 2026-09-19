@@ -1,14 +1,14 @@
-"""Test 8/13 — All six blue LEDs, concurrently, via asyncio.
+"""Diagnostic 8/13 — All six blue LEDs, concurrently, via asyncio.
 
 Integration step for the blue-LED row: GPIO 26, 14, 27, 25, 33 and 12
 all blinking at the same 500 ms interval, each as
 its own independent asyncio task -- exactly the pattern main.py uses
-(BLINKING_LEDS / blink_led()). See tests/README.md for how to run this on
+(BLINKING_LEDS / blink_led()). See diagnostics/README.md for how to run this on
 wokwi.com.
 
-Run this only after tests 1-3 (first blue LED + asyncio) and test 7 (the
+Run this only after diagnostics 1-3 (first blue LED + asyncio) and diagnostic 7 (the
 other five blue LEDs) have each passed on their own. If every LED blinked
-correctly alone in test 7 but one stalls, lags, or stops here, the fault
+correctly alone in diagnostic 7 but one stalls, lags, or stops here, the fault
 is in concurrency (one task blocking the others), not in that LED's GPIO
 wiring -- exactly the kind of bug this project's asyncio design exists to
 prevent (see docs/EN/technical-specification.md, section 7).
